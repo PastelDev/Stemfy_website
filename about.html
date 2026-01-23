@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Σχετικά με εμάς — STEMfy.gr</title>
+    <meta name="description" content="Τρεις μαθητές με πάθος για την επιστήμη. Γνώρισε την ομάδα του STEMfy.gr!">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <meta name="theme-color" content="#4a9eff">
+
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Pixel Starfield Background -->
+    <canvas id="starfield"></canvas>
+    
+    <!-- Pixel Corner Decorations -->
+    <div class="pixel-corner pixel-corner--top-left"></div>
+    <div class="pixel-corner pixel-corner--top-right"></div>
+    <div class="pixel-corner pixel-corner--bottom-left"></div>
+    <div class="pixel-corner pixel-corner--bottom-right"></div>
+
+    <main class="about">
+        <header class="about__header">
+            <a href="index.html" class="about__logo">STEMfy<span>.gr</span></a>
+        </header>
+
+        <section class="about__section">
+            <h2>Ποιοι είμαστε</h2>
+            <p>
+                Είμαστε τρεις μαθητές με κοινό πάθος: να κάνουμε την επιστήμη προσιτή, 
+                διαδραστική και διασκεδαστική. Πιστεύουμε ότι η καλύτερη μάθηση γίνεται 
+                μέσα από την εξερεύνηση και το πείραμα.
+            </p>
+        </section>
+
+        <section class="about__section">
+            <h2>Το STEMfy.gr</h2>
+            <p>
+                Το STEMfy.gr είναι το κανάλι μας για όλα τα θέματα STEM — Science, Technology, 
+                Engineering, Mathematics. Δημιουργούμε περιεχόμενο που εξηγεί σύνθετες ιδέες 
+                με απλό τρόπο, και φτιάχνουμε διαδραστικές προσομοιώσεις για να μπορείς να 
+                πειραματιστείς μόνος σου.
+            </p>
+            <p style="margin-top: 1rem;">
+                Το μότο μας: <strong style="color: var(--color-blue-bright);">«Το STEM, for You!»</strong>
+            </p>
+        </section>
+
+        <section class="about__section">
+            <h2>Επικοινωνία</h2>
+            <div class="about__social">
+                <a href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener noreferrer" class="social-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                    </svg>
+                    @stemfy.gr
+                </a>
+                <a href="mailto:stelirapt7@gmail.com" class="social-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    stelirapt7@gmail.com
+                </a>
+            </div>
+        </section>
+
+        <div class="about__back">
+            <a href="index.html" class="back-link">← Αρχική</a>
+        </div>
+    </main>
+
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initStarfield('starfield');
+        });
+    </script>
+</body>
+</html>

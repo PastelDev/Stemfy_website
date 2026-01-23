@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STEMfy.gr — Το STEM, for You!</title>
+    <meta name="description" content="Διαδραστικές προσομοιώσεις φυσικής και μαθηματικών. Εξερεύνησε, μάθε, δημιούργησε.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <meta name="theme-color" content="#4a9eff">
+
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Pixel Starfield Background -->
+    <canvas id="starfield"></canvas>
+    
+    <!-- Pixel Corner Decorations -->
+    <div class="pixel-corner pixel-corner--top-left"></div>
+    <div class="pixel-corner pixel-corner--top-right"></div>
+    <div class="pixel-corner pixel-corner--bottom-left"></div>
+    <div class="pixel-corner pixel-corner--bottom-right"></div>
+
+    <main class="home">
+        <!-- Logo Section -->
+        <header class="home__header">
+            <div class="logo-container">
+                <canvas id="galaxy-logo" width="200" height="200"></canvas>
+                <h1 class="logo-text">STEMfy<span class="logo-text--accent">.gr</span></h1>
+            </div>
+            <p class="motto">Το STEM, for You!</p>
+        </header>
+
+        <!-- Simulations Grid -->
+        <section class="simulations">
+            <h2 class="section-title">Προσομοιώσεις</h2>
+            
+            <div class="simulations__grid">
+                <!-- Double Pendulum - Active -->
+                <a href="double-pendulum.html" class="sim-card sim-card--active">
+                    <div class="sim-card__icon">
+                        <svg viewBox="0 0 64 64" class="sim-card__svg">
+                            <circle cx="32" cy="8" r="4" fill="currentColor"/>
+                            <line x1="32" y1="12" x2="24" y2="32" stroke="currentColor" stroke-width="3"/>
+                            <circle cx="24" cy="32" r="5" fill="currentColor"/>
+                            <line x1="24" y1="37" x2="36" y2="56" stroke="currentColor" stroke-width="3"/>
+                            <circle cx="36" cy="56" r="5" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <h3 class="sim-card__title">Διπλό Εκκρεμές</h3>
+                    <p class="sim-card__desc">Εξερεύνησε το χάος σε ένα απλό σύστημα</p>
+                    <span class="sim-card__badge sim-card__badge--live">Διαθέσιμο</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Navigation -->
+        <nav class="home__nav">
+            <a href="about.html" class="nav-link">Σχετικά με εμάς</a>
+        </nav>
+    </main>
+
+    <script src="js/common.js"></script>
+    <script>
+        // Initialize starfield and galaxy logo on home page
+        document.addEventListener('DOMContentLoaded', () => {
+            initStarfield('starfield');
+            initGalaxyLogo('galaxy-logo');
+        });
+    </script>
+</body>
+</html>

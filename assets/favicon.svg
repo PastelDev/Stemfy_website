@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Dark background -->
+  <rect width="200" height="200" fill="#0a0a1a"/>
+
+  <!-- Pixel starfield background -->
+  <g id="stars">
+    <!-- White pixels -->
+    <rect x="20" y="15" width="6" height="6" fill="#ffffff"/>
+    <rect x="45" y="25" width="6" height="6" fill="#ffffff"/>
+    <rect x="155" y="35" width="6" height="6" fill="#ffffff"/>
+    <rect x="30" y="50" width="6" height="6" fill="#ffffff"/>
+    <rect x="165" y="60" width="6" height="6" fill="#ffffff"/>
+    <rect x="25" y="85" width="6" height="6" fill="#ffffff"/>
+    <rect x="170" y="90" width="6" height="6" fill="#ffffff"/>
+    <rect x="35" y="145" width="6" height="6" fill="#ffffff"/>
+    <rect x="160" y="165" width="6" height="6" fill="#ffffff"/>
+
+    <!-- Blue pixels -->
+    <rect x="55" y="20" width="4" height="4" fill="#4a9eff"/>
+    <rect x="80" y="30" width="5" height="5" fill="#2563d8"/>
+    <rect x="120" y="40" width="4" height="4" fill="#4a9eff"/>
+    <rect x="50" y="70" width="4" height="4" fill="#2563d8"/>
+    <rect x="100" y="75" width="5" height="5" fill="#4a9eff"/>
+    <rect x="140" y="110" width="4" height="4" fill="#2563d8"/>
+    <rect x="75" y="130" width="5" height="5" fill="#4a9eff"/>
+    <rect x="130" y="140" width="4" height="4" fill="#2563d8"/>
+
+    <!-- Purple pixels -->
+    <rect x="70" y="50" width="4" height="4" fill="#9d6bff"/>
+    <rect x="110" y="60" width="5" height="5" fill="#7d5cd9"/>
+    <rect x="60" y="100" width="4" height="4" fill="#9d6bff"/>
+    <rect x="150" y="120" width="4" height="4" fill="#7d5cd9"/>
+    <rect x="90" y="155" width="5" height="5" fill="#9d6bff"/>
+  </g>
+
+  <!-- Galaxy core (simplified spiral pattern) -->
+  <g id="galaxy" opacity="0.85">
+    <!-- Outer spiral rings -->
+    <circle cx="100" cy="100" r="35" fill="none" stroke="#4a9eff" stroke-width="2" opacity="0.6"/>
+    <circle cx="100" cy="100" r="25" fill="none" stroke="#6bb1ff" stroke-width="2" opacity="0.7"/>
+    <circle cx="100" cy="100" r="15" fill="none" stroke="#9dd9ff" stroke-width="1.5" opacity="0.8"/>
+
+    <!-- Core glow -->
+    <circle cx="100" cy="100" r="8" fill="#ffffff" opacity="0.9"/>
+    <circle cx="100" cy="100" r="5" fill="#ffffff" opacity="1"/>
+  </g>
+</svg>
