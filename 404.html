@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Σελίδα δεν βρέθηκε — STEMfy.gr</title>
+    <meta name="description" content="Η σελίδα που ζητάς δεν υπάρχει.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <meta name="theme-color" content="#4a9eff">
+
+    <link rel="stylesheet" href="css/main.css">
+
+    <style>
+        .error-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-blue-bright);
+        }
+
+        .error-code {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 6rem;
+            line-height: 1;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+        }
+
+        .error-message {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        .error-submessage {
+            font-size: 1rem;
+            margin-bottom: 3rem;
+            color: #999999;
+        }
+
+        .error-link {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #4a9eff, #2563d8);
+            border: 2px solid #4a9eff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: all 200ms ease;
+        }
+
+        .error-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(74, 158, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Pixel Starfield Background -->
+    <canvas id="starfield"></canvas>
+
+    <!-- Pixel Corner Decorations -->
+    <div class="pixel-corner pixel-corner--top-left"></div>
+    <div class="pixel-corner pixel-corner--top-right"></div>
+    <div class="pixel-corner pixel-corner--bottom-left"></div>
+    <div class="pixel-corner pixel-corner--bottom-right"></div>
+
+    <main class="error-page">
+        <div class="error-code">404</div>
+        <h1 class="error-message">Σελίδα δεν βρέθηκε</h1>
+        <p class="error-submessage">Συγγνώμη, η σελίδα που ψάχνεις δεν υπάρχει.</p>
+        <a href="index.html" class="error-link">← Επιστροφή στην αρχική</a>
+    </main>
+
+    <script src="js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initStarfield('starfield');
+        });
+    </script>
+</body>
+</html>
