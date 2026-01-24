@@ -28,22 +28,22 @@ function initStarfield(canvasId) {
         const numStars = Math.floor((canvas.width * canvas.height) / 4000);
 
         for (let i = 0; i < numStars; i++) {
-            // Color distribution: 40% white, 40% blue, 20% purple
+            // Color distribution: 30% white, 20% pink, 50% purple
             const colorRand = Math.random();
             let hue, saturation;
 
-            if (colorRand < 0.4) {
-                // White pixels
-                hue = 0;
-                saturation = 0;
-            } else if (colorRand < 0.8) {
-                // Blue pixels (hue 200-220)
-                hue = 200 + Math.random() * 20;
+            if (colorRand < 0.3) {
+                // White/lavender pixels
+                hue = 270;
+                saturation = 10 + Math.random() * 15;
+            } else if (colorRand < 0.5) {
+                // Pink/magenta pixels (hue 300-320)
+                hue = 300 + Math.random() * 20;
                 saturation = 40 + Math.random() * 40;
             } else {
-                // Purple pixels (hue 260-280)
-                hue = 260 + Math.random() * 20;
-                saturation = 35 + Math.random() * 45;
+                // Purple pixels (hue 260-290)
+                hue = 260 + Math.random() * 30;
+                saturation = 45 + Math.random() * 40;
             }
 
             stars.push({
@@ -61,7 +61,7 @@ function initStarfield(canvasId) {
     
     // Draw frame
     function draw(time) {
-        ctx.fillStyle = '#050510';
+        ctx.fillStyle = '#0a0812';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         stars.forEach(star => {
@@ -146,10 +146,10 @@ function initGalaxyLogo(canvasId) {
                 size: Math.random() < 0.9 ? pixelSize : pixelSize * 1.5,
                 // Core particles are brighter and whiter
                 isCore: t < 0.15,
-                hue: 210 + Math.random() * 30
+                hue: 270 + Math.random() * 30
             });
         }
-        
+
         // Add central glow particles
         for (let i = 0; i < 50; i++) {
             const r = Math.random() * 15;
@@ -160,7 +160,7 @@ function initGalaxyLogo(canvasId) {
                 brightness: 0.8 + Math.random() * 0.2,
                 size: pixelSize,
                 isCore: true,
-                hue: 220
+                hue: 280
             });
         }
     }
@@ -181,7 +181,7 @@ function initGalaxyLogo(canvasId) {
             const py = Math.floor(y / pixelSize) * pixelSize;
             
             if (p.isCore) {
-                ctx.fillStyle = `rgba(200, 220, 255, ${p.brightness})`;
+                ctx.fillStyle = `rgba(220, 200, 255, ${p.brightness})`;
             } else {
                 ctx.fillStyle = `hsla(${p.hue}, 70%, 70%, ${p.brightness})`;
             }
