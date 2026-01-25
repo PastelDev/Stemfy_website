@@ -4,6 +4,7 @@ requireLogin();
 
 $message = '';
 $error = '';
+$errors = [];
 $action = $_GET['action'] ?? 'list';
 $editId = $_GET['id'] ?? null;
 
@@ -17,33 +18,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postAction = $_POST['post_action'] ?? '';
 
     if ($postAction === 'create' || $postAction === 'update') {
-        $resource = [
-            'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
-            'title_en' => sanitizeInput($_POST['title_en']),
-            'title_el' => sanitizeInput($_POST['title_el']),
-            'description_en' => sanitizeInput($_POST['description_en']),
-            'description_el' => sanitizeInput($_POST['description_el']),
-            'file_url' => sanitizeInput($_POST['file_url']),
-            'type' => sanitizeInput($_POST['type']),
-            'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
+        $existingResource = null;
+        $existingFileUrl = null;
 
         if ($postAction === 'update') {
-            $index = array_search($_POST['id'], array_column($data['resources'], 'id'));
-            if ($index !== false) {
-                $data['resources'][$index] = $resource;
-                $message = 'Resource updated successfully!';
+            foreach ($data['resources'] as $resourceItem) {
+                if ($resourceItem['id'] === $_POST['id']) {
+                    $existingResource = $resourceItem;
+                    break;
+                }
             }
-        } else {
-            array_unshift($data['resources'], $resource);
-            $message = 'Resource created successfully!';
+            $existingFileUrl = $existingResource['file_url'] ?? null;
         }
 
-        saveJsonData(POSTS_FILE, $data);
-        $action = 'list';
+        $uploadedFileUrl = uploadPdfFile('file_upload', UPLOAD_RESOURCES_DIR, UPLOAD_BASE_URL . 'resources/', $errors);
+        $fileUrl = $uploadedFileUrl ?: $existingFileUrl;
+
+        if (!$fileUrl) {
+            $errors[] = 'Please upload a PDF file.';
+        }
+
+        if (empty($errors)) {
+            $resource = [
+                'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                'title_en' => sanitizeInput($_POST['title_en']),
+                'title_el' => sanitizeInput($_POST['title_el']),
+                'description_en' => sanitizeInput($_POST['description_en']),
+                'description_el' => sanitizeInput($_POST['description_el']),
+                'file_url' => $fileUrl,
+                'type' => sanitizeInput($_POST['type']),
+                'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            if ($postAction === 'update') {
+                $index = array_search($_POST['id'], array_column($data['resources'], 'id'));
+                if ($index !== false) {
+                    $data['resources'][$index] = $resource;
+                    $message = 'Resource updated successfully!';
+                }
+            } else {
+                array_unshift($data['resources'], $resource);
+                $message = 'Resource created successfully!';
+            }
+
+            saveJsonData(POSTS_FILE, $data);
+
+            if ($uploadedFileUrl && $existingFileUrl) {
+                deleteUploadedFile($existingFileUrl);
+            }
+
+            $action = 'list';
+        } else {
+            $error = implode(' ', $errors);
+            if ($postAction === 'update') {
+                $editId = $_POST['id'];
+            }
+            $action = $postAction === 'update' ? 'edit' : 'new';
+        }
 
     } elseif ($postAction === 'delete' && isset($_POST['id'])) {
+        $resourceToDelete = null;
+        foreach ($data['resources'] as $resourceItem) {
+            if ($resourceItem['id'] === $_POST['id']) {
+                $resourceToDelete = $resourceItem;
+                break;
+            }
+        }
+        if ($resourceToDelete && !empty($resourceToDelete['file_url'])) {
+            deleteUploadedFile($resourceToDelete['file_url']);
+        }
+
         $data['resources'] = array_filter($data['resources'], fn($r) => $r['id'] !== $_POST['id']);
         $data['resources'] = array_values($data['resources']);
         saveJsonData(POSTS_FILE, $data);
@@ -77,6 +122,16 @@ include 'templates/header.php';
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
             <?php echo $message; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($error): ?>
+        <div class="alert alert-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <?php echo $error; ?>
         </div>
     <?php endif; ?>
 
@@ -136,7 +191,7 @@ include 'templates/header.php';
 
     <?php else: ?>
         <div class="content-panel">
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="post_action" value="<?php echo $editResource ? 'update' : 'create'; ?>">
                 <?php if ($editResource): ?>
                     <input type="hidden" name="id" value="<?php echo $editResource['id']; ?>">
@@ -169,11 +224,12 @@ include 'templates/header.php';
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="file_url">File URL</label>
-                        <input type="url" id="file_url" name="file_url" required
-                               value="<?php echo $editResource ? htmlspecialchars($editResource['file_url']) : ''; ?>"
-                               placeholder="https://example.com/document.pdf">
-                        <p class="form-hint">Direct link to the PDF or resource file</p>
+                        <label for="file_upload">PDF Upload</label>
+                        <input type="file" id="file_upload" name="file_upload" accept="application/pdf" <?php echo $editResource ? '' : 'required'; ?>>
+                        <p class="form-hint">Upload a PDF file for this resource.</p>
+                        <?php if ($editResource && !empty($editResource['file_url'])): ?>
+                            <p class="form-hint">Current file: <a href="<?php echo htmlspecialchars($editResource['file_url']); ?>" target="_blank" rel="noopener">View PDF</a></p>
+                        <?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label for="type">Resource Type</label>

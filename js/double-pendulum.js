@@ -86,6 +86,8 @@ const VIEW_MODES = {
     desktop: 'desktop'
 };
 
+const CHAOS_WARNING_STORAGE_KEY = 'pendulumChaosWarningDismissed';
+
 // ============================================
 // STATE
 // ============================================
@@ -115,6 +117,8 @@ const state = {
     chaosMapVisible: false,
     chaosMapData: null,
     chaosMapComputing: false,
+    chaosMapSignature: null,
+    chaosMapSnapshot: null,
     chaosAxisX: 'theta1',
     chaosAxisY: 'theta2',
     chaosGridEnabled: true,
@@ -122,6 +126,43 @@ const state = {
     // UI
     controlPanelOpen: true,
     chaosPanelOpen: true
+};
+
+const INFO_CANVAS_SIZES = {
+    trajectory: { width: 1400, height: 900 },
+    chaos: { width: 1200, height: 820 }
+};
+
+const PARAMETER_METADATA = [
+    { key: 'm1', labelKey: 'label_m1', unit: 'kg', decimals: 2 },
+    { key: 'm2', labelKey: 'label_m2', unit: 'kg', decimals: 2 },
+    { key: 'L1', labelKey: 'label_L1', unit: 'm', decimals: 2 },
+    { key: 'L2', labelKey: 'label_L2', unit: 'm', decimals: 2 },
+    { key: 'theta1', labelKey: 'label_theta1', unit: '\u00B0', decimals: 1 },
+    { key: 'theta2', labelKey: 'label_theta2', unit: '\u00B0', decimals: 1 },
+    { key: 'omega1', labelKey: 'label_omega1', unit: 'rad/s', decimals: 1 },
+    { key: 'omega2', labelKey: 'label_omega2', unit: 'rad/s', decimals: 1 },
+    { key: 'g', labelKey: 'label_g', unit: '', decimals: 2 },
+    { key: 'damping', labelKey: 'section_damping_title', unit: '', decimals: 2 }
+];
+
+const INFO_THEME = {
+    backgroundStart: '#0a0812',
+    backgroundEnd: '#1a0f2b',
+    panel: 'rgba(18, 12, 28, 0.92)',
+    border: 'rgba(176, 138, 240, 0.35)',
+    accent: '#b08af0',
+    text: '#f8f4ff',
+    muted: 'rgba(248, 244, 255, 0.7)',
+    subtle: 'rgba(248, 244, 255, 0.45)',
+    highlight: '#ff7aec'
+};
+
+const AXIS_LABEL_KEYS = {
+    theta1: 'axis_theta1',
+    theta2: 'axis_theta2',
+    omega1: 'axis_omega1',
+    omega2: 'axis_omega2'
 };
 
 // ============================================
@@ -256,6 +297,15 @@ function initViewMode() {
 let canvas, ctx;
 let chaosCanvas, chaosCtx;
 let elements = {};
+let chaosWarning = {
+    modal: null,
+    confirmBtn: null,
+    cancelBtn: null,
+    closeBtn: null,
+    skipCheckbox: null,
+    resolver: null,
+    isOpen: false
+};
 
 // ============================================
 // PHYSICS ENGINE
@@ -542,6 +592,642 @@ function renderChaosMap() {
     drawChaosOverlay(data);
 }
 
+// ============================================
+// DOWNLOAD SNAPSHOTS
+// ============================================
+
+function buildChaosMapSnapshot() {
+    return {
+        params: { ...state.params },
+        axisX: state.chaosAxisX,
+        axisY: state.chaosAxisY
+    };
+}
+
+function normalizeSnapshotValue(value) {
+    if (!Number.isFinite(value)) return value;
+    return Number(value.toFixed(4));
+}
+
+function getChaosMapSignature(snapshot) {
+    if (!snapshot) return '';
+    const params = {};
+    Object.keys(CONFIG.defaults).forEach((key) => {
+        params[key] = normalizeSnapshotValue(snapshot.params[key]);
+    });
+    return JSON.stringify({
+        axisX: snapshot.axisX,
+        axisY: snapshot.axisY,
+        params
+    });
+}
+
+function waitForChaosMap() {
+    return new Promise((resolve) => {
+        if (!state.chaosMapComputing) {
+            resolve();
+            return;
+        }
+
+        const check = () => {
+            if (!state.chaosMapComputing) {
+                resolve();
+            } else {
+                requestAnimationFrame(check);
+            }
+        };
+
+        requestAnimationFrame(check);
+    });
+}
+
+function cloneCanvas(sourceCanvas) {
+    if (!sourceCanvas) return null;
+    const clone = document.createElement('canvas');
+    clone.width = sourceCanvas.width;
+    clone.height = sourceCanvas.height;
+    const cloneCtx = clone.getContext('2d');
+    if (cloneCtx) {
+        cloneCtx.drawImage(sourceCanvas, 0, 0);
+    }
+    return clone;
+}
+
+function getInfoText(key, fallback) {
+    const i18n = window.i18nManager;
+    return i18n?.t(key) || fallback;
+}
+
+function getParamLabel(meta) {
+    const i18n = window.i18nManager;
+    return i18n?.t(meta.labelKey) || meta.labelKey || meta.key;
+}
+
+function formatValueWithUnit(value, unit, decimals) {
+    const formatted = formatNumber(value, decimals);
+    if (!unit) return formatted;
+    if (unit === '\u00B0') {
+        return `${formatted}${unit}`;
+    }
+    return `${formatted} ${unit}`;
+}
+
+function formatParamValue(meta, params) {
+    const value = params[meta.key];
+    if (!Number.isFinite(value)) return '--';
+    if (meta.key === 'g' && meta.labelKey === 'label_g') {
+        return formatNumber(value, meta.decimals);
+    }
+    return formatValueWithUnit(value, meta.unit, meta.decimals);
+}
+
+function formatParamRange(meta) {
+    const range = CONFIG.ranges[meta.key];
+    if (!range) return '';
+    const minText = formatValueWithUnit(range.min, meta.unit, meta.decimals);
+    const maxText = formatValueWithUnit(range.max, meta.unit, meta.decimals);
+    return `${minText} - ${maxText}`;
+}
+
+function getAxisLabel(axisKey) {
+    const i18n = window.i18nManager;
+    const labelKey = AXIS_LABEL_KEYS[axisKey];
+    return i18n?.t(labelKey) || axisKey;
+}
+
+function getAxisShortLabel(axisKey) {
+    const meta = PARAMETER_METADATA.find((item) => item.key === axisKey);
+    if (!meta) return axisKey;
+    const i18n = window.i18nManager;
+    return i18n?.t(meta.labelKey) || meta.key;
+}
+
+function drawInfoBackground(ctx, width, height) {
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, INFO_THEME.backgroundStart);
+    gradient.addColorStop(1, INFO_THEME.backgroundEnd);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = 'rgba(176, 138, 240, 0.08)';
+    ctx.beginPath();
+    ctx.ellipse(width * 0.75, height * 0.2, width * 0.45, height * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
+}
+
+function drawCard(ctx, x, y, width, height) {
+    drawRoundedRect(ctx, x, y, width, height, 20);
+    ctx.fillStyle = INFO_THEME.panel;
+    ctx.fill();
+    ctx.strokeStyle = INFO_THEME.border;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+}
+
+function drawSectionTitle(ctx, text, x, y) {
+    ctx.fillStyle = INFO_THEME.accent;
+    ctx.font = '600 18px Outfit, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(text, x, y);
+}
+
+function drawParamTable(ctx, items, x, y, width, rowHeight, columns = 2) {
+    const columnGap = columns > 1 ? 32 : 0;
+    const rows = Math.ceil(items.length / columns);
+    const columnWidth = (width - columnGap * (columns - 1)) / columns;
+
+    items.forEach((item, index) => {
+        const col = Math.floor(index / rows);
+        const row = index % rows;
+        const rowY = y + row * rowHeight + rowHeight / 2;
+        const colX = x + col * (columnWidth + columnGap);
+
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = INFO_THEME.muted;
+        ctx.font = '500 16px Outfit, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, colX, rowY);
+
+        ctx.fillStyle = INFO_THEME.text;
+        ctx.font = '600 16px Outfit, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(item.value, colX + columnWidth, rowY);
+    });
+}
+
+function getChaosMapCoordinate(snapshot, chaosData) {
+    if (!snapshot || !chaosData) return null;
+    const axisX = snapshot.axisX;
+    const axisY = snapshot.axisY;
+    const rangeX = CONFIG.ranges[axisX];
+    const rangeY = CONFIG.ranges[axisY];
+    if (!rangeX || !rangeY) return null;
+
+    const resolution = chaosData.resolution;
+    const valueX = snapshot.params[axisX];
+    const valueY = snapshot.params[axisY];
+
+    const pixelX = clamp(mapRange(valueX, rangeX.min, rangeX.max, 0, resolution - 1), 0, resolution - 1);
+    const pixelY = clamp(mapRange(valueY, rangeY.max, rangeY.min, 0, resolution - 1), 0, resolution - 1);
+
+    return { pixelX, pixelY, valueX, valueY };
+}
+
+function drawChaosMapPreview(ctx, mapCanvas, x, y, size, coordinate) {
+    if (!mapCanvas) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fillRect(x, y, size, size);
+        return;
+    }
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(mapCanvas, x, y, size, size);
+    ctx.restore();
+
+    ctx.strokeStyle = INFO_THEME.border;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, size, size);
+
+    if (coordinate) {
+        const scale = (size - 1) / (mapCanvas.width - 1);
+        const markerX = x + coordinate.pixelX * scale;
+        const markerY = y + coordinate.pixelY * scale;
+
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = INFO_THEME.highlight;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = INFO_THEME.text;
+        ctx.stroke();
+    }
+}
+
+function createTrajectoryInfoCanvas(snapshot, mapCanvas) {
+    const { width, height } = INFO_CANVAS_SIZES.trajectory;
+    const infoCanvas = document.createElement('canvas');
+    infoCanvas.width = width;
+    infoCanvas.height = height;
+    const infoCtx = infoCanvas.getContext('2d');
+    if (!infoCtx) return null;
+
+    drawInfoBackground(infoCtx, width, height);
+
+    const title = getInfoText('snapshot_trajectory_title', 'Trajectory Snapshot');
+    infoCtx.fillStyle = INFO_THEME.text;
+    infoCtx.font = '700 32px Outfit, sans-serif';
+    infoCtx.textAlign = 'left';
+    infoCtx.textBaseline = 'top';
+    infoCtx.fillText(title, 60, 48);
+
+    const paramsTitle = getInfoText('snapshot_parameters_title', 'Parameters');
+    const mapTitle = getInfoText('chaos_title', 'Chaos Map');
+    const coordinateTitle = getInfoText('snapshot_coordinate_title', 'Selected coordinate');
+
+    const cardTop = 120;
+    const cardPadding = 32;
+    const cardGap = 40;
+    const leftWidth = 740;
+    const rightWidth = width - 60 * 2 - cardGap - leftWidth;
+    const cardHeight = height - cardTop - 60;
+    const leftX = 60;
+    const rightX = leftX + leftWidth + cardGap;
+
+    drawCard(infoCtx, leftX, cardTop, leftWidth, cardHeight);
+    drawSectionTitle(infoCtx, paramsTitle, leftX + cardPadding, cardTop + cardPadding);
+
+    const paramItems = PARAMETER_METADATA.map((meta) => ({
+        label: getParamLabel(meta),
+        value: formatParamValue(meta, snapshot.params)
+    }));
+
+    drawParamTable(
+        infoCtx,
+        paramItems,
+        leftX + cardPadding,
+        cardTop + cardPadding + 40,
+        leftWidth - cardPadding * 2,
+        40
+    );
+
+    drawCard(infoCtx, rightX, cardTop, rightWidth, cardHeight);
+    drawSectionTitle(infoCtx, mapTitle, rightX + cardPadding, cardTop + cardPadding);
+
+    const mapSize = Math.min(rightWidth - cardPadding * 2, 360);
+    const mapX = rightX + cardPadding;
+    const mapY = cardTop + cardPadding + 42;
+    const chaosData = state.chaosMapData;
+    const coordinate = getChaosMapCoordinate(snapshot, chaosData);
+
+    drawChaosMapPreview(infoCtx, mapCanvas, mapX, mapY, mapSize, coordinate);
+
+    const axisLabelX = `${getInfoText('chaos_axis_x', 'Axis X')}: ${getAxisShortLabel(snapshot.axisX)}`;
+    const axisLabelY = `${getInfoText('chaos_axis_y', 'Axis Y')}: ${getAxisShortLabel(snapshot.axisY)}`;
+    const axisValueX = formatValueWithUnit(snapshot.params[snapshot.axisX], PARAMETER_METADATA.find((item) => item.key === snapshot.axisX)?.unit || '', PARAMETER_METADATA.find((item) => item.key === snapshot.axisX)?.decimals || 2);
+    const axisValueY = formatValueWithUnit(snapshot.params[snapshot.axisY], PARAMETER_METADATA.find((item) => item.key === snapshot.axisY)?.unit || '', PARAMETER_METADATA.find((item) => item.key === snapshot.axisY)?.decimals || 2);
+
+    const infoStartY = mapY + mapSize + 30;
+    infoCtx.fillStyle = INFO_THEME.muted;
+    infoCtx.font = '600 16px Outfit, sans-serif';
+    infoCtx.textAlign = 'left';
+    infoCtx.fillText(coordinateTitle, mapX, infoStartY);
+
+    infoCtx.font = '500 15px Outfit, sans-serif';
+    infoCtx.fillStyle = INFO_THEME.subtle;
+    infoCtx.fillText(axisLabelX, mapX, infoStartY + 28);
+    infoCtx.fillText(axisLabelY, mapX, infoStartY + 52);
+
+    infoCtx.textAlign = 'right';
+    infoCtx.fillStyle = INFO_THEME.text;
+    infoCtx.font = '600 15px Outfit, sans-serif';
+    infoCtx.fillText(axisValueX, mapX + mapSize, infoStartY + 28);
+    infoCtx.fillText(axisValueY, mapX + mapSize, infoStartY + 52);
+
+    return infoCanvas;
+}
+
+function createChaosMapInfoCanvas(snapshot, mapCanvas) {
+    const { width, height } = INFO_CANVAS_SIZES.chaos;
+    const infoCanvas = document.createElement('canvas');
+    infoCanvas.width = width;
+    infoCanvas.height = height;
+    const infoCtx = infoCanvas.getContext('2d');
+    if (!infoCtx) return null;
+
+    drawInfoBackground(infoCtx, width, height);
+
+    const title = getInfoText('snapshot_chaos_title', 'Chaos Map Snapshot');
+    infoCtx.fillStyle = INFO_THEME.text;
+    infoCtx.font = '700 30px Outfit, sans-serif';
+    infoCtx.textAlign = 'left';
+    infoCtx.textBaseline = 'top';
+    infoCtx.fillText(title, 60, 48);
+
+    const paramsTitle = getInfoText('snapshot_parameters_title', 'Parameters');
+    const axesTitle = getInfoText('snapshot_axes_title', 'Axes');
+
+    const cardTop = 120;
+    const cardPadding = 28;
+    const cardGap = 40;
+    const leftWidth = 460;
+    const rightWidth = width - 60 * 2 - cardGap - leftWidth;
+    const cardHeight = height - cardTop - 60;
+    const leftX = 60;
+    const rightX = leftX + leftWidth + cardGap;
+
+    drawCard(infoCtx, leftX, cardTop, leftWidth, cardHeight);
+    drawSectionTitle(infoCtx, getInfoText('chaos_title', 'Chaos Map'), leftX + cardPadding, cardTop + cardPadding);
+
+    const mapSize = Math.min(leftWidth - cardPadding * 2, 360);
+    const mapX = leftX + cardPadding;
+    const mapY = cardTop + cardPadding + 42;
+    drawChaosMapPreview(infoCtx, mapCanvas, mapX, mapY, mapSize, null);
+
+    drawCard(infoCtx, rightX, cardTop, rightWidth, cardHeight);
+    drawSectionTitle(infoCtx, paramsTitle, rightX + cardPadding, cardTop + cardPadding);
+
+    const axisKeys = [snapshot.axisX, snapshot.axisY];
+    const paramItems = PARAMETER_METADATA.map((meta) => {
+        if (axisKeys.includes(meta.key)) {
+            const variesLabel = getInfoText('snapshot_varies', 'varies');
+            const rangeLabel = getInfoText('snapshot_range', 'Range');
+            const rangeText = formatParamRange(meta);
+            return {
+                label: getParamLabel(meta),
+                value: `${variesLabel} (${rangeLabel}: ${rangeText})`
+            };
+        }
+        return {
+            label: getParamLabel(meta),
+            value: formatParamValue(meta, snapshot.params)
+        };
+    });
+
+    drawParamTable(
+        infoCtx,
+        paramItems,
+        rightX + cardPadding,
+        cardTop + cardPadding + 40,
+        rightWidth - cardPadding * 2,
+        36,
+        1
+    );
+
+    const axisInfoY = cardTop + cardHeight - 96;
+    infoCtx.fillStyle = INFO_THEME.accent;
+    infoCtx.font = '600 16px Outfit, sans-serif';
+    infoCtx.textAlign = 'left';
+    infoCtx.fillText(axesTitle, rightX + cardPadding, axisInfoY);
+
+    infoCtx.fillStyle = INFO_THEME.muted;
+    infoCtx.font = '500 15px Outfit, sans-serif';
+    infoCtx.fillText(`${getInfoText('chaos_axis_x', 'Axis X')}: ${getAxisLabel(snapshot.axisX)}`, rightX + cardPadding, axisInfoY + 26);
+    infoCtx.fillText(`${getInfoText('chaos_axis_y', 'Axis Y')}: ${getAxisLabel(snapshot.axisY)}`, rightX + cardPadding, axisInfoY + 50);
+
+    return infoCanvas;
+}
+
+function shouldSkipChaosWarning() {
+    try {
+        return localStorage.getItem(CHAOS_WARNING_STORAGE_KEY) === 'true';
+    } catch (err) {
+        return false;
+    }
+}
+
+function setChaosWarningDismissed(value) {
+    try {
+        localStorage.setItem(CHAOS_WARNING_STORAGE_KEY, value ? 'true' : 'false');
+    } catch (err) {
+        // Ignore storage errors
+    }
+}
+
+function openChaosWarningModal() {
+    if (!chaosWarning.modal) return Promise.resolve(true);
+    chaosWarning.modal.classList.add('active');
+    chaosWarning.modal.setAttribute('aria-hidden', 'false');
+    chaosWarning.isOpen = true;
+    if (chaosWarning.skipCheckbox) {
+        chaosWarning.skipCheckbox.checked = false;
+    }
+
+    return new Promise((resolve) => {
+        chaosWarning.resolver = resolve;
+    });
+}
+
+function closeChaosWarningModal(result) {
+    if (!chaosWarning.modal) return;
+    chaosWarning.modal.classList.remove('active');
+    chaosWarning.modal.setAttribute('aria-hidden', 'true');
+    chaosWarning.isOpen = false;
+
+    if (chaosWarning.skipCheckbox && chaosWarning.skipCheckbox.checked) {
+        setChaosWarningDismissed(true);
+    }
+
+    if (typeof chaosWarning.resolver === 'function') {
+        const resolver = chaosWarning.resolver;
+        chaosWarning.resolver = null;
+        resolver(result);
+    }
+}
+
+function confirmChaosMapRefresh() {
+    if (shouldSkipChaosWarning()) return Promise.resolve(true);
+    return openChaosWarningModal();
+}
+
+function initChaosWarningModal() {
+    chaosWarning.modal = document.getElementById('chaos-warning-modal');
+    if (!chaosWarning.modal) return;
+
+    chaosWarning.confirmBtn = document.getElementById('chaos-warning-confirm');
+    chaosWarning.cancelBtn = document.getElementById('chaos-warning-cancel');
+    chaosWarning.closeBtn = document.getElementById('chaos-warning-close');
+    chaosWarning.skipCheckbox = document.getElementById('chaos-warning-skip');
+
+    if (chaosWarning.confirmBtn) {
+        chaosWarning.confirmBtn.addEventListener('click', () => closeChaosWarningModal(true));
+    }
+
+    if (chaosWarning.cancelBtn) {
+        chaosWarning.cancelBtn.addEventListener('click', () => closeChaosWarningModal(false));
+    }
+
+    if (chaosWarning.closeBtn) {
+        chaosWarning.closeBtn.addEventListener('click', () => closeChaosWarningModal(false));
+    }
+
+    chaosWarning.modal.addEventListener('click', (event) => {
+        if (event.target === chaosWarning.modal) {
+            closeChaosWarningModal(false);
+        }
+    });
+}
+
+async function prepareTrajectoryInfoDownload() {
+    const snapshot = buildChaosMapSnapshot();
+    const signature = getChaosMapSignature(snapshot);
+
+    if (state.chaosMapComputing) {
+        await waitForChaosMap();
+    }
+
+    const hasExistingMap = Boolean(state.chaosMapData);
+    const needsRefresh = !state.chaosMapData || state.chaosMapSignature !== signature;
+
+    if (needsRefresh) {
+        const shouldWarn = hasExistingMap && state.chaosMapSignature && state.chaosMapSignature !== signature;
+        if (shouldWarn) {
+            const proceed = await confirmChaosMapRefresh();
+            if (!proceed) {
+                return { ready: false, snapshot, mapCanvas: null };
+            }
+        }
+
+        state.chaosMapSnapshot = snapshot;
+        state.chaosMapSignature = signature;
+        computeChaosMap();
+        await waitForChaosMap();
+    }
+
+    if (!state.chaosMapData || state.chaosMapSignature !== signature) {
+        return { ready: false, snapshot, mapCanvas: null };
+    }
+
+    renderChaosMap();
+    const mapCanvas = cloneCanvas(chaosCanvas);
+    if (!mapCanvas) {
+        return { ready: false, snapshot, mapCanvas: null };
+    }
+    return { ready: true, snapshot, mapCanvas };
+}
+
+async function ensureChaosMapAvailable() {
+    if (state.chaosMapData) return true;
+    if (state.chaosMapComputing) {
+        await waitForChaosMap();
+        return Boolean(state.chaosMapData);
+    }
+
+    state.chaosMapSnapshot = buildChaosMapSnapshot();
+    state.chaosMapSignature = getChaosMapSignature(state.chaosMapSnapshot);
+    computeChaosMap();
+    await waitForChaosMap();
+    return Boolean(state.chaosMapData);
+}
+
+function formatDownloadTimestamp() {
+    const now = new Date();
+    return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').replace('Z', '');
+}
+
+function downloadCanvasImage(targetCanvas, name) {
+    if (!targetCanvas) return;
+    const link = document.createElement('a');
+    const timestamp = formatDownloadTimestamp();
+    link.download = `${name}-${timestamp}.png`;
+    link.href = targetCanvas.toDataURL('image/png');
+    link.click();
+}
+
+async function downloadPendulumImage() {
+    render();
+    downloadCanvasImage(canvas, 'double-pendulum');
+
+    const info = await prepareTrajectoryInfoDownload();
+    if (!info.ready) return;
+    const infoCanvas = createTrajectoryInfoCanvas(info.snapshot, info.mapCanvas);
+    if (infoCanvas) {
+        downloadCanvasImage(infoCanvas, 'double-pendulum-info');
+    }
+}
+
+async function downloadChaosImage() {
+    const hasMap = state.chaosMapData || await ensureChaosMapAvailable();
+    if (!hasMap) return;
+    renderChaosMap();
+    downloadCanvasImage(chaosCanvas, 'chaos-map');
+
+    const snapshot = state.chaosMapSnapshot || {
+        params: { ...state.params },
+        axisX: state.chaosMapData?.axisX || state.chaosAxisX,
+        axisY: state.chaosMapData?.axisY || state.chaosAxisY
+    };
+    const infoCanvas = createChaosMapInfoCanvas(snapshot, cloneCanvas(chaosCanvas));
+    if (infoCanvas) {
+        downloadCanvasImage(infoCanvas, 'chaos-map-info');
+    }
+}
+
+function getSupportedVideoMimeType() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    const types = [
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm'
+    ];
+    return types.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+async function downloadPendulumVideo() {
+    const i18n = window.i18nManager;
+    if (!canvas || typeof canvas.captureStream !== 'function' || typeof MediaRecorder === 'undefined') {
+        alert(i18n?.t('download_video_unsupported') || 'Video recording is not supported in this browser.');
+        return;
+    }
+
+    const promptText = i18n?.t('download_video_prompt') || 'Enter video duration in seconds (max 15):';
+    const input = window.prompt(promptText, '5');
+    if (input === null) return;
+
+    const parsed = Number.parseFloat(input);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        alert(i18n?.t('download_video_invalid') || 'Please enter a valid number of seconds (1–15).');
+        return;
+    }
+
+    const duration = Math.min(parsed, 15);
+    const info = await prepareTrajectoryInfoDownload();
+    const stream = canvas.captureStream(60);
+    const mimeType = getSupportedVideoMimeType();
+    let recorder;
+
+    try {
+        recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    } catch (err) {
+        alert(i18n?.t('download_video_unsupported') || 'Video recording is not supported in this browser.');
+        return;
+    }
+
+    const chunks = [];
+    recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+            chunks.push(event.data);
+        }
+    };
+
+    recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const timestamp = formatDownloadTimestamp();
+        link.href = url;
+        link.download = `double-pendulum-${timestamp}.webm`;
+        link.click();
+        URL.revokeObjectURL(url);
+
+        if (info.ready) {
+            const infoCanvas = createTrajectoryInfoCanvas(info.snapshot, info.mapCanvas);
+            if (infoCanvas) {
+                downloadCanvasImage(infoCanvas, 'double-pendulum-info');
+            }
+        }
+    };
+
+    recorder.start();
+    setTimeout(() => {
+        if (recorder.state !== 'inactive') {
+            recorder.stop();
+        }
+    }, duration * 1000);
+}
+
 function getChaosAxisPixel(range, size, invert) {
     if (!range) return (size - 1) / 2;
     if (range.min <= 0 && range.max >= 0) {
@@ -791,18 +1477,21 @@ function toggleChaosPanel() {
 
 function computeChaosMap() {
     if (state.chaosMapComputing) return;
-    
+
     state.chaosMapComputing = true;
+    state.chaosMapSnapshot = buildChaosMapSnapshot();
+    state.chaosMapSignature = getChaosMapSignature(state.chaosMapSnapshot);
     showChaosLoading(true);
-    
+
     // Compute in chunks on the main thread
-    computeChaosMapDirect();
+    computeChaosMapDirect(state.chaosMapSnapshot);
 }
 
-function computeChaosMapDirect() {
+function computeChaosMapDirect(snapshot) {
+    const localSnapshot = snapshot || buildChaosMapSnapshot();
     const resolution = CONFIG.chaosMap.resolution;
-    const axisX = state.chaosAxisX;
-    const axisY = state.chaosAxisY;
+    const axisX = localSnapshot.axisX;
+    const axisY = localSnapshot.axisY;
     
     const rangeX = CONFIG.ranges[axisX];
     const rangeY = CONFIG.ranges[axisY];
@@ -810,7 +1499,7 @@ function computeChaosMapDirect() {
     const values = [];
     let maxLyapunov = 0;
     
-    const baseParams = { ...state.params };
+    const baseParams = { ...localSnapshot.params };
     
     let computed = 0;
     const total = resolution * resolution;
@@ -841,13 +1530,16 @@ function computeChaosMapDirect() {
                 params[axisY] = mapRange(y, 0, resolution - 1, rangeY.max, rangeY.min);
             }
             
-            // Set initial conditions
-            params.theta1 = params.theta1 !== undefined ? 
-                (typeof params.theta1 === 'number' && !axisX.includes('theta') ? degToRad(state.params.theta1) : params.theta1) :
-                degToRad(state.params.theta1);
-            params.theta2 = params.theta2 !== undefined ?
-                (typeof params.theta2 === 'number' && !axisY.includes('theta') ? degToRad(state.params.theta2) : params.theta2) :
-                degToRad(state.params.theta2);
+            const theta1IsAxis = axisX === 'theta1' || axisY === 'theta1';
+            const theta2IsAxis = axisX === 'theta2' || axisY === 'theta2';
+
+            if (!theta1IsAxis) {
+                params.theta1 = degToRad(baseParams.theta1);
+            }
+
+            if (!theta2IsAxis) {
+                params.theta2 = degToRad(baseParams.theta2);
+            }
             
             const lyapunov = computeLyapunov(params);
             values[y][x] = Math.max(0, lyapunov);
@@ -860,7 +1552,7 @@ function computeChaosMapDirect() {
         if (computed < total) {
             requestAnimationFrame(computeChunk);
         } else {
-            finishChaosMap(values, maxLyapunov, resolution);
+            finishChaosMap(values, maxLyapunov, resolution, axisX, axisY);
         }
     }
     
@@ -868,13 +1560,13 @@ function computeChaosMapDirect() {
 }
 
 
-function finishChaosMap(values, maxLyapunov, resolution) {
+function finishChaosMap(values, maxLyapunov, resolution, axisX, axisY) {
     state.chaosMapData = {
         values,
         maxLyapunov: maxLyapunov || 1,
         resolution,
-        axisX: state.chaosAxisX,
-        axisY: state.chaosAxisY
+        axisX,
+        axisY
     };
     
     state.chaosMapComputing = false;
@@ -940,6 +1632,8 @@ function setChaosAxis(axis, param) {
     
     // Recompute map
     state.chaosMapData = null;
+    state.chaosMapSignature = null;
+    state.chaosMapSnapshot = null;
     if (state.chaosPanelOpen) {
         computeChaosMap();
     }
@@ -1028,6 +1722,9 @@ function initControls() {
     elements.resetBtn = document.getElementById('reset-btn');
     elements.tutorialBtn = document.getElementById('tutorial-btn');
     elements.viewToggleBtn = document.getElementById('view-toggle-btn');
+    elements.downloadPendulumImageBtn = document.getElementById('download-pendulum-image');
+    elements.downloadPendulumVideoBtn = document.getElementById('download-pendulum-video');
+    elements.downloadChaosImageBtn = document.getElementById('download-chaos-image');
     
     // Play/Pause
     if (elements.playBtn) {
@@ -1047,6 +1744,18 @@ function initControls() {
     // View toggle
     if (elements.viewToggleBtn) {
         elements.viewToggleBtn.addEventListener('click', toggleViewPreference);
+    }
+
+    if (elements.downloadPendulumImageBtn) {
+        elements.downloadPendulumImageBtn.addEventListener('click', downloadPendulumImage);
+    }
+
+    if (elements.downloadPendulumVideoBtn) {
+        elements.downloadPendulumVideoBtn.addEventListener('click', downloadPendulumVideo);
+    }
+
+    if (elements.downloadChaosImageBtn) {
+        elements.downloadChaosImageBtn.addEventListener('click', downloadChaosImage);
     }
     
     // Parameter sliders
@@ -1147,6 +1856,8 @@ function initControls() {
     if (recomputeBtn) {
         recomputeBtn.addEventListener('click', () => {
             state.chaosMapData = null;
+            state.chaosMapSignature = null;
+            state.chaosMapSnapshot = null;
             computeChaosMap();
         });
     }
@@ -1174,6 +1885,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     initChaosCanvas();
     initControls();
+    initChaosWarningModal();
     initViewMode();
     initState();
     
@@ -1203,6 +1915,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+    if (chaosWarning.isOpen && e.key === 'Escape') {
+        e.preventDefault();
+        closeChaosWarningModal(false);
+        return;
+    }
+
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
     
     switch (e.key) {

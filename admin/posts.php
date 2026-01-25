@@ -4,6 +4,7 @@ requireLogin();
 
 $message = '';
 $error = '';
+$errors = [];
 $action = $_GET['action'] ?? 'list';
 $editId = $_GET['id'] ?? null;
 
@@ -17,33 +18,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postAction = $_POST['post_action'] ?? '';
 
     if ($postAction === 'create' || $postAction === 'update') {
-        $post = [
-            'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
-            'title_en' => sanitizeInput($_POST['title_en']),
-            'title_el' => sanitizeInput($_POST['title_el']),
-            'description_en' => sanitizeInput($_POST['description_en']),
-            'description_el' => sanitizeInput($_POST['description_el']),
-            'image_url' => sanitizeInput($_POST['image_url']),
-            'link_url' => sanitizeInput($_POST['link_url']),
-            'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
+        $existingPost = null;
+        $existingMedia = [];
+        $removedMedia = [];
 
         if ($postAction === 'update') {
-            $index = array_search($_POST['id'], array_column($data['posts'], 'id'));
-            if ($index !== false) {
-                $data['posts'][$index] = $post;
-                $message = 'Post updated successfully!';
+            foreach ($data['posts'] as $postItem) {
+                if ($postItem['id'] === $_POST['id']) {
+                    $existingPost = $postItem;
+                    break;
+                }
             }
-        } else {
-            array_unshift($data['posts'], $post);
-            $message = 'Post created successfully!';
+            $existingMedia = $existingPost['media'] ?? [];
+            if (empty($existingMedia) && !empty($existingPost['image_url'])) {
+                $existingMedia = [['type' => 'image', 'url' => $existingPost['image_url']]];
+            }
+            $removedMedia = $_POST['remove_media'] ?? [];
         }
 
-        saveJsonData(POSTS_FILE, $data);
-        $action = 'list';
+        $keptMedia = array_values(array_filter($existingMedia, function($item) use ($removedMedia) {
+            return !in_array($item['url'], $removedMedia, true);
+        }));
+
+        $newMedia = uploadMediaFiles('media_files', UPLOAD_POSTS_DIR, UPLOAD_BASE_URL . 'posts/', $errors);
+        $media = array_merge($keptMedia, $newMedia);
+
+        if (empty($media)) {
+            $errors[] = 'Please upload at least one image or video.';
+        }
+
+        if (empty($errors)) {
+            $post = [
+                'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                'title_en' => sanitizeInput($_POST['title_en']),
+                'title_el' => sanitizeInput($_POST['title_el']),
+                'description_en' => sanitizeInput($_POST['description_en']),
+                'description_el' => sanitizeInput($_POST['description_el']),
+                'media' => $media,
+                'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            if ($postAction === 'update') {
+                $index = array_search($_POST['id'], array_column($data['posts'], 'id'));
+                if ($index !== false) {
+                    $data['posts'][$index] = $post;
+                    $message = 'Post updated successfully!';
+                }
+            } else {
+                array_unshift($data['posts'], $post);
+                $message = 'Post created successfully!';
+            }
+
+            saveJsonData(POSTS_FILE, $data);
+
+            foreach ($removedMedia as $removedUrl) {
+                deleteUploadedFile($removedUrl);
+            }
+
+            $action = 'list';
+        } else {
+            $error = implode(' ', $errors);
+            if ($postAction === 'update') {
+                $editId = $_POST['id'];
+            }
+            $action = $postAction === 'update' ? 'edit' : 'new';
+        }
 
     } elseif ($postAction === 'delete' && isset($_POST['id'])) {
+        $postToDelete = null;
+        foreach ($data['posts'] as $postItem) {
+            if ($postItem['id'] === $_POST['id']) {
+                $postToDelete = $postItem;
+                break;
+            }
+        }
+
+        if ($postToDelete && !empty($postToDelete['media'])) {
+            foreach ($postToDelete['media'] as $mediaItem) {
+                deleteUploadedFile($mediaItem['url'] ?? '');
+            }
+        }
+
         $data['posts'] = array_filter($data['posts'], fn($p) => $p['id'] !== $_POST['id']);
         $data['posts'] = array_values($data['posts']);
         saveJsonData(POSTS_FILE, $data);
@@ -80,6 +136,16 @@ include 'templates/header.php';
         </div>
     <?php endif; ?>
 
+    <?php if ($error): ?>
+        <div class="alert alert-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <?php echo $error; ?>
+        </div>
+    <?php endif; ?>
+
     <?php if ($action === 'list'): ?>
         <div class="content-panel">
             <div class="panel-header">
@@ -106,10 +172,24 @@ include 'templates/header.php';
             <?php else: ?>
                 <div class="items-list">
                     <?php foreach ($data['posts'] as $post): ?>
+                        <?php
+                            $mediaItems = $post['media'] ?? [];
+                            if (empty($mediaItems) && !empty($post['image_url'])) {
+                                $mediaItems = [['type' => 'image', 'url' => $post['image_url']]];
+                            }
+                            $previewMedia = $mediaItems[0] ?? null;
+                        ?>
                         <div class="item-card">
                             <div class="item-preview">
-                                <?php if (!empty($post['image_url'])): ?>
-                                    <img src="<?php echo htmlspecialchars($post['image_url']); ?>" alt="">
+                                <?php if ($previewMedia && ($previewMedia['type'] ?? '') === 'image'): ?>
+                                    <img src="<?php echo htmlspecialchars($previewMedia['url']); ?>" alt="">
+                                <?php elseif ($previewMedia && ($previewMedia['type'] ?? '') === 'video'): ?>
+                                    <div class="media-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                                        </svg>
+                                    </div>
                                 <?php else: ?>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -117,11 +197,15 @@ include 'templates/header.php';
                                         <polyline points="21 15 16 10 5 21"></polyline>
                                     </svg>
                                 <?php endif; ?>
+                                <?php if (count($mediaItems) > 1): ?>
+                                    <span class="media-count"><?php echo count($mediaItems); ?></span>
+                                <?php endif; ?>
                             </div>
                             <div class="item-content">
                                 <h4><?php echo htmlspecialchars($post['title_en']); ?></h4>
                                 <p><?php echo htmlspecialchars($post['description_en']); ?></p>
                                 <div class="item-meta">
+                                    <span><?php echo count($mediaItems); ?> media</span>
                                     <span>Created: <?php echo date('M j, Y', strtotime($post['created_at'])); ?></span>
                                 </div>
                             </div>
@@ -141,7 +225,7 @@ include 'templates/header.php';
 
     <?php else: ?>
         <div class="content-panel">
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="post_action" value="<?php echo $editPost ? 'update' : 'create'; ?>">
                 <?php if ($editPost): ?>
                     <input type="hidden" name="id" value="<?php echo $editPost['id']; ?>">
@@ -172,20 +256,43 @@ include 'templates/header.php';
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="image_url">Image URL</label>
-                    <input type="url" id="image_url" name="image_url"
-                           value="<?php echo $editPost ? htmlspecialchars($editPost['image_url']) : ''; ?>"
-                           placeholder="https://example.com/image.jpg">
-                    <p class="form-hint">Direct link to the image (Instagram post image, uploaded image, etc.)</p>
-                </div>
+                <?php if ($editPost): ?>
+                    <?php
+                        $editMediaItems = $editPost['media'] ?? [];
+                        if (empty($editMediaItems) && !empty($editPost['image_url'])) {
+                            $editMediaItems = [['type' => 'image', 'url' => $editPost['image_url']]];
+                        }
+                    ?>
+                    <?php if (!empty($editMediaItems)): ?>
+                        <div class="form-group">
+                            <label>Existing Media</label>
+                            <div class="media-grid">
+                                <?php foreach ($editMediaItems as $mediaItem): ?>
+                                    <label class="media-tile">
+                                        <input type="checkbox" name="remove_media[]" value="<?php echo htmlspecialchars($mediaItem['url']); ?>">
+                                        <div class="media-thumb">
+                                            <?php if (($mediaItem['type'] ?? '') === 'image'): ?>
+                                                <img src="<?php echo htmlspecialchars($mediaItem['url']); ?>" alt="">
+                                            <?php else: ?>
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                                    <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                                                </svg>
+                                            <?php endif; ?>
+                                        </div>
+                                        <span>Remove</span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <p class="form-hint">Check any media you want to remove.</p>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
 
                 <div class="form-group">
-                    <label for="link_url">Link URL (optional)</label>
-                    <input type="url" id="link_url" name="link_url"
-                           value="<?php echo $editPost ? htmlspecialchars($editPost['link_url']) : ''; ?>"
-                           placeholder="https://instagram.com/p/...">
-                    <p class="form-hint">Link to the original post or related content</p>
+                    <label for="media_files">Upload Media (Images &amp; Videos)</label>
+                    <input type="file" id="media_files" name="media_files[]" accept="image/*,video/*" multiple <?php echo $editPost ? '' : 'required'; ?>>
+                    <p class="form-hint">Select multiple files for carousel posts. Supported: JPG, PNG, GIF, WebP, MP4, WebM, MOV.</p>
                 </div>
 
                 <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">

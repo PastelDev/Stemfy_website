@@ -43,6 +43,68 @@
       margin: 0 auto;
     }
 
+    .posts-toggle {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      max-width: 1050px;
+      margin: 0 auto 1.5rem;
+      padding: 0 0.5rem;
+    }
+
+    .toggle-buttons {
+      display: flex;
+      gap: 0.75rem;
+      background: rgba(18, 12, 28, 0.7);
+      border: 1px solid rgba(176, 138, 240, 0.3);
+      border-radius: 999px;
+      padding: 0.35rem;
+    }
+
+    .toggle-btn {
+      border: none;
+      background: transparent;
+      color: rgba(248, 244, 255, 0.7);
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-btn.active {
+      background: linear-gradient(135deg, rgba(176, 138, 240, 0.35) 0%, rgba(144, 96, 208, 0.6) 100%);
+      color: #f8f4ff;
+      box-shadow: 0 10px 25px rgba(176, 138, 240, 0.25);
+    }
+
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(176, 138, 240, 0.4);
+      background: rgba(18, 12, 28, 0.6);
+      color: rgba(248, 244, 255, 0.75);
+      transition: all 0.2s ease;
+    }
+
+    .admin-link:hover {
+      color: #f8f4ff;
+      border-color: rgba(176, 138, 240, 0.7);
+      box-shadow: 0 8px 20px rgba(176, 138, 240, 0.25);
+    }
+
+    .admin-link svg {
+      width: 20px;
+      height: 20px;
+    }
+
     .posts-section {
       background: rgba(18, 12, 28, 0.85);
       border: 1px solid rgba(176, 138, 240, 0.25);
@@ -68,8 +130,9 @@
     .posts-grid,
     .resources-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
       gap: 1.25rem;
+      justify-content: center;
     }
 
     .post-card,
@@ -85,6 +148,24 @@
       gap: 0.75rem;
       min-height: 220px;
       justify-content: center;
+      width: 100%;
+      max-width: 320px;
+      justify-self: center;
+    }
+
+    .post-card-btn {
+      background: none;
+      border: none;
+      color: inherit;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      font-family: inherit;
     }
 
     .post-media {
@@ -98,6 +179,53 @@
       justify-content: center;
       color: rgba(248, 244, 255, 0.7);
       font-size: 0.85rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .post-media img,
+    .post-media video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .post-media.is-video {
+      aspect-ratio: 4 / 5;
+      background: rgba(10, 8, 18, 0.6);
+      border-style: solid;
+    }
+
+    .post-media.is-video video {
+      height: auto;
+      object-fit: contain;
+    }
+
+    .post-media video {
+      background: rgba(10, 8, 18, 0.6);
+    }
+
+    .media-count-badge,
+    .media-type-badge {
+      position: absolute;
+      background: rgba(10, 8, 18, 0.8);
+      border: 1px solid rgba(176, 138, 240, 0.4);
+      color: #f8f4ff;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      backdrop-filter: blur(6px);
+    }
+
+    .media-count-badge {
+      top: 10px;
+      right: 10px;
+    }
+
+    .media-type-badge {
+      bottom: 10px;
+      left: 10px;
     }
 
     .resource-icon {
@@ -167,6 +295,10 @@
       color: rgba(248, 244, 255, 0.7);
       font-size: 0.85rem;
       line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .empty-message {
@@ -174,6 +306,170 @@
       text-align: center;
       padding: 2rem;
       color: rgba(248, 244, 255, 0.5);
+    }
+
+    .toggle-panel {
+      display: none;
+    }
+
+    .toggle-panel.active {
+      display: block;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    .post-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 4, 10, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 999;
+      padding: 1.5rem;
+    }
+
+    .post-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .post-modal-content {
+      background: rgba(18, 12, 28, 0.95);
+      border: 1px solid rgba(176, 138, 240, 0.3);
+      border-radius: 24px;
+      width: min(920px, 95vw);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .post-modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(10, 8, 18, 0.7);
+      border: 1px solid rgba(176, 138, 240, 0.4);
+      color: #f8f4ff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .post-modal-media {
+      position: relative;
+      background: rgba(10, 8, 18, 0.9);
+    }
+
+    .post-media-track {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .post-slide {
+      flex: 0 0 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      scroll-snap-align: center;
+      position: relative;
+    }
+
+    .post-slide img,
+    .post-slide video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: rgba(10, 8, 18, 0.85);
+    }
+
+    .post-modal-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(10, 8, 18, 0.7);
+      border: 1px solid rgba(176, 138, 240, 0.4);
+      color: #f8f4ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .post-modal-nav[disabled] {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .post-modal-nav.prev {
+      left: 16px;
+    }
+
+    .post-modal-nav.next {
+      right: 16px;
+    }
+
+    .post-modal-body {
+      padding: 1.5rem;
+      border-top: 1px solid rgba(176, 138, 240, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .post-modal-body h3 {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .post-modal-body p {
+      color: rgba(248, 244, 255, 0.75);
+      line-height: 1.6;
+    }
+
+    .post-modal-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: rgba(248, 244, 255, 0.55);
+    }
+
+    @media (max-width: 700px) {
+      .post-modal-content {
+        width: 100%;
+      }
+
+      .post-slide {
+        aspect-ratio: 4 / 5;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .posts-toggle {
+        justify-content: center;
+      }
     }
   </style>
 </head>
@@ -193,8 +489,12 @@
           <li><a href="about.html">About</a></li>
           <li><a href="contact.html">Contact</a></li>
         </ul>
-        <button class="settings-btn" id="settings-btn" aria-label="Settings" title="Settings">
-          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l1.72-1.35c.15-.12.19-.34.1-.51l-1.63-2.83c-.12-.22-.37-.29-.59-.22l-2.03.81c-.42-.32-.9-.6-1.42-.82l-.31-2.15c-.04-.24-.24-.41-.48-.41h-3.26c-.24 0-.43.17-.47.41l-.31 2.15c-.52.23-1 .5-1.42.82l-2.03-.81c-.22-.09-.47 0-.59.22L2.74 8.87c-.12.21-.08.44.1.51l1.72 1.35c-.05.3-.07.62-.07.94s.02.64.07.94l-1.72 1.35c-.15.12-.19.34-.1.51l1.63 2.83c.12.22.37.29.59.22l2.03-.81c.42.32.9.6 1.42.82l.31 2.15c.05.24.24.41.48.41h3.26c.24 0 .43-.17.47-.41l.31-2.15c.52-.23 1-.5 1.42-.82l2.03.81c.22.09.47 0 .59-.22l1.63-2.83c.12-.22.07-.44-.1-.51l-1.72-1.35zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        <button class="settings-btn" id="settings-btn" aria-label="Toggle language" title="Toggle language">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
         </button>
       </div>
     </nav>
@@ -205,7 +505,14 @@
         <p id="posts-subtitle">Thoughts, insights &amp; discoveries</p>
       </header>
 
-      <section class="posts-section">
+      <div class="posts-toggle">
+        <div class="toggle-buttons" role="tablist" aria-label="Content Toggle">
+          <button class="toggle-btn active" type="button" data-target="posts-panel" aria-selected="true">Posts</button>
+          <button class="toggle-btn" type="button" data-target="resources-panel" aria-selected="false">Educational Resources</button>
+        </div>
+      </div>
+
+      <section class="posts-section toggle-panel active" id="posts-panel">
         <h2 class="section-heading" id="posts-instagram-title">From Instagram</h2>
         <p class="section-desc" id="posts-instagram-desc">Our latest posts from @stemfy.gr</p>
         <div class="posts-grid" id="posts-container">
@@ -213,7 +520,7 @@
         </div>
       </section>
 
-      <section class="posts-section">
+      <section class="posts-section toggle-panel" id="resources-panel">
         <h2 class="section-heading" id="posts-resources-title">Educational Resources</h2>
         <p class="section-desc" id="posts-resources-desc">PDFs and visual guides explaining STEM concepts</p>
         <div class="resources-grid" id="resources-container">
@@ -228,8 +535,30 @@
         <a href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener" title="Instagram">
           <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
         </a>
+        <a href="admin/" title="Admin" style="opacity: 0.4;">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+        </a>
       </div>
     </footer>
+
+    <div class="post-modal" id="post-modal" aria-hidden="true">
+      <div class="post-modal-content" role="dialog" aria-modal="true">
+        <button class="post-modal-close" type="button" id="post-modal-close" aria-label="Close">&times;</button>
+        <div class="post-modal-media">
+          <button class="post-modal-nav prev" type="button" id="post-modal-prev" aria-label="Previous media">&#10094;</button>
+          <div class="post-media-track" id="post-modal-track"></div>
+          <button class="post-modal-nav next" type="button" id="post-modal-next" aria-label="Next media">&#10095;</button>
+        </div>
+        <div class="post-modal-body">
+          <div class="post-modal-meta">
+            <span id="post-modal-counter">1 / 1</span>
+            <span id="post-modal-date"></span>
+          </div>
+          <h3 id="post-modal-title"></h3>
+          <p id="post-modal-desc"></p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Settings Modal -->
@@ -257,10 +586,27 @@
     // Fetch and display dynamic posts and resources
     (function() {
       const API_URL = 'admin/api.php?type=posts';
-      const lang = localStorage.getItem('stemfy-language') || 'en';
+      let postsCache = [];
+
+      const modal = document.getElementById('post-modal');
+      const modalTrack = document.getElementById('post-modal-track');
+      const modalTitle = document.getElementById('post-modal-title');
+      const modalDesc = document.getElementById('post-modal-desc');
+      const modalCounter = document.getElementById('post-modal-counter');
+      const modalDate = document.getElementById('post-modal-date');
+      const modalClose = document.getElementById('post-modal-close');
+      const modalPrev = document.getElementById('post-modal-prev');
+      const modalNext = document.getElementById('post-modal-next');
+      let activeIndex = 0;
+      let activeMedia = [];
+
+      function getLang() {
+        return localStorage.getItem('stemfy-language') || 'en';
+      }
 
       async function loadContent() {
         try {
+          const lang = getLang();
           const response = await fetch(API_URL);
           const data = await response.json();
 
@@ -274,44 +620,76 @@
         }
       }
 
+      function inferMediaType(item) {
+        if (!item) return 'image';
+        if (item.type) return item.type;
+        const url = item.url || '';
+        const ext = url.split('.').pop().toLowerCase();
+        return ['mp4', 'webm', 'mov', 'm4v'].includes(ext) ? 'video' : 'image';
+      }
+
+      function normalizeMedia(post) {
+        if (Array.isArray(post.media) && post.media.length > 0) {
+          return post.media.map(item => ({
+            url: item.url,
+            type: inferMediaType(item)
+          }));
+        }
+        if (post.image_url) {
+          return [{ url: post.image_url, type: 'image' }];
+        }
+        return [];
+      }
+
       function renderPosts(posts, lang) {
         const container = document.getElementById('posts-container');
         if (!container) return;
 
+        postsCache = posts || [];
+
         if (!posts || posts.length === 0) {
+          const placeholder = window.i18nManager?.t('posts_no_content') || 'Content coming soon!';
           container.innerHTML = `
             <div class="post-card">
               <div class="post-media">Instagram Post</div>
-              <p class="posts-placeholder-text">Content coming soon!</p>
-            </div>
-            <div class="post-card">
-              <div class="post-media">Instagram Post</div>
-              <p class="posts-placeholder-text">Content coming soon!</p>
-            </div>
-            <div class="post-card">
-              <div class="post-media">Instagram Post</div>
-              <p class="posts-placeholder-text">Content coming soon!</p>
+              <p class="posts-placeholder-text">${placeholder}</p>
             </div>`;
           return;
         }
 
-        container.innerHTML = posts.map(post => {
+        container.innerHTML = posts.map((post, index) => {
+          const mediaItems = normalizeMedia(post);
+          const preview = mediaItems[0];
+          const mediaCount = mediaItems.length;
           const title = lang === 'el' ? post.title_el : post.title_en;
           const desc = lang === 'el' ? post.description_el : post.description_en;
-          const linkStart = post.link_url ? `<a href="${post.link_url}" target="_blank" rel="noopener">` : '';
-          const linkEnd = post.link_url ? '</a>' : '';
+          const isVideo = preview && preview.type === 'video';
+          const previewMarkup = preview
+            ? (isVideo
+                ? `<video src="${preview.url}" preload="metadata" muted playsinline></video>`
+                : `<img src="${preview.url}" alt="">`)
+            : 'Instagram Post';
 
           return `
             <div class="post-card dynamic">
-              ${linkStart}
-                <div class="post-media" ${post.image_url ? `style="background-image: url('${post.image_url}'); background-size: cover; background-position: center;"` : ''}>
-                  ${!post.image_url ? 'Instagram Post' : ''}
+              <button class="post-card-btn" type="button" data-index="${index}">
+                <div class="post-media${isVideo ? ' is-video' : ''}">
+                  ${previewMarkup}
+                  ${mediaCount > 1 ? `<span class="media-count-badge">1 / ${mediaCount}</span>` : ''}
+                  ${isVideo ? `<span class="media-type-badge">Reel</span>` : ''}
                 </div>
                 <p class="post-title">${title}</p>
                 <p class="post-desc">${desc}</p>
-              ${linkEnd}
+              </button>
             </div>`;
         }).join('');
+
+        container.querySelectorAll('.post-card-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const index = Number(btn.dataset.index || 0);
+            openModal(index);
+          });
+        });
       }
 
       function renderResources(resources, lang) {
@@ -319,6 +697,7 @@
         if (!container) return;
 
         if (!resources || resources.length === 0) {
+          const placeholder = window.i18nManager?.t('posts_no_content') || 'Content coming soon!';
           container.innerHTML = `
             <div class="resource-card">
               <div class="resource-icon">
@@ -329,29 +708,7 @@
                   <path d="M8 17h5" />
                 </svg>
               </div>
-              <p class="posts-placeholder-text">Content coming soon!</p>
-            </div>
-            <div class="resource-card">
-              <div class="resource-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <path d="M14 2v6h6" />
-                  <path d="M8 13h8" />
-                  <path d="M8 17h5" />
-                </svg>
-              </div>
-              <p class="posts-placeholder-text">Content coming soon!</p>
-            </div>
-            <div class="resource-card">
-              <div class="resource-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <path d="M14 2v6h6" />
-                  <path d="M8 13h8" />
-                  <path d="M8 17h5" />
-                </svg>
-              </div>
-              <p class="posts-placeholder-text">Content coming soon!</p>
+              <p class="posts-placeholder-text">${placeholder}</p>
             </div>`;
           return;
         }
@@ -383,10 +740,192 @@
         renderResources([], 'en');
       }
 
+      function initToggle() {
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        const panels = {
+          'posts-panel': document.getElementById('posts-panel'),
+          'resources-panel': document.getElementById('resources-panel')
+        };
+
+        function setActivePanel(panelId) {
+          toggleButtons.forEach(btn => {
+            const isActive = btn.dataset.target === panelId;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          });
+
+          Object.entries(panels).forEach(([id, panel]) => {
+            if (!panel) return;
+            panel.classList.toggle('active', id === panelId);
+          });
+
+          localStorage.setItem('posts-panel', panelId);
+        }
+
+        toggleButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const target = btn.dataset.target;
+            if (target) {
+              setActivePanel(target);
+            }
+          });
+        });
+
+        const saved = localStorage.getItem('posts-panel');
+        if (saved && panels[saved]) {
+          setActivePanel(saved);
+        } else {
+          setActivePanel('posts-panel');
+        }
+      }
+
+      function openModal(index) {
+        const post = postsCache[index];
+        if (!post) return;
+        const lang = getLang();
+        activeMedia = normalizeMedia(post);
+        if (!activeMedia.length) return;
+        activeIndex = 0;
+
+        modalTrack.innerHTML = activeMedia.map(item => {
+          if (item.type === 'video') {
+            return `<div class="post-slide"><video src="${item.url}" controls playsinline></video></div>`;
+          }
+          return `<div class="post-slide"><img src="${item.url}" alt=""></div>`;
+        }).join('');
+
+        const title = lang === 'el' ? post.title_el : post.title_en;
+        const desc = lang === 'el' ? post.description_el : post.description_en;
+        modalTitle.textContent = title || '';
+        modalDesc.textContent = desc || '';
+
+        if (modalDate && post.created_at) {
+          const locale = lang === 'el' ? 'el-GR' : 'en-US';
+          modalDate.textContent = new Date(post.created_at).toLocaleDateString(locale, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } else if (modalDate) {
+          modalDate.textContent = '';
+        }
+
+        updateModalCounter();
+        updateModalNav();
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        scrollToSlide(0, false);
+      }
+
+      function closeModal() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        pauseModalVideos();
+      }
+
+      function pauseModalVideos() {
+        if (!modalTrack) return;
+        modalTrack.querySelectorAll('video').forEach(video => video.pause());
+      }
+
+      function scrollToSlide(index, smooth) {
+        if (!modalTrack) return;
+        const width = modalTrack.getBoundingClientRect().width;
+        modalTrack.scrollTo({
+          left: width * index,
+          behavior: smooth ? 'smooth' : 'auto'
+        });
+        activeIndex = index;
+        updateModalCounter();
+        updateModalNav();
+      }
+
+      function updateModalCounter() {
+        if (!modalCounter) return;
+        modalCounter.textContent = `${activeIndex + 1} / ${activeMedia.length || 1}`;
+      }
+
+      function updateModalNav() {
+        if (!modalPrev || !modalNext) return;
+        modalPrev.disabled = activeIndex <= 0;
+        modalNext.disabled = activeIndex >= activeMedia.length - 1;
+      }
+
+      if (modalTrack) {
+        let scrollTimeout = null;
+        modalTrack.addEventListener('scroll', () => {
+          if (!modalTrack) return;
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(() => {
+            const width = modalTrack.getBoundingClientRect().width;
+            const index = Math.round(modalTrack.scrollLeft / width);
+            if (index !== activeIndex) {
+              activeIndex = index;
+              updateModalCounter();
+              updateModalNav();
+              pauseModalVideos();
+            }
+          }, 80);
+        });
+      }
+
+      if (modalPrev) {
+        modalPrev.addEventListener('click', () => {
+          if (activeIndex > 0) {
+            scrollToSlide(activeIndex - 1, true);
+          }
+        });
+      }
+
+      if (modalNext) {
+        modalNext.addEventListener('click', () => {
+          if (activeIndex < activeMedia.length - 1) {
+            scrollToSlide(activeIndex + 1, true);
+          }
+        });
+      }
+
+      if (modalClose) {
+        modalClose.addEventListener('click', closeModal);
+      }
+
+      if (modal) {
+        modal.addEventListener('click', (event) => {
+          if (event.target === modal) {
+            closeModal();
+          }
+        });
+      }
+
+      document.addEventListener('keydown', (event) => {
+        if (!modal.classList.contains('open')) return;
+        if (event.key === 'Escape') {
+          closeModal();
+        }
+        if (event.key === 'ArrowLeft') {
+          if (activeIndex > 0) {
+            scrollToSlide(activeIndex - 1, true);
+          }
+        }
+        if (event.key === 'ArrowRight') {
+          if (activeIndex < activeMedia.length - 1) {
+            scrollToSlide(activeIndex + 1, true);
+          }
+        }
+      });
+
       // Load content when DOM is ready
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadContent);
+        document.addEventListener('DOMContentLoaded', () => {
+          initToggle();
+          loadContent();
+        });
       } else {
+        initToggle();
         loadContent();
       }
 

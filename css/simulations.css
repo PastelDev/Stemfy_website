@@ -38,8 +38,20 @@
     color: var(--purple-bright);
 }
 
+.sim-help-btn {
+    width: auto;
+    height: auto;
+    padding: 0.35rem 0.55rem;
+    border-radius: 12px;
+    border: 1px solid rgba(176, 138, 240, 0.25);
+    background: rgba(176, 138, 240, 0.12);
+    gap: 0.5rem;
+}
+
 .sim-help-btn:hover {
     color: var(--white);
+    border-color: rgba(176, 138, 240, 0.45);
+    background: rgba(176, 138, 240, 0.2);
 }
 
 .sim-help-btn svg {
@@ -47,6 +59,30 @@
     stroke: currentColor;
 }
 
+.sim-help-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(10, 8, 18, 0.6);
+    border: 1px solid rgba(176, 138, 240, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+}
+
+.sim-help-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sim-help-text {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--white);
+}
 .sim-view-btn {
     color: var(--white-dim);
 }
@@ -90,6 +126,27 @@ body.sim-view-mobile .sim-view-btn {
     box-shadow: var(--shadow-card);
 }
 
+.sim-canvas-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: var(--space-sm);
+    z-index: 2;
+}
+
+.sim-canvas-actions .btn--icon {
+    background: rgba(10, 8, 18, 0.6);
+    border-color: rgba(176, 138, 240, 0.35);
+    color: var(--purple-bright);
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.sim-canvas-actions .btn--icon:hover {
+    background: rgba(176, 138, 240, 0.2);
+    border-color: rgba(176, 138, 240, 0.5);
+}
 #pendulum-canvas {
     display: block;
     background: transparent;
@@ -434,6 +491,10 @@ body.sim-view-mobile .sim-view-btn {
     background: rgba(12, 8, 20, 0.95);
     padding: var(--space-md);
     border-bottom: 1px solid rgba(176, 138, 240, 0.2);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-sm);
 }
 
 .chaos-panel__title {
@@ -448,6 +509,24 @@ body.sim-view-mobile .sim-view-btn {
 .chaos-panel__subtitle {
     font-size: 0.75rem;
     color: var(--color-gray);
+}
+
+.chaos-panel__actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.chaos-panel__actions .btn--icon {
+    background: rgba(10, 8, 18, 0.6);
+    border-color: rgba(176, 138, 240, 0.35);
+    color: var(--purple-bright);
+    min-width: 36px;
+    min-height: 36px;
+}
+
+.chaos-panel__actions .btn--icon:hover {
+    background: rgba(176, 138, 240, 0.2);
+    border-color: rgba(176, 138, 240, 0.5);
 }
 
 .chaos-panel__content {
@@ -538,6 +617,10 @@ body.sim-view-mobile .sim-view-btn {
     margin-top: var(--space-md);
 }
 
+.info-box--challenges {
+    border-color: rgba(176, 138, 240, 0.4);
+    background: rgba(176, 138, 240, 0.1);
+}
 .info-box__title {
     font-family: var(--font-display);
     font-size: 0.7rem;
@@ -551,6 +634,24 @@ body.sim-view-mobile .sim-view-btn {
     font-size: 0.8125rem;
     color: var(--white-dim);
     line-height: 1.6;
+}
+
+.info-box__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: var(--space-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--purple-bright);
+    text-decoration: none;
+}
+
+.info-box__link:hover {
+    color: var(--white);
+    text-decoration: underline;
 }
 
 /* ============================================
@@ -591,6 +692,118 @@ body.sim-view-mobile .sim-view-btn {
 .panel-toggle--chaos {
     top: calc(var(--sim-nav-height) + 12px);
     left: 12px;
+}
+
+/* ============================================
+   CHAOS WARNING MODAL
+   ============================================ */
+
+.chaos-warning-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+    background: rgba(5, 6, 12, 0.72);
+    opacity: 0;
+    visibility: hidden;
+    z-index: 2100;
+    transition:
+        opacity var(--transition-normal),
+        visibility var(--transition-normal);
+}
+
+.chaos-warning-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.chaos-warning-modal__content {
+    width: min(520px, 92vw);
+    background: var(--bg-panel);
+    border: 1px solid rgba(176, 138, 240, 0.35);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-glow-strong);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.chaos-warning-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+}
+
+.chaos-warning-modal__header h2 {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--purple-bright);
+    margin: 0;
+}
+
+.chaos-warning-modal__close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(176, 138, 240, 0.35);
+    background: rgba(10, 8, 18, 0.6);
+    color: var(--white-dim);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+
+.chaos-warning-modal__close:hover {
+    color: var(--white);
+    border-color: rgba(176, 138, 240, 0.6);
+    background: rgba(176, 138, 240, 0.15);
+}
+
+.chaos-warning-modal__text {
+    color: var(--white-soft);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.chaos-warning-modal__note {
+    color: var(--color-gray);
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+.chaos-warning-modal__checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--white-dim);
+}
+
+.chaos-warning-modal__checkbox input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--purple-bright);
+}
+
+.chaos-warning-modal__actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.chaos-warning-modal__actions .btn {
+    min-width: 160px;
 }
 
 /* ============================================
@@ -665,6 +878,11 @@ body.sim-view-mobile .sim-view-btn {
     margin-bottom: var(--space-md);
 }
 
+.tutorial-tooltip__hint {
+    font-size: 0.75rem;
+    color: var(--white-dim);
+    margin-bottom: var(--space-md);
+}
 .tutorial-tooltip__actions {
     display: flex;
     gap: var(--space-sm);

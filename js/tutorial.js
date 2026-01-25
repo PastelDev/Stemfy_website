@@ -95,6 +95,13 @@ function getTutorialSteps() {
             text: t('tutorial_chaos_panel_text', 'Each point corresponds to a different set of initial conditions. Click a point to see the resulting motion.'),
             position: 'right',
             requiresPanel: 'chaos'
+        },
+        {
+            target: '#chaos-challenges-box',
+            title: t('tutorial_challenges_title', 'Challenges'),
+            text: t('tutorial_challenges_text', 'Explore the two challenges below and share your results. Happy experimenting!'),
+            position: 'right',
+            requiresPanel: 'chaos'
         }
     ];
 }
@@ -313,6 +320,10 @@ function updateTooltip(step, target, stepIndex) {
     textEl.className = 'tutorial-tooltip__text';
     textEl.textContent = step.text;
 
+    const hintEl = document.createElement('p');
+    hintEl.className = 'tutorial-tooltip__hint';
+    hintEl.textContent = t('tutorial_hint', 'Tip: Press Enter to continue • Esc to exit');
+
     const actions = document.createElement('div');
     actions.className = 'tutorial-tooltip__actions';
 
@@ -336,6 +347,7 @@ function updateTooltip(step, target, stepIndex) {
     tooltip.appendChild(stepEl);
     tooltip.appendChild(titleEl);
     tooltip.appendChild(textEl);
+    tooltip.appendChild(hintEl);
     tooltip.appendChild(actions);
 
     positionTooltip(target, step.position);
@@ -409,7 +421,15 @@ window.addEventListener('resize', debounce(() => {
 
 // Handle escape key
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && tutorialState.active) {
+    if (!tutorialState.active) return;
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+    if (e.key === 'Escape') {
         endTutorial();
+    }
+
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        nextTutorialStep();
     }
 }, true);

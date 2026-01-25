@@ -96,8 +96,32 @@ const I18N = {
     recompute_chaos: 'Recompute',
     chaos_grid_label: 'Show grid',
     chaos_info_title: 'What does it mean?',
-    chaos_info_text: 'The color shows how chaotic the motion is for each set of initial conditions. In chaotic regions, a tiny change at the start leads to a completely different path.',
+    chaos_info_text: 'The closer the color is to purple, the more chaotic the motion. That means it is more sensitive to the initial conditions—tiny changes at the start can lead to very different paths.',
+    chaos_challenges_title: 'Challenges',
+    chaos_challenges_text: 'Two quick missions: create a beautiful pendulum trail and discover patterns in the chaos map.',
+    chaos_challenges_link: 'Explore challenges',
+    chaos_calc_title: 'How is this calculated?',
+    chaos_calc_text: 'We start with two almost identical beginnings and track how quickly the gap between their paths grows. Faster separation leads to brighter colors.',
     chaos_loading: 'Computing... {percent}%',
+    download_image: 'Download image',
+    download_video: 'Download video',
+    download_video_prompt: 'Enter video duration in seconds (max 15):',
+    download_video_invalid: 'Please enter a valid number of seconds (1–15).',
+    download_video_unsupported: 'Video recording isn\'t supported in this browser.',
+    snapshot_trajectory_title: 'Trajectory Snapshot',
+    snapshot_chaos_title: 'Chaos Map Snapshot',
+    snapshot_parameters_title: 'Parameters',
+    snapshot_axes_title: 'Axes',
+    snapshot_coordinate_title: 'Selected coordinate',
+    snapshot_varies: 'varies',
+    snapshot_range: 'Range',
+    chaos_warning_title: 'Update chaos map for this snapshot?',
+    chaos_warning_text: 'To include the latest chaos map in the trajectory snapshot, we need to recompute it with the current parameters. This will replace the map in the left panel.',
+    chaos_warning_note: 'If you want to keep the current map, download it first.',
+    chaos_warning_skip: 'Don\'t show this again',
+    chaos_warning_cancel: 'Keep current map',
+    chaos_warning_confirm: 'Update chaos map',
+    language_toggle: 'Toggle language',
 
     // Tutorial
     tutorial_step_label: 'Step {current} / {total}',
@@ -128,6 +152,9 @@ const I18N = {
     tutorial_chaos_toggle_text: 'Open the chaos map to explore initial conditions.',
     tutorial_chaos_panel_title: 'Chaos Map',
     tutorial_chaos_panel_text: 'Each point corresponds to a different set of initial conditions. Click a point to see the resulting motion.',
+    tutorial_challenges_title: 'Challenges',
+    tutorial_challenges_text: 'Explore the two challenges below and share your results. Happy experimenting!',
+    tutorial_hint: 'Tip: Press Enter to continue • Esc to exit',
 
     // Challenges page
     challenges_title: 'Challenges',
@@ -301,8 +328,32 @@ const I18N = {
     recompute_chaos: 'Επανυπολογισμός',
     chaos_grid_label: 'Εμφάνιση πλέγματος',
     chaos_info_title: 'Τι σημαίνει;',
-    chaos_info_text: 'Το χρώμα δείχνει πόσο χαοτική είναι η κίνηση για κάθε σύνολο αρχικών συνθηκών. Στις χαοτικές περιοχές, μια πολύ μικρή αλλαγή στην αρχή οδηγεί σε εντελώς διαφορετική τροχιά.',
+    chaos_info_text: 'Όσο πιο κοντά στο μωβ είναι το χρώμα, τόσο πιο χαοτική είναι η κίνηση. Αυτό σημαίνει ότι είναι πιο ευαίσθητη στις αρχικές συνθήκες—πολύ μικρές αλλαγές στην αρχή οδηγούν σε πολύ διαφορετικές τροχιές.',
+    chaos_challenges_title: 'Προκλήσεις',
+    chaos_challenges_text: 'Δύο μικρές αποστολές: δημιούργησε μια όμορφη τροχιά εκκρεμούς και ανακάλυψε μοτίβα στον χάρτη χάους.',
+    chaos_challenges_link: 'Δες τις προκλήσεις',
+    chaos_calc_title: 'Πώς υπολογίζεται;',
+    chaos_calc_text: 'Ξεκινάμε με δύο σχεδόν ίδιες αρχές και μετράμε πόσο γρήγορα μεγαλώνει το κενό μεταξύ των τροχιών. Η πιο γρήγορη απόκλιση δίνει πιο φωτεινά χρώματα.',
     chaos_loading: 'Υπολογισμός... {percent}%',
+    download_image: 'Λήψη εικόνας',
+    download_video: 'Λήψη βίντεο',
+    download_video_prompt: 'Δώσε διάρκεια βίντεο σε δευτερόλεπτα (μέγιστο 15):',
+    download_video_invalid: 'Δώσε έγκυρο αριθμό δευτερολέπτων (1–15).',
+    download_video_unsupported: 'Η εγγραφή βίντεο δεν υποστηρίζεται σε αυτόν τον browser.',
+    snapshot_trajectory_title: 'Στιγμιότυπο Τροχιάς',
+    snapshot_chaos_title: 'Στιγμιότυπο Χάρτη Χάους',
+    snapshot_parameters_title: 'Παράμετροι',
+    snapshot_axes_title: 'Άξονες',
+    snapshot_coordinate_title: 'Επιλεγμένη συντεταγμένη',
+    snapshot_varies: 'μεταβάλλεται',
+    snapshot_range: 'Εύρος',
+    chaos_warning_title: 'Ενημέρωση χάρτη χάους για το στιγμιότυπο;',
+    chaos_warning_text: 'Για να συμπεριλάβουμε τον πιο πρόσφατο χάρτη χάους στο στιγμιότυπο τροχιάς, θα χρειαστεί να τον επανυπολογίσουμε με τις τρέχουσες παραμέτρους. Αυτό θα αντικαταστήσει τον χάρτη στο αριστερό πάνελ.',
+    chaos_warning_note: 'Αν θέλεις να κρατήσεις τον τρέχοντα χάρτη, κατέβασέ τον πρώτα.',
+    chaos_warning_skip: 'Να μην εμφανιστεί ξανά',
+    chaos_warning_cancel: 'Κράτησε τον τρέχοντα χάρτη',
+    chaos_warning_confirm: 'Ενημέρωση χάρτη',
+    language_toggle: 'Εναλλαγή γλώσσας',
 
     // Tutorial
     tutorial_step_label: 'Βήμα {current} / {total}',
@@ -333,6 +384,9 @@ const I18N = {
     tutorial_chaos_toggle_text: 'Άνοιξε τον χάρτη χάους για να εξερευνήσεις αρχικές συνθήκες.',
     tutorial_chaos_panel_title: 'Χάρτης Χάους',
     tutorial_chaos_panel_text: 'Κάθε σημείο αντιστοιχεί σε διαφορετικές αρχικές συνθήκες. Κάνε κλικ σε ένα σημείο για να δεις την κίνηση που προκύπτει.',
+    tutorial_challenges_title: 'Προκλήσεις',
+    tutorial_challenges_text: 'Δες τις δύο προκλήσεις παρακάτω και μοιράσου τα αποτελέσματά σου. Καλή εξερεύνηση!',
+    tutorial_hint: 'Συμβουλή: Πάτησε Enter για συνέχεια • Esc για έξοδο',
 
     // Challenges page
     challenges_title: 'Προκλήσεις',
@@ -462,6 +516,7 @@ class I18nManager {
       localStorage.setItem('stemfy-language', lang);
       this.applyLanguage(lang);
       this.updatePageContent();
+      window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
     }
   }
 
@@ -573,8 +628,8 @@ class I18nManager {
   updateNavigation() {
     this.setTextForAll('a[href="about.html"]', 'about');
     this.setTextForAll('a[href="contact.html"]', 'contact');
-    this.setAttrById('settings-btn', 'aria-label', 'settings');
-    this.setAttrById('settings-btn', 'title', 'settings');
+    this.setAttrById('settings-btn', 'aria-label', 'language_toggle');
+    this.setAttrById('settings-btn', 'title', 'language_toggle');
   }
 
   updateFooter() {
@@ -712,6 +767,18 @@ class I18nManager {
     this.setTextById('recompute-chaos', 'recompute_chaos');
     this.setTextById('chaos-info-title', 'chaos_info_title');
     this.setTextById('chaos-info-text', 'chaos_info_text');
+    this.setTextById('chaos-challenges-title', 'chaos_challenges_title');
+    this.setTextById('chaos-challenges-text', 'chaos_challenges_text');
+    this.setTextById('chaos-challenges-link', 'chaos_challenges_link');
+    this.setTextById('chaos-calc-title', 'chaos_calc_title');
+    this.setTextById('chaos-calc-text', 'chaos_calc_text');
+    this.setTextById('tutorial-label', 'tutorial');
+    this.setTextById('chaos-warning-title', 'chaos_warning_title');
+    this.setTextById('chaos-warning-text', 'chaos_warning_text');
+    this.setTextById('chaos-warning-note', 'chaos_warning_note');
+    this.setTextById('chaos-warning-skip-label', 'chaos_warning_skip');
+    this.setTextById('chaos-warning-cancel', 'chaos_warning_cancel');
+    this.setTextById('chaos-warning-confirm', 'chaos_warning_confirm');
 
     this.setAttrById('tutorial-btn', 'aria-label', 'tutorial');
     this.setAttrById('tutorial-btn', 'title', 'tutorial');
@@ -719,6 +786,12 @@ class I18nManager {
     this.setAttrById('chaos-toggle-btn', 'aria-label', 'open_chaos');
     this.setAttrById('chaos-toggle', 'aria-label', 'toggle_chaos');
     this.setAttrById('reset-btn', 'aria-label', 'reset_label');
+    this.setAttrById('download-pendulum-image', 'aria-label', 'download_image');
+    this.setAttrById('download-pendulum-image', 'title', 'download_image');
+    this.setAttrById('download-pendulum-video', 'aria-label', 'download_video');
+    this.setAttrById('download-pendulum-video', 'title', 'download_video');
+    this.setAttrById('download-chaos-image', 'aria-label', 'download_image');
+    this.setAttrById('download-chaos-image', 'title', 'download_image');
 
     const loadingText = document.getElementById('chaos-loading-text');
     if (loadingText) {
