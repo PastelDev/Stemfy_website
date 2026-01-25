@@ -59,6 +59,8 @@ const I18N = {
     reset_label: 'Reset',
     play_label: 'Play',
     pause_label: 'Pause',
+    view_mobile_label: 'Switch to mobile view',
+    view_desktop_label: 'Switch to desktop view',
     speed_label: 'Speed',
     section_masses_title: 'Masses (kg)',
     section_lengths_title: 'Lengths (m)',
@@ -92,6 +94,7 @@ const I18N = {
     chaos_legend_stable: 'Stable',
     chaos_legend_chaotic: 'Chaotic',
     recompute_chaos: 'Recompute',
+    chaos_grid_label: 'Show grid',
     chaos_info_title: 'What does it mean?',
     chaos_info_text: 'The color shows how chaotic the motion is for each set of initial conditions. In chaotic regions, a tiny change at the start leads to a completely different path.',
     chaos_loading: 'Computing... {percent}%',
@@ -151,14 +154,14 @@ const I18N = {
     newsletter_title: 'Newsletter',
     newsletter_desc: 'Subscribe to receive the latest STEM news and updates',
     newsletter_coming: 'Newsletter signup coming soon!',
-    competitions_title: 'Competitions for Greek Students',
+    competitions_title: 'International Competitions',
     competitions_intro: 'Information about science and math olympiads available to Greek students',
     comp_math: 'Mathematics',
     comp_physics: 'Physics',
     comp_informatics: 'Informatics',
     comp_science: 'Science & Research',
     comp_astronomy: 'Astronomy',
-    selection_title: 'Greek Team Selection Pathways',
+    selection_title: 'Panhellenic Competitions',
     selection_intro: 'Inside-Greece competitions and how they lead to international Olympiads.',
     selection_math_title: 'Mathematics',
     selection_math_national: 'Greece: <a href="https://www.hms.gr/diagonismoi/" target="_blank" rel="noopener">Hellenic Mathematical Society rounds</a> (Thales \u2192 Euclid \u2192 Archimedes) lead to the preliminary selection exam for national teams.',
@@ -249,6 +252,84 @@ const I18N = {
     sim_mandelbrot_title: 'Σύνολο Mandelbrot',
     sim_mandelbrot_desc: 'Βουτιά στην άπειρη πολυπλοκότητα. Εξερεύνησε το πιο διάσημο fractal στα μαθηματικά.',
 
+    // Double pendulum page
+    pendulum_title: 'Διπλό Εκκρεμές',
+    tutorial: 'Οδηγός',
+    open_controls: 'Άνοιγμα χειριστηρίων',
+    open_chaos: 'Άνοιγμα χάρτη χάους',
+    controls_title: 'Χειριστήρια',
+    toggle_chaos: 'Εναλλαγή χάρτη χάους',
+    reset_label: 'Επαναφορά',
+    play_label: 'Αναπαραγωγή',
+    pause_label: 'Παύση',
+    view_mobile_label: 'Εναλλαγή σε προβολή κινητού',
+    view_desktop_label: 'Εναλλαγή σε προβολή υπολογιστή',
+    speed_label: 'Ταχύτητα',
+    section_masses_title: 'Μάζες (kg)',
+    section_lengths_title: 'Μήκη (m)',
+    section_angles_title: 'Αρχικές Γωνίες (°)',
+    section_velocities_title: 'Αρχικές Ταχύτητες (rad/s)',
+    section_gravity_title: 'Βαρύτητα',
+    section_damping_title: 'Απόσβεση',
+    section_trail_title: 'Ίχνος',
+    label_m1: 'm₁',
+    label_m2: 'm₂',
+    label_L1: 'L₁',
+    label_L2: 'L₂',
+    label_theta1: 'θ₁',
+    label_theta2: 'θ₂',
+    label_omega1: 'ω₁',
+    label_omega2: 'ω₂',
+    label_g: 'g (m/s²)',
+    damping_enabled: 'Ενεργοποίηση',
+    damping_coefficient: 'Συντελεστής',
+    trail_enabled: 'Εμφάνιση ίχνους',
+    trail_infinite: 'Απεριόριστο ίχνος',
+    trail_duration: 'Διάρκεια',
+    chaos_title: 'Χάρτης Χάους',
+    chaos_subtitle: 'Κάνε κλικ για να επιλέξεις αρχικές συνθήκες',
+    chaos_axis_x: 'Άξονας X',
+    chaos_axis_y: 'Άξονας Y',
+    axis_theta1: 'θ₁ (γωνία 1)',
+    axis_theta2: 'θ₂ (γωνία 2)',
+    axis_omega1: 'ω₁ (γωνιακή ταχύτητα 1)',
+    axis_omega2: 'ω₂ (γωνιακή ταχύτητα 2)',
+    chaos_legend_stable: 'Σταθερό',
+    chaos_legend_chaotic: 'Χαοτικό',
+    recompute_chaos: 'Επανυπολογισμός',
+    chaos_grid_label: 'Εμφάνιση πλέγματος',
+    chaos_info_title: 'Τι σημαίνει;',
+    chaos_info_text: 'Το χρώμα δείχνει πόσο χαοτική είναι η κίνηση για κάθε σύνολο αρχικών συνθηκών. Στις χαοτικές περιοχές, μια πολύ μικρή αλλαγή στην αρχή οδηγεί σε εντελώς διαφορετική τροχιά.',
+    chaos_loading: 'Υπολογισμός... {percent}%',
+
+    // Tutorial
+    tutorial_step_label: 'Βήμα {current} / {total}',
+    tutorial_skip: 'Παράλειψη',
+    tutorial_next: 'Επόμενο',
+    tutorial_finish: 'Τέλος',
+    tutorial_canvas_title: 'Καμβάς Προσομοίωσης',
+    tutorial_canvas_text: 'Παρακολούθησε το διπλό εκκρεμές σε κίνηση. Ο πρώτος βραχίονας κρέμεται από τον άξονα και ο δεύτερος από τον πρώτο.',
+    tutorial_play_title: 'Αναπαραγωγή / Παύση',
+    tutorial_play_text: 'Ξεκίνα ή πάγωσε την προσομοίωση. Μπορείς και με το Space.',
+    tutorial_reset_title: 'Επαναφορά',
+    tutorial_reset_text: 'Επαναφορά του εκκρεμούς στην αρχική του κατάσταση. Μπορείς και με R.',
+    tutorial_speed_title: 'Ταχύτητα',
+    tutorial_speed_text: 'Ρύθμισε πόσο γρήγορα τρέχει η προσομοίωση.',
+    tutorial_masses_title: 'Μάζες',
+    tutorial_masses_text: 'Άλλαξε τις μάζες για να δεις πώς εξελίσσεται η κίνηση και πώς αλληλεπιδρούν οι δύο βραχίονες.',
+    tutorial_lengths_title: 'Μήκη',
+    tutorial_lengths_text: 'Ρύθμισε τα μήκη για να αλλάξεις πόσο μακριά φτάνει κάθε βραχίονας.',
+    tutorial_angles_title: 'Αρχικές Γωνίες',
+    tutorial_angles_text: 'Όρισε τις αρχικές γωνίες. 0° είναι προς τα κάτω, 90° είναι οριζόντια.',
+    tutorial_velocities_title: 'Αρχικές Ταχύτητες',
+    tutorial_velocities_text: 'Δώσε μια αρχική ώθηση στο εκκρεμές ρυθμίζοντας τις γωνιακές ταχύτητες.',
+    tutorial_trail_title: 'Ίχνος',
+    tutorial_trail_text: 'Ενεργοποίησε το ίχνος για να αποκαλύψεις όμορφα μοτίβα κίνησης.',
+    tutorial_chaos_toggle_title: 'Χάρτης Χάους',
+    tutorial_chaos_toggle_text: 'Άνοιξε τον χάρτη χάους για να εξερευνήσεις αρχικές συνθήκες.',
+    tutorial_chaos_panel_title: 'Χάρτης Χάους',
+    tutorial_chaos_panel_text: 'Κάθε σημείο αντιστοιχεί σε διαφορετικές αρχικές συνθήκες. Κάνε κλικ σε ένα σημείο για να δεις την κίνηση που προκύπτει.',
+
     // Challenges page
     challenges_title: 'Προκλήσεις',
     challenges_subtitle: 'Δοκίμασε τις ικανότητές σου με τις προκλήσεις μας',
@@ -276,7 +357,24 @@ const I18N = {
     newsletter_title: 'Newsletter',
     newsletter_desc: 'Εγγραφείτε για να λαμβάνετε τα τελευταία νέα STEM',
     newsletter_coming: 'Η εγγραφή στο newsletter έρχεται σύντομα!',
-    competitions_title: 'Διαγωνισμοί για Έλληνες Μαθητές',
+    selection_title: 'Πανελλήνιοι Διαγωνισμοί',
+    selection_intro: 'Διαγωνισμοί εντός Ελλάδας και πώς οδηγούν σε διεθνείς Ολυμπιάδες.',
+    selection_math_title: 'Μαθηματικά',
+    selection_math_national: 'Ελλάδα: Οι <a href="https://www.hms.gr/diagonismoi/" target="_blank" rel="noopener">γύροι της Ελληνικής Μαθηματικής Εταιρείας</a> (Θαλής → Ευκλείδης → Αρχιμήδης) οδηγούν στην προκριματική εξέταση για τις εθνικές ομάδες.',
+    selection_math_international: 'Διεθνείς: <a href="https://imo-official.org/" target="_blank" rel="noopener">IMO</a>, <a href="https://bmo-olympiad.org/" target="_blank" rel="noopener">BMO (Βαλκανική)</a>, <a href="https://www.egmo.org/" target="_blank" rel="noopener">EGMO</a>.',
+    selection_physics_title: 'Φυσική',
+    selection_physics_national: 'Ελλάδα: Ο Πανελλήνιος Διαγωνισμός Φυσικής "Αριστοτέλης" (<a href="https://www.eef.gr/" target="_blank" rel="noopener">ΕΕΦ</a>) είναι η επίσημη διαδρομή επιλογής· οι κορυφαίοι μαθητές μπαίνουν σε προπόνηση και στην εθνική ομάδα.',
+    selection_physics_international: 'Διεθνείς: <a href="https://www.ipho-new.org/" target="_blank" rel="noopener">IPhO</a>, <a href="https://balkanphysicsolympiad.com/" target="_blank" rel="noopener">BPO (Βαλκανική)</a>, <a href="https://eupho.org/" target="_blank" rel="noopener">EuPhO</a>.',
+    selection_informatics_title: 'Πληροφορική',
+    selection_informatics_national: 'Ελλάδα: Ο <a href="https://www.e-olymp.gr/" target="_blank" rel="noopener">Πανελλήνιος Διαγωνισμός Πληροφορικής</a> επιλέγει και προετοιμάζει την εθνική ομάδα.',
+    selection_informatics_international: 'Διεθνείς: <a href="https://ioinformatics.org/" target="_blank" rel="noopener">IOI</a>, BOI, EJOI, <a href="https://ioai-official.org/" target="_blank" rel="noopener">IOAI</a>.',
+    selection_astronomy_title: 'Αστρονομία',
+    selection_astronomy_national: 'Ελλάδα: Ο <a href="https://astronomos.gr/apotelesmata-3is-fasis-ptolemaios-lykeiou-27os-panellinios-diagonismos-astronomias/" target="_blank" rel="noopener">Πανελλήνιος Διαγωνισμός Αστρονομίας & Αστροφυσικής</a> περιλαμβάνει πολλές φάσεις· η τελική φάση έχει χρησιμοποιηθεί για την επιλογή των ομάδων IOAA.',
+    selection_astronomy_international: 'Διεθνείς: <a href="https://ioaastrophysics.org/" target="_blank" rel="noopener">IOAA</a>.',
+    selection_research_title: 'Επιστήμη & Έρευνα',
+    selection_research_national: 'Ελλάδα: Η <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">Ελληνική Φυσική Εταιρεία</a> συντονίζει την ελληνική συμμετοχή και τον σχηματισμό ομάδων για το IYPT και το IYNT.',
+    selection_research_international: 'Διεθνείς: <a href="https://www.iypt.org/" target="_blank" rel="noopener">IYPT</a>, <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">IYNT</a>.',
+    competitions_title: 'Διεθνείς Διαγωνισμοί',
     competitions_intro: 'Πληροφορίες για επιστημονικές και μαθηματικές ολυμπιάδες διαθέσιμες σε Έλληνες μαθητές',
     comp_math: 'Μαθηματικά',
     comp_physics: 'Φυσική',
@@ -471,6 +569,8 @@ class I18nManager {
   updateNavigation() {
     this.setTextForAll('a[href="about.html"]', 'about');
     this.setTextForAll('a[href="contact.html"]', 'contact');
+    this.setAttrById('settings-btn', 'aria-label', 'settings');
+    this.setAttrById('settings-btn', 'title', 'settings');
   }
 
   updateFooter() {
@@ -604,6 +704,7 @@ class I18nManager {
     this.setTextById('chaos-axis-y-label', 'chaos_axis_y');
     this.setTextById('chaos-legend-stable', 'chaos_legend_stable');
     this.setTextById('chaos-legend-chaotic', 'chaos_legend_chaotic');
+    this.setTextById('chaos-grid-label', 'chaos_grid_label');
     this.setTextById('recompute-chaos', 'recompute_chaos');
     this.setTextById('chaos-info-title', 'chaos_info_title');
     this.setTextById('chaos-info-text', 'chaos_info_text');
@@ -618,6 +719,14 @@ class I18nManager {
     const loadingText = document.getElementById('chaos-loading-text');
     if (loadingText) {
       loadingText.textContent = this.t('chaos_loading').replace('{percent}', '0');
+    }
+
+    if (typeof updateViewToggleLabel === 'function' &&
+        typeof getStoredViewPreference === 'function' &&
+        typeof getEffectiveViewMode === 'function') {
+      const preference = getStoredViewPreference();
+      const effective = getEffectiveViewMode(preference);
+      updateViewToggleLabel(effective);
     }
 
     if (typeof updatePlayButton === 'function') {

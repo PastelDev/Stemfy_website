@@ -22,18 +22,15 @@
       '#9aaaff', '#aab0ff', '#b0c0ff',
       '#c0d0ff', '#d4d8ff', '#e8f0ff'
     ],
-    starDensity: 2.0,
-    minStars: 260,
-    maxStars: 1100,
+    starCount: 400,
     baseSpeed: 0.35,
     minSize: 0.5,
-    maxSize: 4.5,
+    maxSize: 5,
     sizeGamma: 2.0
   };
 
   let stars = [];
   let time = 0;
-  let lastFrame = 0;
 
   function resize() {
     canvas.width = window.innerWidth;
@@ -52,11 +49,7 @@
 
   function generateStars() {
     stars = [];
-    const area = canvas.width * canvas.height;
-    let count = Math.round((area / 10000) * PARAMS.starDensity);
-    count = Math.max(PARAMS.minStars, Math.min(PARAMS.maxStars, count));
-
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < PARAMS.starCount; i++) {
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
 
@@ -75,6 +68,8 @@
       const opacity = Math.min(1, baseOpacity + sizeOpacity);
 
       stars.push({
+        x,
+        y,
         baseX: x,
         baseY: y,
         size,
@@ -85,11 +80,7 @@
     }
   }
 
-  function render(timestamp) {
-    const delta = lastFrame ? (timestamp - lastFrame) : 16.67;
-    lastFrame = timestamp;
-    time += delta;
-
+  function render() {
     ctx.fillStyle = PARAMS.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -101,10 +92,11 @@
       ctx.fillRect(x, y, s.size, s.size);
     }
 
+    time += 16.67;
     requestAnimationFrame(render);
   }
 
   window.addEventListener('resize', resize);
   resize();
-  requestAnimationFrame(render);
+  render();
 })();

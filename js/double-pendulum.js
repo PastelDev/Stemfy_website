@@ -79,6 +79,13 @@ const CONFIG = {
     }
 };
 
+const VIEW_STORAGE_KEY = 'pendulumViewPreference';
+const VIEW_MODES = {
+    auto: 'auto',
+    mobile: 'mobile',
+    desktop: 'desktop'
+};
+
 // ============================================
 // STATE
 // ============================================
@@ -110,11 +117,86 @@ const state = {
     chaosMapComputing: false,
     chaosAxisX: 'theta1',
     chaosAxisY: 'theta2',
+    chaosGridEnabled: true,
     
     // UI
     controlPanelOpen: true,
     chaosPanelOpen: true
 };
+
+// ============================================
+// VIEW MODE
+// ============================================
+
+function isMobileDevice() {
+    if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+        return navigator.userAgentData.mobile;
+    }
+    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function getStoredViewPreference() {
+    try {
+        return localStorage.getItem(VIEW_STORAGE_KEY) || VIEW_MODES.auto;
+    } catch (err) {
+        return VIEW_MODES.auto;
+    }
+}
+
+function getEffectiveViewMode(preference) {
+    if (preference === VIEW_MODES.auto) {
+        return isMobileDevice() ? VIEW_MODES.mobile : VIEW_MODES.desktop;
+    }
+    return preference;
+}
+
+function updateViewToggleLabel(effectiveMode) {
+    if (!elements.viewToggleBtn) return;
+    const isMobile = effectiveMode === VIEW_MODES.mobile;
+    const i18n = window.i18nManager;
+    const labelKey = isMobile ? 'view_desktop_label' : 'view_mobile_label';
+    const label = i18n?.t(labelKey) || (isMobile ? 'Switch to desktop view' : 'Switch to mobile view');
+    elements.viewToggleBtn.setAttribute('aria-label', label);
+    elements.viewToggleBtn.setAttribute('title', label);
+    elements.viewToggleBtn.setAttribute('data-view', isMobile ? 'mobile' : 'desktop');
+}
+
+function applyViewPreference(preference) {
+    const body = document.body;
+    if (!body) return;
+
+    body.classList.remove('sim-view-mobile', 'sim-view-desktop');
+
+    const effective = getEffectiveViewMode(preference);
+    if (effective === VIEW_MODES.mobile) {
+        body.classList.add('sim-view-mobile');
+    } else if (preference === VIEW_MODES.desktop) {
+        body.classList.add('sim-view-desktop');
+    }
+
+    updateViewToggleLabel(effective);
+}
+
+function setViewPreference(preference) {
+    try {
+        localStorage.setItem(VIEW_STORAGE_KEY, preference);
+    } catch (err) {
+        // Ignore storage errors (private mode, etc.)
+    }
+    applyViewPreference(preference);
+}
+
+function toggleViewPreference() {
+    const currentPreference = getStoredViewPreference();
+    const effective = getEffectiveViewMode(currentPreference);
+    const next = effective === VIEW_MODES.mobile ? VIEW_MODES.desktop : VIEW_MODES.mobile;
+    setViewPreference(next);
+}
+
+function initViewMode() {
+    const preference = getStoredViewPreference();
+    applyViewPreference(preference);
+}
 
 // ============================================
 // DOM ELEMENTS
@@ -406,6 +488,71 @@ function renderChaosMap() {
     }
     
     chaosCtx.putImageData(imageData, 0, 0);
+    drawChaosOverlay(data);
+}
+
+function getChaosAxisPixel(range, size, invert) {
+    if (!range) return (size - 1) / 2;
+    if (range.min <= 0 && range.max >= 0) {
+        const t = (0 - range.min) / (range.max - range.min);
+        const pos = t * (size - 1);
+        return invert ? (size - 1 - pos) : pos;
+    }
+    return (size - 1) / 2;
+}
+
+function drawChaosOverlay(data) {
+    if (!state.chaosGridEnabled) return;
+
+    const resolution = data.resolution;
+    const rangeX = CONFIG.ranges[data.axisX];
+    const rangeY = CONFIG.ranges[data.axisY];
+
+    if (!rangeX || !rangeY) return;
+
+    const snap = (value) => Math.min(resolution - 0.5, Math.max(0.5, Math.round(value) + 0.5));
+    const gridDivisions = 4;
+
+    chaosCtx.save();
+    chaosCtx.lineWidth = 1;
+
+    // Grid lines
+    chaosCtx.strokeStyle = 'rgba(232, 240, 255, 0.12)';
+    chaosCtx.beginPath();
+    for (let i = 1; i < gridDivisions; i++) {
+        const pos = snap((resolution / gridDivisions) * i);
+        chaosCtx.moveTo(pos, 0.5);
+        chaosCtx.lineTo(pos, resolution - 0.5);
+        chaosCtx.moveTo(0.5, pos);
+        chaosCtx.lineTo(resolution - 0.5, pos);
+    }
+    chaosCtx.stroke();
+
+    // Axis lines (zero or midpoint)
+    const axisX = snap(getChaosAxisPixel(rangeX, resolution, false));
+    const axisY = snap(getChaosAxisPixel(rangeY, resolution, true));
+
+    chaosCtx.strokeStyle = 'rgba(232, 240, 255, 0.35)';
+    chaosCtx.beginPath();
+    chaosCtx.moveTo(axisX, 0.5);
+    chaosCtx.lineTo(axisX, resolution - 0.5);
+    chaosCtx.moveTo(0.5, axisY);
+    chaosCtx.lineTo(resolution - 0.5, axisY);
+    chaosCtx.stroke();
+
+    // Tick marks
+    const tickSize = 3;
+    chaosCtx.beginPath();
+    for (let i = 1; i < gridDivisions; i++) {
+        const pos = snap((resolution / gridDivisions) * i);
+        chaosCtx.moveTo(axisX - tickSize, pos);
+        chaosCtx.lineTo(axisX + tickSize, pos);
+        chaosCtx.moveTo(pos, axisY - tickSize);
+        chaosCtx.lineTo(pos, axisY + tickSize);
+    }
+    chaosCtx.stroke();
+
+    chaosCtx.restore();
 }
 
 // ============================================
@@ -809,6 +956,7 @@ function initControls() {
     elements.playBtn = document.getElementById('play-btn');
     elements.resetBtn = document.getElementById('reset-btn');
     elements.tutorialBtn = document.getElementById('tutorial-btn');
+    elements.viewToggleBtn = document.getElementById('view-toggle-btn');
     
     // Play/Pause
     if (elements.playBtn) {
@@ -823,6 +971,11 @@ function initControls() {
     // Tutorial
     if (elements.tutorialBtn) {
         elements.tutorialBtn.addEventListener('click', startTutorial);
+    }
+
+    // View toggle
+    if (elements.viewToggleBtn) {
+        elements.viewToggleBtn.addEventListener('click', toggleViewPreference);
     }
     
     // Parameter sliders
@@ -894,6 +1047,17 @@ function initControls() {
             setChaosAxis('y', e.target.value);
         });
     }
+
+    const chaosGridToggle = document.getElementById('chaos-grid-toggle');
+    if (chaosGridToggle) {
+        chaosGridToggle.checked = state.chaosGridEnabled;
+        chaosGridToggle.addEventListener('change', (e) => {
+            state.chaosGridEnabled = e.target.checked;
+            if (state.chaosMapData) {
+                renderChaosMap();
+            }
+        });
+    }
     
     // Mobile panel toggles
     const controlsToggle = document.querySelector('.panel-toggle--controls');
@@ -939,6 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     initChaosCanvas();
     initControls();
+    initViewMode();
     initState();
     
     // Initial render

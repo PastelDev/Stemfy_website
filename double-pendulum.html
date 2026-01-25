@@ -49,6 +49,12 @@
                     <li><a href="about.html">About</a></li>
                     <li><a href="contact.html">Contact</a></li>
                 </ul>
+                <button id="view-toggle-btn" class="settings-btn sim-view-btn" aria-label="Switch to mobile view" title="Switch to mobile view">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="7" y="2" width="10" height="20" rx="2"/>
+                        <line x1="11" y1="18" x2="13" y2="18"/>
+                    </svg>
+                </button>
                 <button id="tutorial-btn" class="settings-btn sim-help-btn" aria-label="Tutorial" title="Tutorial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
@@ -134,6 +140,14 @@
                         <span id="chaos-legend-stable" style="font-size: 0.625rem; color: var(--color-gray);">Stable</span>
                         <div class="chaos-legend__gradient"></div>
                         <span id="chaos-legend-chaotic" style="font-size: 0.625rem; color: var(--color-gray);">Chaotic</span>
+                    </div>
+
+                    <div class="control-toggle">
+                        <label class="control-toggle__label" for="chaos-grid-toggle" id="chaos-grid-label">Show grid</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="chaos-grid-toggle" checked>
+                            <span class="toggle-switch__slider"></span>
+                        </label>
                     </div>
                     
                     <!-- Recompute Button -->

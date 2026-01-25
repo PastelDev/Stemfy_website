@@ -43,6 +43,19 @@
     stroke: currentColor;
 }
 
+.sim-view-btn {
+    color: var(--white-dim);
+}
+
+body.sim-view-mobile .sim-view-btn {
+    color: var(--purple-bright);
+}
+
+.sim-view-btn svg {
+    fill: none;
+    stroke: currentColor;
+}
+
 /* Main Content Area */
 .sim-content {
     margin-top: var(--sim-nav-height);
@@ -583,7 +596,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: transparent;
     z-index: 2000;
     opacity: 0;
     visibility: hidden;
@@ -599,9 +612,9 @@
 
 .tutorial-highlight {
     position: absolute;
-    box-shadow: 
-        0 0 0 4px var(--purple-bright),
-        0 0 0 9999px rgba(0, 0, 0, 0.85);
+    box-shadow:
+        0 0 0 3px var(--purple-bright),
+        0 0 24px rgba(176, 138, 240, 0.45);
     border-radius: var(--border-radius);
     transition: 
         top var(--transition-normal),
@@ -702,21 +715,78 @@
 }
 
 /* ============================================
+   VIEW MODE OVERRIDES
+   ============================================ */
+
+body.sim-view-mobile .simulation-page {
+    --sim-nav-height: 128px;
+}
+
+body.sim-view-mobile .panel-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.sim-view-mobile .control-panel {
+    width: 100%;
+    height: 60vh;
+    top: auto;
+    bottom: 0;
+    border-left: none;
+    border-top: 1px solid rgba(176, 138, 240, 0.2);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    transform: translateY(100%);
+    box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.35);
+}
+
+body.sim-view-mobile .control-panel.open {
+    transform: translateY(0);
+}
+
+body.sim-view-mobile .chaos-panel {
+    width: 100%;
+    height: 80vh;
+    top: auto;
+    bottom: 0;
+    border-right: none;
+    border-top: 1px solid rgba(176, 138, 240, 0.2);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    transform: translateY(100%);
+    box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.35);
+}
+
+body.sim-view-mobile .chaos-panel.open {
+    transform: translateY(0);
+}
+
+body.sim-view-mobile .sim-main {
+    padding: var(--space-sm);
+}
+
+body.sim-view-mobile .tutorial-tooltip {
+    max-width: calc(100vw - 32px);
+    left: 16px !important;
+    right: 16px !important;
+}
+
+
+/* ============================================
    RESPONSIVE — MOBILE
    ============================================ */
 
 @media (max-width: 768px) {
-    .simulation-page {
+    body:not(.sim-view-desktop) .simulation-page {
         --sim-nav-height: 128px;
     }
 
-    .panel-toggle {
+    body:not(.sim-view-desktop) .panel-toggle {
         display: flex;
         align-items: center;
         justify-content: center;
     }
     
-    .control-panel {
+    body:not(.sim-view-desktop) .control-panel {
         width: 100%;
         height: 60vh;
         top: auto;
@@ -728,11 +798,11 @@
         box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.35);
     }
     
-    .control-panel.open {
+    body:not(.sim-view-desktop) .control-panel.open {
         transform: translateY(0);
     }
     
-    .chaos-panel {
+    body:not(.sim-view-desktop) .chaos-panel {
         width: 100%;
         height: 80vh;
         top: auto;
@@ -744,15 +814,15 @@
         box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.35);
     }
     
-    .chaos-panel.open {
+    body:not(.sim-view-desktop) .chaos-panel.open {
         transform: translateY(0);
     }
     
-    .sim-main {
+    body:not(.sim-view-desktop) .sim-main {
         padding: var(--space-sm);
     }
     
-    .tutorial-tooltip {
+    body:not(.sim-view-desktop) .tutorial-tooltip {
         max-width: calc(100vw - 32px);
         left: 16px !important;
         right: 16px !important;
@@ -760,15 +830,15 @@
 }
 
 @media (max-width: 480px) {
-    .simulation-page {
+    body:not(.sim-view-desktop) .simulation-page {
         --sim-nav-height: 140px;
     }
     
-    .playback-controls {
+    body:not(.sim-view-desktop) .playback-controls {
         flex-wrap: wrap;
     }
     
-    .control-panel__content {
+    body:not(.sim-view-desktop) .control-panel__content {
         padding: var(--space-sm);
     }
 }

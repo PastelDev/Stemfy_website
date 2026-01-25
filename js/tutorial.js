@@ -363,4 +363,4 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && tutorialState.active) {
         endTutorial();
     }
-});
+}, true);
