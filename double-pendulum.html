@@ -127,8 +127,8 @@
                     </div>
                     
                     <!-- Chaos Map Canvas -->
-                    <div class="chaos-map-container">
-                        <canvas id="chaos-canvas"></canvas>
+                <div class="chaos-map-container" id="chaos-map-container">
+                    <canvas id="chaos-canvas"></canvas>
                         <div class="chaos-map-loading" style="display: none;">
                             <div class="chaos-map-loading__spinner"></div>
                             <span id="chaos-loading-text">Computing... 0%</span>
@@ -167,7 +167,7 @@
 
             <!-- Main Canvas Area -->
             <main class="sim-main">
-                <div class="sim-canvas-container">
+                <div class="sim-canvas-container" id="pendulum-canvas-container">
                     <canvas id="pendulum-canvas"></canvas>
                 </div>
             </main>
@@ -202,7 +202,7 @@
                     </div>
                     
                     <!-- Speed Control -->
-                    <div class="control-slider">
+                    <div class="control-slider" id="speed-control">
                         <div class="control-slider__header">
                             <label class="control-slider__label" for="speed" id="speed-label">Speed</label>
                             <span id="speed-value" class="control-slider__value">1x</span>

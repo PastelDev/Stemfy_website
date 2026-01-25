@@ -13,6 +13,10 @@
     display: flex;
     flex-direction: column;
     --sim-nav-height: 108px;
+    --chaos-panel-width: clamp(260px, 28vw, 380px);
+    --control-panel-width: clamp(240px, 26vw, 320px);
+    --panel-left: 0px;
+    --panel-right: 0px;
     --color-chaos-stable: #1a3a5a;
     --color-chaos-mid: #7a4a8a;
     --color-chaos-chaotic: #ff7aec;
@@ -62,6 +66,8 @@ body.sim-view-mobile .sim-view-btn {
     flex: 1;
     display: flex;
     position: relative;
+    padding-left: var(--panel-left);
+    padding-right: var(--panel-right);
 }
 
 /* Main Canvas Area */
@@ -72,6 +78,7 @@ body.sim-view-mobile .sim-view-btn {
     justify-content: center;
     padding: clamp(1rem, 3vw, 2.5rem);
     position: relative;
+    min-width: 0;
 }
 
 .sim-canvas-container {
@@ -96,7 +103,7 @@ body.sim-view-mobile .sim-view-btn {
     position: fixed;
     top: var(--sim-nav-height);
     right: 0;
-    width: 320px;
+    width: var(--control-panel-width);
     height: calc(100vh - var(--sim-nav-height));
     background: var(--bg-panel);
     border-left: 1px solid rgba(176, 138, 240, 0.2);
@@ -406,7 +413,7 @@ body.sim-view-mobile .sim-view-btn {
     position: fixed;
     top: var(--sim-nav-height);
     left: 0;
-    width: 380px;
+    width: var(--chaos-panel-width);
     height: calc(100vh - var(--sim-nav-height));
     background: var(--bg-panel);
     border-right: 1px solid rgba(176, 138, 240, 0.2);
@@ -705,12 +712,9 @@ body.sim-view-mobile .sim-view-btn {
    ============================================ */
 
 @media (max-width: 1024px) {
-    .control-panel {
-        width: 280px;
-    }
-    
-    .chaos-panel {
-        width: 320px;
+    .simulation-page {
+        --control-panel-width: clamp(220px, 30vw, 280px);
+        --chaos-panel-width: clamp(240px, 34vw, 320px);
     }
 }
 
@@ -720,6 +724,16 @@ body.sim-view-mobile .sim-view-btn {
 
 body.sim-view-mobile .simulation-page {
     --sim-nav-height: 128px;
+    --panel-left: 0px;
+    --panel-right: 0px;
+}
+
+body.control-panel-open:not(.sim-view-mobile) .simulation-page {
+    --panel-right: var(--control-panel-width);
+}
+
+body.chaos-panel-open:not(.sim-view-mobile) .simulation-page {
+    --panel-left: var(--chaos-panel-width);
 }
 
 body.sim-view-mobile .panel-toggle {
@@ -778,6 +792,8 @@ body.sim-view-mobile .tutorial-tooltip {
 @media (max-width: 768px) {
     body:not(.sim-view-desktop) .simulation-page {
         --sim-nav-height: 128px;
+        --panel-left: 0px;
+        --panel-right: 0px;
     }
 
     body:not(.sim-view-desktop) .panel-toggle {

@@ -119,6 +119,94 @@
     .competition-list a:hover {
       text-decoration: underline;
     }
+
+    /* Announcements Section */
+    .announcements-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .announcement-card {
+      background: rgba(18, 12, 28, 0.65);
+      border: 1px solid rgba(176, 138, 240, 0.2);
+      border-radius: 14px;
+      padding: 1.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .announcement-card:hover {
+      border-color: rgba(176, 138, 240, 0.4);
+      transform: translateX(4px);
+    }
+
+    .announcement-card.pinned {
+      border-color: rgba(255, 122, 236, 0.4);
+      background: rgba(255, 122, 236, 0.05);
+    }
+
+    .announcement-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .announcement-pin {
+      color: #ff7aec;
+      font-size: 1rem;
+    }
+
+    .announcement-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f8f4ff;
+      flex: 1;
+    }
+
+    .announcement-category {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(176, 138, 240, 0.15);
+      color: #b08af0;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .announcement-content {
+      color: rgba(248, 244, 255, 0.75);
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .announcement-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .announcement-date {
+      font-size: 0.8rem;
+      color: rgba(248, 244, 255, 0.5);
+    }
+
+    .announcement-link {
+      font-size: 0.85rem;
+      color: #b08af0;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .announcement-link:hover {
+      text-decoration: underline;
+    }
+
+    .posts-loading {
+      text-align: center;
+      padding: 2rem;
+      color: rgba(248, 244, 255, 0.6);
+    }
   </style>
 </head>
 <body>
@@ -148,6 +236,14 @@
         <h1 id="news-title">News</h1>
         <p id="news-subtitle">Science news and competition updates</p>
       </header>
+
+      <section class="news-section" id="announcements-section" style="display: none;">
+        <h2 class="section-heading" id="announcements-title">Announcements</h2>
+        <p class="section-desc" id="announcements-desc">Latest news and updates from STEMfy.gr</p>
+        <div class="announcements-list" id="announcements-container">
+          <div class="posts-loading">Loading announcements...</div>
+        </div>
+      </section>
 
       <section class="news-section">
         <h2 class="section-heading" id="newsletter-title">Newsletter</h2>
@@ -280,6 +376,76 @@
   <script src="js/starfield.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/ui.js"></script>
+  <script>
+    // Fetch and display dynamic announcements
+    (function() {
+      const API_URL = 'admin/api.php?type=news';
+      const lang = localStorage.getItem('stemfy-language') || 'en';
+
+      async function loadAnnouncements() {
+        try {
+          const response = await fetch(API_URL);
+          const data = await response.json();
+
+          if (data.success && data.announcements && data.announcements.length > 0) {
+            renderAnnouncements(data.announcements, lang);
+            document.getElementById('announcements-section').style.display = 'block';
+          }
+        } catch (error) {
+          console.log('Could not load announcements:', error);
+        }
+      }
+
+      function renderAnnouncements(announcements, lang) {
+        const container = document.getElementById('announcements-container');
+        if (!container) return;
+
+        const categoryLabels = {
+          en: { general: 'General', competition: 'Competition', event: 'Event', update: 'Update' },
+          el: { general: 'Γενικά', competition: 'Διαγωνισμός', event: 'Εκδήλωση', update: 'Ενημέρωση' }
+        };
+
+        const readMoreText = lang === 'el' ? 'Διαβάστε περισσότερα' : 'Read more';
+
+        container.innerHTML = announcements.map(item => {
+          const title = lang === 'el' ? item.title_el : item.title_en;
+          const content = lang === 'el' ? item.content_el : item.content_en;
+          const categoryLabel = categoryLabels[lang][item.category] || item.category;
+          const date = new Date(item.created_at).toLocaleDateString(lang === 'el' ? 'el-GR' : 'en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+
+          return `
+            <div class="announcement-card ${item.pinned ? 'pinned' : ''}">
+              <div class="announcement-header">
+                ${item.pinned ? '<span class="announcement-pin">&#x1F4CC;</span>' : ''}
+                <h3 class="announcement-title">${title}</h3>
+                <span class="announcement-category">${categoryLabel}</span>
+              </div>
+              <p class="announcement-content">${content}</p>
+              <div class="announcement-footer">
+                <span class="announcement-date">${date}</span>
+                ${item.link_url ? `<a href="${item.link_url}" target="_blank" rel="noopener" class="announcement-link">${readMoreText} &rarr;</a>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      // Load content when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadAnnouncements);
+      } else {
+        loadAnnouncements();
+      }
+
+      // Re-render when language changes
+      window.addEventListener('languageChanged', (e) => {
+        loadAnnouncements();
+      });
+    })();
+  </script>
 </body>
 </html>
 

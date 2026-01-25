@@ -26,3 +26,6 @@ package-lock.json
 # Environment files
 .env
 .env.local
+
+# Admin credentials (create manually on server)
+admin/credentials.php

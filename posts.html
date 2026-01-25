@@ -121,6 +121,60 @@
       color: rgba(248, 244, 255, 0.7);
       font-size: 0.9rem;
     }
+
+    .posts-loading {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2rem;
+      color: rgba(248, 244, 255, 0.6);
+    }
+
+    .post-card.dynamic,
+    .resource-card.dynamic {
+      border-style: solid;
+      transition: all 0.3s ease;
+    }
+
+    .post-card.dynamic:hover,
+    .resource-card.dynamic:hover {
+      transform: translateY(-4px);
+      border-color: rgba(176, 138, 240, 0.5);
+      box-shadow: 0 10px 30px rgba(176, 138, 240, 0.15);
+    }
+
+    .post-card a,
+    .resource-card a {
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      width: 100%;
+      height: 100%;
+    }
+
+    .post-title,
+    .resource-title {
+      font-weight: 600;
+      color: #f8f4ff;
+      font-size: 0.95rem;
+    }
+
+    .post-desc,
+    .resource-desc {
+      color: rgba(248, 244, 255, 0.7);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .empty-message {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2rem;
+      color: rgba(248, 244, 255, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -154,59 +208,16 @@
       <section class="posts-section">
         <h2 class="section-heading" id="posts-instagram-title">From Instagram</h2>
         <p class="section-desc" id="posts-instagram-desc">Our latest posts from @stemfy.gr</p>
-        <div class="posts-grid">
-          <div class="post-card">
-            <div class="post-media">Instagram Post</div>
-            <p class="posts-placeholder-text">Content coming soon!</p>
-          </div>
-          <div class="post-card">
-            <div class="post-media">Instagram Post</div>
-            <p class="posts-placeholder-text">Content coming soon!</p>
-          </div>
-          <div class="post-card">
-            <div class="post-media">Instagram Post</div>
-            <p class="posts-placeholder-text">Content coming soon!</p>
-          </div>
+        <div class="posts-grid" id="posts-container">
+          <div class="posts-loading">Loading posts...</div>
         </div>
       </section>
 
       <section class="posts-section">
         <h2 class="section-heading" id="posts-resources-title">Educational Resources</h2>
         <p class="section-desc" id="posts-resources-desc">PDFs and visual guides explaining STEM concepts</p>
-        <div class="resources-grid">
-          <div class="resource-card">
-            <div class="resource-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-                <path d="M8 13h8" />
-                <path d="M8 17h5" />
-              </svg>
-            </div>
-            <p class="posts-placeholder-text">Content coming soon!</p>
-          </div>
-          <div class="resource-card">
-            <div class="resource-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-                <path d="M8 13h8" />
-                <path d="M8 17h5" />
-              </svg>
-            </div>
-            <p class="posts-placeholder-text">Content coming soon!</p>
-          </div>
-          <div class="resource-card">
-            <div class="resource-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-                <path d="M8 13h8" />
-                <path d="M8 17h5" />
-              </svg>
-            </div>
-            <p class="posts-placeholder-text">Content coming soon!</p>
-          </div>
+        <div class="resources-grid" id="resources-container">
+          <div class="posts-loading">Loading resources...</div>
         </div>
       </section>
     </main>
@@ -242,6 +253,149 @@
   <script src="js/starfield.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/ui.js"></script>
+  <script>
+    // Fetch and display dynamic posts and resources
+    (function() {
+      const API_URL = 'admin/api.php?type=posts';
+      const lang = localStorage.getItem('stemfy-language') || 'en';
+
+      async function loadContent() {
+        try {
+          const response = await fetch(API_URL);
+          const data = await response.json();
+
+          if (data.success) {
+            renderPosts(data.posts, lang);
+            renderResources(data.resources, lang);
+          }
+        } catch (error) {
+          console.log('Could not load dynamic content:', error);
+          showPlaceholders();
+        }
+      }
+
+      function renderPosts(posts, lang) {
+        const container = document.getElementById('posts-container');
+        if (!container) return;
+
+        if (!posts || posts.length === 0) {
+          container.innerHTML = `
+            <div class="post-card">
+              <div class="post-media">Instagram Post</div>
+              <p class="posts-placeholder-text">Content coming soon!</p>
+            </div>
+            <div class="post-card">
+              <div class="post-media">Instagram Post</div>
+              <p class="posts-placeholder-text">Content coming soon!</p>
+            </div>
+            <div class="post-card">
+              <div class="post-media">Instagram Post</div>
+              <p class="posts-placeholder-text">Content coming soon!</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = posts.map(post => {
+          const title = lang === 'el' ? post.title_el : post.title_en;
+          const desc = lang === 'el' ? post.description_el : post.description_en;
+          const linkStart = post.link_url ? `<a href="${post.link_url}" target="_blank" rel="noopener">` : '';
+          const linkEnd = post.link_url ? '</a>' : '';
+
+          return `
+            <div class="post-card dynamic">
+              ${linkStart}
+                <div class="post-media" ${post.image_url ? `style="background-image: url('${post.image_url}'); background-size: cover; background-position: center;"` : ''}>
+                  ${!post.image_url ? 'Instagram Post' : ''}
+                </div>
+                <p class="post-title">${title}</p>
+                <p class="post-desc">${desc}</p>
+              ${linkEnd}
+            </div>`;
+        }).join('');
+      }
+
+      function renderResources(resources, lang) {
+        const container = document.getElementById('resources-container');
+        if (!container) return;
+
+        if (!resources || resources.length === 0) {
+          container.innerHTML = `
+            <div class="resource-card">
+              <div class="resource-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8" />
+                  <path d="M8 17h5" />
+                </svg>
+              </div>
+              <p class="posts-placeholder-text">Content coming soon!</p>
+            </div>
+            <div class="resource-card">
+              <div class="resource-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8" />
+                  <path d="M8 17h5" />
+                </svg>
+              </div>
+              <p class="posts-placeholder-text">Content coming soon!</p>
+            </div>
+            <div class="resource-card">
+              <div class="resource-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8" />
+                  <path d="M8 17h5" />
+                </svg>
+              </div>
+              <p class="posts-placeholder-text">Content coming soon!</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = resources.map(resource => {
+          const title = lang === 'el' ? resource.title_el : resource.title_en;
+          const desc = lang === 'el' ? resource.description_el : resource.description_en;
+
+          return `
+            <div class="resource-card dynamic">
+              <a href="${resource.file_url}" target="_blank" rel="noopener">
+                <div class="resource-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M8 13h8" />
+                    <path d="M8 17h5" />
+                  </svg>
+                </div>
+                <p class="resource-title">${title}</p>
+                <p class="resource-desc">${desc}</p>
+              </a>
+            </div>`;
+        }).join('');
+      }
+
+      function showPlaceholders() {
+        renderPosts([], 'en');
+        renderResources([], 'en');
+      }
+
+      // Load content when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadContent);
+      } else {
+        loadContent();
+      }
+
+      // Re-render when language changes
+      window.addEventListener('languageChanged', (e) => {
+        loadContent();
+      });
+    })();
+  </script>
 </body>
 </html>
 

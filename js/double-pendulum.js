@@ -135,6 +135,15 @@ function isMobileDevice() {
     return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
+function isCompactViewport() {
+    return window.innerWidth <= 900 || window.innerHeight <= 700;
+}
+
+function prefersMobileLayout() {
+    const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    return isMobileDevice() || coarsePointer || isCompactViewport();
+}
+
 function getStoredViewPreference() {
     try {
         return localStorage.getItem(VIEW_STORAGE_KEY) || VIEW_MODES.auto;
@@ -145,7 +154,7 @@ function getStoredViewPreference() {
 
 function getEffectiveViewMode(preference) {
     if (preference === VIEW_MODES.auto) {
-        return isMobileDevice() ? VIEW_MODES.mobile : VIEW_MODES.desktop;
+        return prefersMobileLayout() ? VIEW_MODES.mobile : VIEW_MODES.desktop;
     }
     return preference;
 }
@@ -161,10 +170,19 @@ function updateViewToggleLabel(effectiveMode) {
     elements.viewToggleBtn.setAttribute('data-view', isMobile ? 'mobile' : 'desktop');
 }
 
+function updateNavHeightVariable() {
+    const nav = document.querySelector('.sim-nav');
+    const page = document.querySelector('.simulation-page');
+    if (!nav || !page) return;
+    const height = nav.getBoundingClientRect().height;
+    page.style.setProperty('--sim-nav-height', `${height}px`);
+}
+
 function applyViewPreference(preference) {
     const body = document.body;
     if (!body) return;
 
+    const wasMobile = body.classList.contains('sim-view-mobile');
     body.classList.remove('sim-view-mobile', 'sim-view-desktop');
 
     const effective = getEffectiveViewMode(preference);
@@ -174,7 +192,31 @@ function applyViewPreference(preference) {
         body.classList.add('sim-view-desktop');
     }
 
+    const controlPanel = document.querySelector('.control-panel');
+    if (effective === VIEW_MODES.mobile && !wasMobile) {
+        if (controlPanel) {
+            controlPanel.classList.add('collapsed');
+            controlPanel.classList.remove('open');
+        }
+        state.controlPanelOpen = false;
+    }
+
+    if (effective === VIEW_MODES.desktop && wasMobile) {
+        if (controlPanel) {
+            controlPanel.classList.remove('collapsed');
+            controlPanel.classList.add('open');
+        }
+        state.controlPanelOpen = true;
+    }
+
     updateViewToggleLabel(effective);
+    updateNavHeightVariable();
+    if (typeof syncPanelStateClasses === 'function') {
+        syncPanelStateClasses();
+    }
+    if (typeof resizeCanvas === 'function') {
+        resizeCanvas();
+    }
 }
 
 function setViewPreference(preference) {
@@ -196,6 +238,15 @@ function toggleViewPreference() {
 function initViewMode() {
     const preference = getStoredViewPreference();
     applyViewPreference(preference);
+
+    window.addEventListener('resize', debounce(() => {
+        const currentPreference = getStoredViewPreference();
+        if (currentPreference === VIEW_MODES.auto) {
+            applyViewPreference(currentPreference);
+        } else {
+            updateNavHeightVariable();
+        }
+    }, 150));
 }
 
 // ============================================
@@ -733,6 +784,9 @@ function toggleChaosPanel() {
     if (state.chaosPanelOpen && !state.chaosMapData) {
         computeChaosMap();
     }
+
+    syncPanelStateClasses();
+    resizeCanvas();
 }
 
 function computeChaosMap() {
@@ -895,6 +949,13 @@ function setChaosAxis(axis, param) {
 // PANEL TOGGLES
 // ============================================
 
+function syncPanelStateClasses() {
+    const body = document.body;
+    if (!body) return;
+    body.classList.toggle('control-panel-open', state.controlPanelOpen);
+    body.classList.toggle('chaos-panel-open', state.chaosPanelOpen);
+}
+
 function toggleControlPanel() {
     state.controlPanelOpen = !state.controlPanelOpen;
     const panel = document.querySelector('.control-panel');
@@ -902,6 +963,8 @@ function toggleControlPanel() {
         panel.classList.toggle('collapsed', !state.controlPanelOpen);
         panel.classList.toggle('open', state.controlPanelOpen);
     }
+    syncPanelStateClasses();
+    resizeCanvas();
 }
 
 // ============================================
@@ -921,12 +984,20 @@ function initCanvas() {
 
 function resizeCanvas() {
     if (!canvas) return;
-    
-    const container = canvas.parentElement;
-    const maxWidth = Math.min(container.clientWidth - 32, 760);
-    const maxHeight = Math.min(window.innerHeight - 160, 620);
-    const size = Math.max(320, Math.min(maxWidth, maxHeight));
-    
+
+    const main = document.querySelector('.sim-main');
+    const nav = document.querySelector('.sim-nav');
+    const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+    const viewportHeight = Math.max(0, window.innerHeight - navHeight);
+    const availableWidth = main ? main.clientWidth : window.innerWidth;
+    const availableHeight = Math.min(main ? main.clientHeight : viewportHeight, viewportHeight);
+    const padding = 32;
+
+    const maxWidth = Math.max(0, availableWidth - padding);
+    const maxHeight = Math.max(0, availableHeight - padding);
+    const maxSize = Math.max(0, Math.min(maxWidth, maxHeight, 760));
+    const size = Math.max(1, Math.floor(maxSize));
+
     canvas.width = size;
     canvas.height = size;
     

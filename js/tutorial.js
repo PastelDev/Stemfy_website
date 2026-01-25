@@ -14,7 +14,7 @@ function t(key, fallback) {
 function getTutorialSteps() {
     return [
         {
-            target: '#pendulum-canvas',
+            target: '#pendulum-canvas-container',
             title: t('tutorial_canvas_title', 'Simulation Canvas'),
             text: t('tutorial_canvas_text', 'Watch the double pendulum in motion. The first arm hangs from the pivot, and the second hangs from the first.'),
             position: 'right'
@@ -34,7 +34,7 @@ function getTutorialSteps() {
             requiresPanel: 'controls'
         },
         {
-            target: '#speed',
+            target: '#speed-control',
             title: t('tutorial_speed_title', 'Speed'),
             text: t('tutorial_speed_text', 'Adjust how fast the simulation runs.'),
             position: 'left',
@@ -57,7 +57,7 @@ function getTutorialSteps() {
         {
             target: '#section-angles',
             title: t('tutorial_angles_title', 'Initial Angles'),
-            text: t('tutorial_angles_text', 'Set the starting angles. 0? is straight down, 90? is horizontal.'),
+            text: t('tutorial_angles_text', 'Set the starting angles. 0\u00B0 is straight down, 90\u00B0 is horizontal.'),
             position: 'left',
             requiresPanel: 'controls'
         },
@@ -65,6 +65,13 @@ function getTutorialSteps() {
             target: '#section-velocities',
             title: t('tutorial_velocities_title', 'Initial Velocities'),
             text: t('tutorial_velocities_text', 'Give the pendulum an initial push by setting angular velocities.'),
+            position: 'left',
+            requiresPanel: 'controls'
+        },
+        {
+            target: '#section-damping',
+            title: t('tutorial_damping_title', 'Damping'),
+            text: t('tutorial_damping_text', 'Enable damping to model friction or air resistance. Higher values remove energy faster, so the motion settles.'),
             position: 'left',
             requiresPanel: 'controls'
         },
@@ -83,7 +90,7 @@ function getTutorialSteps() {
             requiresPanel: 'controls'
         },
         {
-            target: '.chaos-panel',
+            target: '#chaos-map-container',
             title: t('tutorial_chaos_panel_title', 'Chaos Map'),
             text: t('tutorial_chaos_panel_text', 'Each point corresponds to a different set of initial conditions. Click a point to see the resulting motion.'),
             position: 'right',
@@ -105,6 +112,8 @@ let tutorialState = {
     tooltip: null,
     originalPanelStates: {}
 };
+
+const PANEL_TRANSITION_DELAY = 320;
 
 // ============================================
 // TUTORIAL FUNCTIONS
@@ -156,6 +165,14 @@ function endTutorial() {
         }
         state.chaosPanelOpen = false;
     }
+
+    if (typeof syncPanelStateClasses === 'function') {
+        syncPanelStateClasses();
+    }
+
+    if (typeof resizeCanvas === 'function') {
+        resizeCanvas();
+    }
 }
 
 function createTutorialElements() {
@@ -186,28 +203,48 @@ function showTutorialStep(stepIndex) {
 
     tutorialState.currentStep = stepIndex;
 
-    if (step.requiresPanel === 'controls') {
-        openPanel('controls');
-    }
-
-    if (step.requiresPanel === 'chaos') {
-        openPanel('chaos');
-    }
-
     const target = document.querySelector(step.target);
     if (!target) {
         nextTutorialStep();
         return;
     }
 
-    if (typeof target.scrollIntoView === 'function') {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    const delay = getPanelTransitionDelay(step);
+
+    const positionStep = () => {
+        if (typeof target.scrollIntoView === 'function') {
+            target.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+        }
+
+        requestAnimationFrame(() => {
+            positionHighlight(target);
+            updateTooltip(step, target, stepIndex);
+        });
+    };
+
+    if (delay > 0) {
+        setTimeout(positionStep, delay);
+    } else {
+        positionStep();
+    }
+}
+
+function getPanelTransitionDelay(step) {
+    if (step.requiresPanel === 'controls') {
+        const controlPanel = document.querySelector('.control-panel');
+        const wasCollapsed = controlPanel && controlPanel.classList.contains('collapsed');
+        openPanel('controls');
+        return wasCollapsed ? PANEL_TRANSITION_DELAY : 0;
     }
 
-    requestAnimationFrame(() => {
-        positionHighlight(target);
-        updateTooltip(step, target, stepIndex);
-    });
+    if (step.requiresPanel === 'chaos') {
+        const chaosPanel = document.querySelector('.chaos-panel');
+        const wasCollapsed = chaosPanel && chaosPanel.classList.contains('collapsed');
+        openPanel('chaos');
+        return wasCollapsed ? PANEL_TRANSITION_DELAY : 0;
+    }
+
+    return 0;
 }
 
 function openPanel(panel) {
@@ -218,6 +255,12 @@ function openPanel(panel) {
             controlPanel.classList.add('open');
         }
         state.controlPanelOpen = true;
+        if (typeof syncPanelStateClasses === 'function') {
+            syncPanelStateClasses();
+        }
+        if (typeof resizeCanvas === 'function') {
+            resizeCanvas();
+        }
         return;
     }
 
@@ -230,6 +273,12 @@ function openPanel(panel) {
         state.chaosPanelOpen = true;
         if (!state.chaosMapData && typeof computeChaosMap === 'function') {
             computeChaosMap();
+        }
+        if (typeof syncPanelStateClasses === 'function') {
+            syncPanelStateClasses();
+        }
+        if (typeof resizeCanvas === 'function') {
+            resizeCanvas();
         }
     }
 }
