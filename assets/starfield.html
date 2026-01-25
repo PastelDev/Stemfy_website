@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purple Starfield</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+
+    <script>
+        // Purple Starfield - Drift only
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+
+        const PARAMS = {
+            background: '#080a14',
+            starColors: [
+                '#1a1a3a', '#2a1a4a', '#1a2a5a',  // deep dim
+                '#3a2a5a', '#2a3a6a', '#3a3a7a',  // mid dim
+                '#4a3a8a', '#3a4a9a', '#5a4a9e',  // mid
+                '#4a6aba', '#6a5aba', '#5a7aca',  // mid bright
+                '#7a8ada', '#8a7aea', '#6a9aea',  // bright
+                '#9aaaff', '#aab0ff', '#b0c0ff',  // very bright
+                '#c0d0ff', '#d4d8ff', '#e8f0ff'   // white-ish
+            ],
+            starCount: 400,
+            baseSpeed: 0.35,
+            minSize: 0.5,
+            maxSize: 5,
+            sizeGamma: 2.0
+        };
+
+        let stars = [];
+        let time = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            generateStars();
+        }
+
+        function hexToRgb(hex) {
+            hex = hex.replace('#', '');
+            return { 
+                r: parseInt(hex.substring(0, 2), 16), 
+                g: parseInt(hex.substring(2, 4), 16), 
+                b: parseInt(hex.substring(4, 6), 16) 
+            };
+        }
+
+        function generateStars() {
+            stars = [];
+            for (let i = 0; i < PARAMS.starCount; i++) {
+                let x = Math.random() * canvas.width;
+                let y = Math.random() * canvas.height;
+                
+                // Size with gamma distribution (more small stars, fewer large)
+                const sizeRand = Math.pow(Math.random(), PARAMS.sizeGamma);
+                const size = PARAMS.minSize + sizeRand * (PARAMS.maxSize - PARAMS.minSize);
+                
+                // Distance factor based on size (larger = "closer")
+                const dist = (size - PARAMS.minSize) / (PARAMS.maxSize - PARAMS.minSize);
+                
+                // Color based on distance (dimmer colors for "distant" stars)
+                // Add some randomness to color selection
+                const colorVariation = (Math.random() - 0.5) * 0.2;
+                const colorIdx = Math.min(
+                    Math.max(0, Math.floor((dist + colorVariation) * (PARAMS.starColors.length - 1))),
+                    PARAMS.starColors.length - 1
+                );
+                
+                // More varied opacity
+                const baseOpacity = 0.2 + Math.random() * 0.3;
+                const sizeOpacity = dist * 0.5;
+                const opacity = Math.min(1, baseOpacity + sizeOpacity);
+                
+                stars.push({
+                    x, 
+                    y, 
+                    baseX: x, 
+                    baseY: y, 
+                    size,
+                    opacity,
+                    color: hexToRgb(PARAMS.starColors[colorIdx]),
+                    velocity: PARAMS.baseSpeed * (0.3 + dist * 0.7)
+                });
+            }
+        }
+
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = PARAMS.background;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw stars
+            for (const s of stars) {
+                // Drift animation - stars wrap around edges
+                const x = (s.baseX + time * s.velocity * 0.025) % canvas.width;
+                const y = (s.baseY + time * s.velocity * 0.012) % canvas.height;
+                
+                ctx.fillStyle = `rgba(${s.color.r},${s.color.g},${s.color.b},${s.opacity})`;
+                ctx.fillRect(x, y, s.size, s.size);
+            }
+            
+            time += 16.67; // ~60fps timing
+            requestAnimationFrame(render);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="el">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,7 +25,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" href="assets/logo.png">
     <meta name="theme-color" content="#b08af0">
 
     <link rel="stylesheet" href="css/main.css">
@@ -34,31 +34,36 @@
 <body>
     <!-- Pixel Starfield Background -->
     <canvas id="starfield"></canvas>
-    
-    <!-- Pixel Corner Decorations -->
-    <div class="pixel-corner pixel-corner--top-left"></div>
-    <div class="pixel-corner pixel-corner--top-right"></div>
-    <div class="pixel-corner pixel-corner--bottom-left"></div>
-    <div class="pixel-corner pixel-corner--bottom-right"></div>
 
-    <div class="simulation-page">
+    <div class="page simulation-page">
         <!-- Navigation Bar -->
         <nav class="sim-nav">
-            <a href="index.html" class="sim-nav__brand">STEMfy<span>.gr</span></a>
-            <h1 class="sim-nav__title">Διπλό Εκκρεμές</h1>
-            <div class="sim-nav__actions">
-                <button id="tutorial-btn" class="btn btn--icon" aria-label="Οδηγός χρήσης">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">
+                    <img src="assets/logo.png" alt="STEMfy.gr logo">
+                </div>
+                <div class="logo-text">STEM<span>fy.gr</span></div>
+            </a>
+            <div class="nav-right">
+                <ul class="nav-links">
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+                <button id="tutorial-btn" class="settings-btn sim-help-btn" aria-label="Tutorial" title="Tutorial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
                         <line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
                 </button>
+                <button class="settings-btn" id="settings-btn" aria-label="Settings" title="Settings">
+                    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l1.72-1.35c.15-.12.19-.34.1-.51l-1.63-2.83c-.12-.22-.37-.29-.59-.22l-2.03.81c-.42-.32-.9-.6-1.42-.82l-.31-2.15c-.04-.24-.24-.41-.48-.41h-3.26c-.24 0-.43.17-.47.41l-.31 2.15c-.52.23-1 .5-1.42.82l-2.03-.81c-.22-.09-.47 0-.59.22L2.74 8.87c-.12.21-.08.44.1.51l1.72 1.35c-.05.3-.07.62-.07.94s.02.64.07.94l-1.72 1.35c-.15.12-.19.34-.1.51l1.63 2.83c.12.22.37.29.59.22l2.03-.81c.42.32.9.6 1.42.82l.31 2.15c.05.24.24.41.48.41h3.26c.24 0 .43-.17.47-.41l.31-2.15c.52-.23 1-.5 1.42-.82l2.03.81c.22.09.47 0 .59-.22l1.63-2.83c.12-.22.07-.44-.1-.51l-1.72-1.35zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                </button>
             </div>
         </nav>
 
         <!-- Mobile Panel Toggle Buttons -->
-        <button class="panel-toggle panel-toggle--controls" aria-label="Άνοιγμα ρυθμίσεων">
+        <button class="panel-toggle panel-toggle--controls" aria-label="Open controls" id="controls-toggle-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="4" y1="21" x2="4" y2="14"/>
                 <line x1="4" y1="10" x2="4" y2="3"/>
@@ -72,7 +77,7 @@
             </svg>
         </button>
         
-        <button class="panel-toggle panel-toggle--chaos" aria-label="Άνοιγμα χάρτη χάους">
+        <button class="panel-toggle panel-toggle--chaos" aria-label="Open chaos map" id="chaos-toggle-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <path d="M3 9h18"/>
@@ -82,12 +87,13 @@
 
         <!-- Main Content -->
         <div class="sim-content">
+            <h1 class="visually-hidden" id="pendulum-title">Double Pendulum</h1>
             <!-- Chaos Map Panel (Left) -->
-            <aside class="chaos-panel collapsed">
+            <aside class="chaos-panel open">
                 <div class="chaos-panel__header">
                     <div>
-                        <h2 class="chaos-panel__title">Χάρτης Χάους</h2>
-                        <p class="chaos-panel__subtitle">Κλικ για επιλογή αρχικών συνθηκών</p>
+                        <h2 class="chaos-panel__title" id="chaos-title">Chaos Map</h2>
+                        <p class="chaos-panel__subtitle" id="chaos-subtitle">Click to choose initial conditions</p>
                     </div>
                 </div>
                 
@@ -95,21 +101,21 @@
                     <!-- Axis Selection -->
                     <div class="axis-selection">
                         <div class="control-dropdown">
-                            <label class="control-dropdown__label" for="chaos-axis-x">Άξονας X</label>
+                            <label class="control-dropdown__label" for="chaos-axis-x" id="chaos-axis-x-label">Axis X</label>
                             <select id="chaos-axis-x" class="control-dropdown__select">
-                                <option value="theta1" selected>θ₁ (γωνία 1)</option>
-                                <option value="theta2">θ₂ (γωνία 2)</option>
-                                <option value="omega1">ω₁ (ταχύτητα 1)</option>
-                                <option value="omega2">ω₂ (ταχύτητα 2)</option>
+                                <option value="theta1" selected data-i18n="axis_theta1">&theta;&#8321; (angle 1)</option>
+                                <option value="theta2" data-i18n="axis_theta2">&theta;&#8322; (angle 2)</option>
+                                <option value="omega1" data-i18n="axis_omega1">&omega;&#8321; (angular velocity 1)</option>
+                                <option value="omega2" data-i18n="axis_omega2">&omega;&#8322; (angular velocity 2)</option>
                             </select>
                         </div>
                         <div class="control-dropdown">
-                            <label class="control-dropdown__label" for="chaos-axis-y">Άξονας Y</label>
+                            <label class="control-dropdown__label" for="chaos-axis-y" id="chaos-axis-y-label">Axis Y</label>
                             <select id="chaos-axis-y" class="control-dropdown__select">
-                                <option value="theta1">θ₁ (γωνία 1)</option>
-                                <option value="theta2" selected>θ₂ (γωνία 2)</option>
-                                <option value="omega1">ω₁ (ταχύτητα 1)</option>
-                                <option value="omega2">ω₂ (ταχύτητα 2)</option>
+                                <option value="theta1" data-i18n="axis_theta1">&theta;&#8321; (angle 1)</option>
+                                <option value="theta2" selected data-i18n="axis_theta2">&theta;&#8322; (angle 2)</option>
+                                <option value="omega1" data-i18n="axis_omega1">&omega;&#8321; (angular velocity 1)</option>
+                                <option value="omega2" data-i18n="axis_omega2">&omega;&#8322; (angular velocity 2)</option>
                             </select>
                         </div>
                     </div>
@@ -119,28 +125,27 @@
                         <canvas id="chaos-canvas"></canvas>
                         <div class="chaos-map-loading" style="display: none;">
                             <div class="chaos-map-loading__spinner"></div>
-                            <span>Υπολογισμός... 0%</span>
+                            <span id="chaos-loading-text">Computing... 0%</span>
                         </div>
                     </div>
                     
                     <!-- Legend -->
                     <div class="chaos-legend">
-                        <span style="font-size: 0.625rem; color: var(--color-gray);">Σταθερό</span>
+                        <span id="chaos-legend-stable" style="font-size: 0.625rem; color: var(--color-gray);">Stable</span>
                         <div class="chaos-legend__gradient"></div>
-                        <span style="font-size: 0.625rem; color: var(--color-gray);">Χαοτικό</span>
+                        <span id="chaos-legend-chaotic" style="font-size: 0.625rem; color: var(--color-gray);">Chaotic</span>
                     </div>
                     
                     <!-- Recompute Button -->
                     <button id="recompute-chaos" class="btn btn--secondary" style="width: 100%;">
-                        Επανυπολογισμός
+                        Recompute
                     </button>
                     
                     <!-- Info Box -->
                     <div class="info-box">
-                        <h3 class="info-box__title">Τι σημαίνει;</h3>
-                        <p class="info-box__text">
-                            Το χρώμα δείχνει πόσο «χαοτική» είναι η κίνηση για κάθε συνδυασμό αρχικών συνθηκών. 
-                            Στις χαοτικές περιοχές, μια μικροσκοπική αλλαγή στην αρχή οδηγεί σε τελείως διαφορετική κίνηση.
+                        <h3 class="info-box__title" id="chaos-info-title">What does it mean?</h3>
+                        <p class="info-box__text" id="chaos-info-text">
+                            The color shows how chaotic the motion is for each set of initial conditions. In chaotic regions, a tiny change at the start leads to a completely different path.
                         </p>
                     </div>
                 </div>
@@ -156,8 +161,8 @@
             <!-- Control Panel (Right) -->
             <aside class="control-panel">
                 <div class="control-panel__header">
-                    <h2 class="control-panel__title">Ρυθμίσεις</h2>
-                    <button id="chaos-toggle" class="btn btn--icon" aria-label="Εμφάνιση χάρτη χάους">
+                    <h2 class="control-panel__title" id="controls-title">Controls</h2>
+                    <button id="chaos-toggle" class="btn btn--icon" aria-label="Toggle chaos map">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="3" width="18" height="18" rx="2"/>
                             <path d="M3 9h18"/>
@@ -169,13 +174,13 @@
                 <div class="control-panel__content">
                     <!-- Playback Controls -->
                     <div class="playback-controls">
-                        <button id="reset-btn" class="btn btn--secondary" aria-label="Επαναφορά">
+                        <button id="reset-btn" class="btn btn--secondary" aria-label="Reset">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                                 <path d="M3 3v5h5"/>
                             </svg>
                         </button>
-                        <button id="play-btn" class="btn btn--play" aria-label="Αναπαραγωγή">
+                        <button id="play-btn" class="btn btn--play" aria-label="Play">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <polygon points="5,3 19,12 5,21"/>
                             </svg>
@@ -185,7 +190,7 @@
                     <!-- Speed Control -->
                     <div class="control-slider">
                         <div class="control-slider__header">
-                            <label class="control-slider__label" for="speed">Ταχύτητα</label>
+                            <label class="control-slider__label" for="speed" id="speed-label">Speed</label>
                             <span id="speed-value" class="control-slider__value">1x</span>
                         </div>
                         <input type="range" id="speed" class="control-slider__input" 
@@ -193,12 +198,12 @@
                     </div>
 
                     <!-- Masses -->
-                    <div class="control-section">
-                        <h3 class="control-section__title">Μάζες (kg)</h3>
+                    <div class="control-section" id="section-masses">
+                        <h3 class="control-section__title" id="section-masses-title">Masses (kg)</h3>
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="m1">m₁</label>
+                                <label class="control-slider__label" for="m1" id="label-m1">m&#8321;</label>
                                 <span id="m1-value" class="control-slider__value">1.00</span>
                             </div>
                             <input type="range" id="m1" class="control-slider__input" 
@@ -207,7 +212,7 @@
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="m2">m₂</label>
+                                <label class="control-slider__label" for="m2" id="label-m2">m&#8322;</label>
                                 <span id="m2-value" class="control-slider__value">1.00</span>
                             </div>
                             <input type="range" id="m2" class="control-slider__input" 
@@ -216,12 +221,12 @@
                     </div>
 
                     <!-- Lengths -->
-                    <div class="control-section">
-                        <h3 class="control-section__title">Μήκη (m)</h3>
+                    <div class="control-section" id="section-lengths">
+                        <h3 class="control-section__title" id="section-lengths-title">Lengths (m)</h3>
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="L1">L₁</label>
+                                <label class="control-slider__label" for="L1" id="label-L1">L&#8321;</label>
                                 <span id="L1-value" class="control-slider__value">1.00</span>
                             </div>
                             <input type="range" id="L1" class="control-slider__input" 
@@ -230,7 +235,7 @@
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="L2">L₂</label>
+                                <label class="control-slider__label" for="L2" id="label-L2">L&#8322;</label>
                                 <span id="L2-value" class="control-slider__value">1.00</span>
                             </div>
                             <input type="range" id="L2" class="control-slider__input" 
@@ -239,12 +244,12 @@
                     </div>
 
                     <!-- Initial Angles -->
-                    <div class="control-section">
-                        <h3 class="control-section__title">Αρχικές Γωνίες (°)</h3>
+                    <div class="control-section" id="section-angles">
+                        <h3 class="control-section__title" id="section-angles-title">Initial Angles (&deg;)</h3>
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="theta1">θ₁</label>
+                                <label class="control-slider__label" for="theta1" id="label-theta1">&theta;&#8321;</label>
                                 <span id="theta1-value" class="control-slider__value">90.0</span>
                             </div>
                             <input type="range" id="theta1" class="control-slider__input" 
@@ -253,7 +258,7 @@
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="theta2">θ₂</label>
+                                <label class="control-slider__label" for="theta2" id="label-theta2">&theta;&#8322;</label>
                                 <span id="theta2-value" class="control-slider__value">90.0</span>
                             </div>
                             <input type="range" id="theta2" class="control-slider__input" 
@@ -262,12 +267,12 @@
                     </div>
 
                     <!-- Initial Velocities -->
-                    <div class="control-section">
-                        <h3 class="control-section__title">Αρχικές Ταχύτητες (rad/s)</h3>
+                    <div class="control-section" id="section-velocities">
+                        <h3 class="control-section__title" id="section-velocities-title">Initial Velocities (rad/s)</h3>
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="omega1">ω₁</label>
+                                <label class="control-slider__label" for="omega1" id="label-omega1">&omega;&#8321;</label>
                                 <span id="omega1-value" class="control-slider__value">0.0</span>
                             </div>
                             <input type="range" id="omega1" class="control-slider__input" 
@@ -276,7 +281,7 @@
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="omega2">ω₂</label>
+                                <label class="control-slider__label" for="omega2" id="label-omega2">&omega;&#8322;</label>
                                 <span id="omega2-value" class="control-slider__value">0.0</span>
                             </div>
                             <input type="range" id="omega2" class="control-slider__input" 
@@ -285,12 +290,12 @@
                     </div>
 
                     <!-- Gravity -->
-                    <div class="control-section">
-                        <h3 class="control-section__title">Βαρύτητα</h3>
+                    <div class="control-section" id="section-gravity">
+                        <h3 class="control-section__title" id="section-gravity-title">Gravity</h3>
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="g">g (m/s²)</label>
+                                <label class="control-slider__label" for="g" id="label-g">g (m/s&sup2;)</label>
                                 <span id="g-value" class="control-slider__value">9.81</span>
                             </div>
                             <input type="range" id="g" class="control-slider__input" 
@@ -299,11 +304,11 @@
                     </div>
 
                     <!-- Damping -->
-                    <div class="control-section">
-                        <h3 class="control-section__title">Απόσβεση</h3>
+                    <div class="control-section" id="section-damping">
+                        <h3 class="control-section__title" id="section-damping-title">Damping</h3>
                         
                         <div class="control-toggle">
-                            <label class="control-toggle__label" for="damping-enabled">Ενεργοποίηση</label>
+                            <label class="control-toggle__label" for="damping-enabled" id="damping-enabled-label">Enable</label>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="damping-enabled">
                                 <span class="toggle-switch__slider"></span>
@@ -312,7 +317,7 @@
                         
                         <div class="control-slider" style="opacity: 0.5;">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="damping">Συντελεστής</label>
+                                <label class="control-slider__label" for="damping" id="damping-coefficient-label">Coefficient</label>
                                 <span id="damping-value" class="control-slider__value">0.00</span>
                             </div>
                             <input type="range" id="damping" class="control-slider__input" 
@@ -321,11 +326,11 @@
                     </div>
 
                     <!-- Trail -->
-                    <div class="control-section">
-                        <h3 class="control-section__title">Ίχνος</h3>
+                    <div class="control-section" id="section-trail">
+                        <h3 class="control-section__title" id="section-trail-title">Trail</h3>
                         
                         <div class="control-toggle">
-                            <label class="control-toggle__label" for="trail-enabled">Εμφάνιση ίχνους</label>
+                            <label class="control-toggle__label" for="trail-enabled" id="trail-enabled-label">Show trail</label>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="trail-enabled" checked>
                                 <span class="toggle-switch__slider"></span>
@@ -333,7 +338,7 @@
                         </div>
                         
                         <div class="control-toggle">
-                            <label class="control-toggle__label" for="trail-infinite">Άπειρο ίχνος</label>
+                            <label class="control-toggle__label" for="trail-infinite" id="trail-infinite-label">Infinite trail</label>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="trail-infinite">
                                 <span class="toggle-switch__slider"></span>
@@ -342,7 +347,7 @@
                         
                         <div class="control-slider">
                             <div class="control-slider__header">
-                                <label class="control-slider__label" for="trail-duration">Διάρκεια</label>
+                                <label class="control-slider__label" for="trail-duration" id="trail-duration-label">Duration</label>
                                 <span id="trail-duration-value" class="control-slider__value">5s</span>
                             </div>
                             <input type="range" id="trail-duration" class="control-slider__input" 
@@ -352,9 +357,37 @@
                 </div>
             </aside>
         </div>
+        <footer>
+            <p>&copy; 2025 STEMfy.gr - Made with &#10084; by three curious students</p>
+            <div class="social-links">
+                <a href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener" title="Instagram">
+                    <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settings-modal">
+        <div class="settings-modal-content">
+            <div class="settings-header">
+                <h2 id="settings-title">Settings</h2>
+                <button class="settings-close" id="settings-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="settings-body">
+                <div class="settings-group">
+                    <label for="language-select" id="language-label">Language</label>
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="el">Greek</option>
+                    </select>
+                </div></div>
+        </div>
     </div>
 
     <script src="js/starfield.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/ui.js"></script>
     <script src="js/common.js"></script>
     <script src="js/double-pendulum.js"></script>
     <script src="js/tutorial.js"></script>

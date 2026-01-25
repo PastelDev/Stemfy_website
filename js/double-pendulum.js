@@ -70,12 +70,12 @@ const CONFIG = {
     
     // Colors
     colors: {
-        pivot: '#4a9eff',
-        rod: '#2d5a8a',
-        mass1: '#7ab8ff',
-        mass2: '#4a9eff',
-        trail: '#ff6b9d',
-        trailFade: '#9d6bff'
+        pivot: '#b08af0',
+        rod: '#6a4a9e',
+        mass1: '#d4a0ff',
+        mass2: '#ff7aec',
+        trail: '#ff7aec',
+        trailFade: '#b08af0'
     }
 };
 
@@ -113,7 +113,7 @@ const state = {
     
     // UI
     controlPanelOpen: true,
-    chaosPanelOpen: false
+    chaosPanelOpen: true
 };
 
 // ============================================
@@ -296,10 +296,10 @@ function render() {
     const width = canvas.width;
     const height = canvas.height;
     const centerX = width / 2;
-    const centerY = height / 3;
+    const centerY = height * 0.38;
     
     // Clear canvas
-    ctx.fillStyle = 'rgba(10, 10, 26, 0.3)';
+    ctx.fillStyle = 'rgba(10, 8, 18, 0.35)';
     ctx.fillRect(0, 0, width, height);
     
     // Get positions
@@ -495,7 +495,7 @@ function reset() {
     
     // Clear and redraw
     if (ctx) {
-        ctx.fillStyle = '#0a0a1a';
+        ctx.fillStyle = '#0a0812';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     render();
@@ -504,18 +504,19 @@ function reset() {
 function updatePlayButton() {
     const btn = elements.playBtn;
     if (!btn) return;
+    const i18n = window.i18nManager;
     
     if (state.isPlaying) {
         btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16"/>
             <rect x="14" y="4" width="4" height="16"/>
         </svg>`;
-        btn.setAttribute('aria-label', 'Παύση');
+        btn.setAttribute('aria-label', i18n?.t('pause_label') || 'Pause');
     } else {
         btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5,3 19,12 5,21"/>
         </svg>`;
-        btn.setAttribute('aria-label', 'Αναπαραγωγή');
+        btn.setAttribute('aria-label', i18n?.t('play_label') || 'Play');
     }
 }
 
@@ -593,12 +594,8 @@ function computeChaosMap() {
     state.chaosMapComputing = true;
     showChaosLoading(true);
     
-    // Use Web Worker if available, otherwise compute in chunks
-    if (window.Worker) {
-        computeChaosMapWithWorker();
-    } else {
-        computeChaosMapDirect();
-    }
+    // Compute in chunks on the main thread
+    computeChaosMapDirect();
 }
 
 function computeChaosMapDirect() {
@@ -669,11 +666,6 @@ function computeChaosMapDirect() {
     requestAnimationFrame(computeChunk);
 }
 
-function computeChaosMapWithWorker() {
-    // For simplicity, fall back to direct computation
-    // A proper implementation would use a Web Worker
-    computeChaosMapDirect();
-}
 
 function finishChaosMap(values, maxLyapunov, resolution) {
     state.chaosMapData = {
@@ -699,7 +691,9 @@ function showChaosLoading(show) {
 function updateChaosProgress(progress) {
     const progressText = document.querySelector('.chaos-map-loading span');
     if (progressText) {
-        progressText.textContent = `Υπολογισμός... ${Math.round(progress * 100)}%`;
+        const i18n = window.i18nManager;
+        const template = i18n?.t('chaos_loading') || 'Computing... {percent}%';
+        progressText.textContent = template.replace('{percent}', Math.round(progress * 100));
     }
 }
 
@@ -782,16 +776,16 @@ function resizeCanvas() {
     if (!canvas) return;
     
     const container = canvas.parentElement;
-    const maxWidth = Math.min(container.clientWidth - 32, 600);
-    const maxHeight = Math.min(window.innerHeight - 150, 500);
-    const size = Math.min(maxWidth, maxHeight);
+    const maxWidth = Math.min(container.clientWidth - 32, 760);
+    const maxHeight = Math.min(window.innerHeight - 160, 620);
+    const size = Math.max(320, Math.min(maxWidth, maxHeight));
     
     canvas.width = size;
     canvas.height = size;
     
     // Adjust scale based on canvas size
     const totalLength = state.params.L1 + state.params.L2;
-    CONFIG.render.scale = (size * 0.35) / totalLength;
+    CONFIG.render.scale = (size * 0.42) / totalLength;
     
     render();
 }
@@ -950,6 +944,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial render
     render();
     updatePlayButton();
+
+    // Ensure chaos panel state on load
+    if (state.chaosPanelOpen) {
+        const chaosPanel = document.querySelector('.chaos-panel');
+        if (chaosPanel) {
+            chaosPanel.classList.remove('collapsed');
+            chaosPanel.classList.add('open');
+        }
+        if (!state.chaosMapData) {
+            computeChaosMap();
+        }
+    }
+
+
     
     // Initialize starfield background
     if (typeof initStarfield === 'function') {

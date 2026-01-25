@@ -1,26 +1,311 @@
-<!DOCTYPE html>
-<html lang="el">
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Προκλήσεις - STEMfy.gr</title>
+  <title>Challenges - STEMfy.gr</title>
+  <meta name="description" content="Test your skills with STEMfy.gr simulation challenges and share your results.">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" href="assets/logo.png">
   <meta name="theme-color" content="#b08af0">
   <link rel="stylesheet" href="css/main.css">
+  <style>
+    .challenges-page {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      padding: 2rem 2rem 4rem;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .page-header h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #f8f4ff 0%, #b08af0 50%, #ff7aec 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-header p {
+      color: rgba(248, 244, 255, 0.7);
+      font-size: 1.05rem;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .page-intro {
+      text-align: center;
+      color: rgba(248, 244, 255, 0.75);
+      max-width: 680px;
+      margin: 0 auto 2.75rem;
+      font-size: 1rem;
+    }
+
+    .challenges-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .challenge-card {
+      background: rgba(18, 12, 28, 0.85);
+      border: 1px solid rgba(176, 138, 240, 0.2);
+      border-radius: 24px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 320px;
+    }
+
+    .challenge-card--disabled {
+      opacity: 0.7;
+    }
+
+    .challenge-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: rgba(176, 138, 240, 0.12);
+      border: 1px solid rgba(176, 138, 240, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b08af0;
+    }
+
+    .challenge-icon svg {
+      width: 36px;
+      height: 36px;
+    }
+
+    .challenge-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .challenge-desc {
+      font-size: 0.9rem;
+      color: rgba(248, 244, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      align-self: flex-start;
+    }
+
+    .badge--live {
+      background: rgba(176, 138, 240, 0.2);
+      color: #b08af0;
+      border: 1px solid #b08af0;
+    }
+
+    .badge--soon {
+      background: rgba(154, 138, 170, 0.2);
+      color: #9a8aaa;
+      border: 1px solid #9a8aaa;
+    }
+
+    .challenge-actions {
+      margin-top: auto;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .challenge-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn--primary {
+      background: rgba(176, 138, 240, 0.2);
+      border-color: rgba(176, 138, 240, 0.45);
+      color: #f8f4ff;
+    }
+
+    .btn--primary:hover {
+      background: rgba(176, 138, 240, 0.3);
+      border-color: #b08af0;
+    }
+
+    .btn--ghost {
+      background: rgba(18, 12, 28, 0.5);
+      border-color: rgba(176, 138, 240, 0.35);
+      color: #f8f4ff;
+    }
+
+    .btn--ghost:hover {
+      background: rgba(176, 138, 240, 0.15);
+      border-color: rgba(176, 138, 240, 0.6);
+    }
+
+    .btn--disabled {
+      background: rgba(154, 138, 170, 0.15);
+      border-color: rgba(154, 138, 170, 0.35);
+      color: #9a8aaa;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
-  <div class="wrap">
-    <div class="card">
-      <h1>Προκλήσεις</h1>
-      <p>Έρχεται σύντομα - εβδομαδιαίες προκλήσεις, κατατάξεις και βραβεία.</p>
-      <a href="index.html">&larr; Πίσω στην αρχική</a>
+
+  <div class="page">
+    <nav>
+      <a href="index.html" class="logo">
+        <div class="logo-icon">
+          <img src="assets/logo.png" alt="STEMfy.gr logo">
+        </div>
+        <div class="logo-text">STEM<span>fy.gr</span></div>
+      </a>
+      <div class="nav-right">
+        <ul class="nav-links">
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <button class="settings-btn" id="settings-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l1.72-1.35c.15-.12.19-.34.1-.51l-1.63-2.83c-.12-.22-.37-.29-.59-.22l-2.03.81c-.42-.32-.9-.6-1.42-.82l-.31-2.15c-.04-.24-.24-.41-.48-.41h-3.26c-.24 0-.43.17-.47.41l-.31 2.15c-.52.23-1 .5-1.42.82l-2.03-.81c-.22-.09-.47 0-.59.22L2.74 8.87c-.12.21-.08.44.1.51l1.72 1.35c-.05.3-.07.62-.07.94s.02.64.07.94l-1.72 1.35c-.15.12-.19.34-.1.51l1.63 2.83c.12.22.37.29.59.22l2.03-.81c.42.32.9.6 1.42.82l.31 2.15c.05.24.24.41.48.41h3.26c.24 0 .43-.17.47-.41l.31-2.15c.52-.23 1-.5 1.42-.82l2.03.81c.22.09.47 0 .59-.22l1.63-2.83c.12-.22.07-.44-.1-.51l-1.72-1.35zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
+    </nav>
+
+    <main class="challenges-page">
+      <header class="page-header">
+        <h1 id="challenges-title">Challenges</h1>
+        <p id="challenges-subtitle">Test your skills with our simulation challenges</p>
+      </header>
+      <p class="page-intro" id="challenges-intro">Complete challenges using our simulations and share your results on Instagram!</p>
+
+      <div class="challenges-grid">
+        <article class="challenge-card">
+          <div class="challenge-icon">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
+              <circle cx="32" cy="10" r="5" fill="currentColor" stroke="none"/>
+              <line x1="32" y1="15" x2="22" y2="36" />
+              <circle cx="22" cy="36" r="6" fill="currentColor" stroke="none"/>
+              <line x1="22" y1="42" x2="40" y2="56" />
+              <circle cx="40" cy="56" r="6" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <span class="badge badge--live" id="challenge-pendulum-badge">Available</span>
+          <h3 class="challenge-title" id="challenge-pendulum-title">Pendulum Trajectory</h3>
+          <p class="challenge-desc" id="challenge-pendulum-desc">Find the most beautiful double pendulum trajectory pattern</p>
+          <div class="challenge-actions">
+            <a href="double-pendulum.html" class="btn btn--primary" id="challenge-pendulum-try">Try Simulation</a>
+            <a href="https://instagram.com/stemfy.gr" class="btn btn--ghost" target="_blank" rel="noopener" id="challenge-pendulum-submit">Submit on Instagram</a>
+          </div>
+        </article>
+
+        <article class="challenge-card">
+          <div class="challenge-icon">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
+              <rect x="12" y="12" width="40" height="40" rx="6" />
+              <path d="M20 40 C28 28, 36 44, 44 24" />
+              <circle cx="24" cy="30" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="40" cy="34" r="2" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <span class="badge badge--live" id="challenge-chaos-badge">Available</span>
+          <h3 class="challenge-title" id="challenge-chaos-title">Chaos Map Explorer</h3>
+          <p class="challenge-desc" id="challenge-chaos-desc">Discover interesting shapes in the chaos map</p>
+          <div class="challenge-actions">
+            <a href="double-pendulum.html" class="btn btn--primary" id="challenge-chaos-try">Try Simulation</a>
+            <a href="https://instagram.com/stemfy.gr" class="btn btn--ghost" target="_blank" rel="noopener" id="challenge-chaos-submit">Submit on Instagram</a>
+          </div>
+        </article>
+
+        <article class="challenge-card challenge-card--disabled">
+          <div class="challenge-icon">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
+              <circle cx="32" cy="32" r="22" />
+              <circle cx="32" cy="32" r="12" />
+              <circle cx="32" cy="32" r="4" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <span class="badge badge--soon" id="challenge-mandelbrot-badge">Coming Soon</span>
+          <h3 class="challenge-title" id="challenge-mandelbrot-title">Mandelbrot Zoom</h3>
+          <p class="challenge-desc" id="challenge-mandelbrot-desc">Find the most stunning Mandelbrot zoom location</p>
+          <div class="challenge-actions">
+            <span class="btn btn--disabled" id="challenge-mandelbrot-soon">Coming Soon</span>
+          </div>
+        </article>
+
+        <article class="challenge-card challenge-card--disabled">
+          <div class="challenge-icon">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
+              <path d="M8 44 L20 28 L32 44 L44 24 L56 44" />
+              <rect x="10" y="44" width="44" height="6" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <span class="badge badge--soon" id="challenge-bridge-badge">Coming Soon</span>
+          <h3 class="challenge-title" id="challenge-bridge-title">Bridge Master</h3>
+          <p class="challenge-desc" id="challenge-bridge-desc">Build the most durable bridge with limited materials</p>
+          <div class="challenge-actions">
+            <span class="btn btn--disabled" id="challenge-bridge-soon">Coming Soon</span>
+          </div>
+        </article>
+      </div>
+    </main>
+
+    <footer>
+      <p>&copy; 2025 STEMfy.gr - Made with &#10084; by three curious students</p>
+      <div class="social-links">
+        <a href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener" title="Instagram">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="settings-modal" id="settings-modal">
+    <div class="settings-modal-content">
+      <div class="settings-header">
+        <h2 id="settings-title">Settings</h2>
+        <button class="settings-close" id="settings-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-group">
+          <label for="language-select" id="language-label">Language</label>
+          <select id="language-select">
+            <option value="en">English</option>
+            <option value="el">Ελληνικά</option>
+          </select>
+        </div></div>
     </div>
   </div>
 
   <script src="js/starfield.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/ui.js"></script>
 </body>
 </html>
+

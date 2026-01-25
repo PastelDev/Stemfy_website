@@ -1,22 +1,22 @@
-<!DOCTYPE html>
-<html lang="el">
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>STEMfy.gr - STEM για Σένα</title>
-  <meta name="description" content="Διαδραστικές προσομοιώσεις φυσικής και μαθηματικών. Εξερεύνησε, μάθε, δημιούργησε.">
+  <title>STEMfy.gr - STEM for you</title>
+  <meta name="description" content="Interactive simulations of physics and mathematics. Explore, learn, create.">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="STEMfy.gr - STEM για Σένα">
-  <meta property="og:description" content="Διαδραστικές προσομοιώσεις φυσικής και μαθηματικών για εκπαιδευτικούς σκοπούς.">
+  <meta property="og:title" content="STEMfy.gr - STEM for you">
+  <meta property="og:description" content="Interactive simulations of physics and mathematics for educational purposes.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pasteldev.github.io">
   <meta property="og:image" content="https://pasteldev.github.io/assets/pfp.jpg">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="STEMfy.gr - STEM για Σένα">
-  <meta name="twitter:description" content="Διαδραστικές προσομοιώσεις φυσικής και μαθηματικών για εκπαιδευτικούς σκοπούς.">
+  <meta name="twitter:title" content="STEMfy.gr - STEM for you">
+  <meta name="twitter:description" content="Interactive simulations of physics and mathematics for educational purposes.">
   <meta name="twitter:image" content="https://pasteldev.github.io/assets/pfp.jpg">
 
   <!-- Fonts -->
@@ -25,7 +25,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" href="assets/logo.png">
   <meta name="theme-color" content="#b08af0">
 
   <link rel="stylesheet" href="css/main.css">
@@ -38,83 +38,86 @@
     <nav>
       <a href="index.html" class="logo">
         <div class="logo-icon">
-          <svg viewBox="0 0 100 100" fill="none">
-            <defs>
-              <linearGradient id="galaxyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#6a4a9e"/>
-                <stop offset="50%" style="stop-color:#b08af0"/>
-                <stop offset="100%" style="stop-color:#d4a0ff"/>
-              </linearGradient>
-            </defs>
-            <circle cx="50" cy="50" r="48" fill="#0a0812" stroke="url(#galaxyGrad)" stroke-width="1"/>
-            <ellipse cx="50" cy="50" rx="40" ry="15" fill="none" stroke="url(#galaxyGrad)" stroke-width="2" transform="rotate(-30 50 50)"/>
-            <ellipse cx="50" cy="50" rx="30" ry="10" fill="none" stroke="url(#galaxyGrad)" stroke-width="2" transform="rotate(-30 50 50)"/>
-            <ellipse cx="50" cy="50" rx="20" ry="6" fill="none" stroke="url(#galaxyGrad)" stroke-width="2" transform="rotate(-30 50 50)"/>
-            <circle cx="50" cy="50" r="8" fill="url(#galaxyGrad)"/>
-          </svg>
+          <img src="assets/logo.png" alt="STEMfy.gr logo">
         </div>
         <div class="logo-text">STEM<span>fy.gr</span></div>
       </a>
-      <ul class="nav-links">
-        <li><a href="about.html">Σχετικά</a></li>
-        <li><a href="contact.html">Επικοινωνία</a></li>
-      </ul>
+      <div class="nav-right">
+        <ul class="nav-links">
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <button class="settings-btn" id="settings-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l1.72-1.35c.15-.12.19-.34.1-.51l-1.63-2.83c-.12-.22-.37-.29-.59-.22l-2.03.81c-.42-.32-.9-.6-1.42-.82l-.31-2.15c-.04-.24-.24-.41-.48-.41h-3.26c-.24 0-.43.17-.47.41l-.31 2.15c-.52.23-1 .5-1.42.82l-2.03-.81c-.22-.09-.47 0-.59.22L2.74 8.87c-.12.21-.08.44.1.51l1.72 1.35c-.05.3-.07.62-.07.94s.02.64.07.94l-1.72 1.35c-.15.12-.19.34-.1.51l1.63 2.83c.12.22.37.29.59.22l2.03-.81c.42.32.9.6 1.42.82l.31 2.15c.05.24.24.41.48.41h3.26c.24 0 .43-.17.47-.41l.31-2.15c.52-.23 1-.5 1.42-.82l2.03.81c.22.09.47 0 .59-.22l1.63-2.83c.12-.22.07-.44-.1-.51l-1.72-1.35zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
     </nav>
 
-    <section class="hero">
-      <div class="hero-badge">
-        <span class="pulse"></span>
-        Τώρα Διαθέσιμο - Προσομοίωση Διπλού Εκκρεμούς
-      </div>
-      <h1>Κάνε το STEM Εθιστικό</h1>
+        <section class="hero">
+      <h1>Make STEM addictive</h1>
       <p class="tagline">
-        <strong>Τρία μυαλά. Μία αποστολή.</strong> Διαδραστικές προσομοιώσεις, επιστημονικά νέα
-        και προκλήσεις που κάνουν τη μάθηση αδύνατη να αγνοηθεί.
+        <strong>Three minds. One mission.</strong> Interactive simulations, scientific news and challenges that make learning impossible to ignore.
       </p>
 
       <div class="nav-cards">
         <a href="simulations.html" class="nav-card">
-          <div class="icon"><img src="icons/rocket.png" alt="Προσομοιώσεις"></div>
-          <h3>Προσομοιώσεις</h3>
-          <p>Διαδραστικές απεικονίσεις φυσικής &amp; μαθηματικών</p>
+          <div class="icon"><img src="icons/rocket.png" alt="Simulations"></div>
+          <h3>Simulations</h3>
+          <p>Interactive visualizations of physics &amp; mathematics</p>
         </a>
 
         <a href="news.html" class="nav-card">
-          <div class="icon"><img src="icons/news.png" alt="Νέα"></div>
-          <h3>Νέα</h3>
-          <p>Τα τελευταία επιστημονικά επιτεύγματα εξηγημένα</p>
+          <div class="icon"><img src="icons/news.png" alt="News"></div>
+          <h3>News</h3>
+          <p>Latest scientific news, simple and understandable</p>
         </a>
 
         <a href="challenges.html" class="nav-card">
-          <div class="icon"><img src="icons/trophy.png" alt="Προκλήσεις"></div>
-          <h3>Προκλήσεις</h3>
-          <p>Δοκίμασε τις γνώσεις σου &amp; διαγωνίσου</p>
+          <div class="icon"><img src="icons/trophy.png" alt="Challenges"></div>
+          <h3>Challenges</h3>
+          <p>Test your knowledge &amp; compete</p>
         </a>
 
-        <a href="philosophy.html" class="nav-card">
-          <div class="icon"><img src="icons/owl.png" alt="Φιλοσοφία"></div>
-          <h3>Φιλοσοφία</h3>
-          <p>AI, ηθική &amp; τα μεγάλα ερωτήματα</p>
+        <a href="posts.html" class="nav-card">
+          <div class="icon"><img src="assets/heart_icon.png" alt="Posts"></div>
+          <h3>Posts</h3>
+          <p>Thoughts, insights &amp; discoveries</p>
         </a>
       </div>
     </section>
 
     <footer>
-      <p>&copy; 2025 STEMfy.gr - Φτιαγμένο με αγάπη από τρεις περίεργους μαθητές</p>
+      <p>&copy; 2025 STEMfy.gr - Made with &#10084; by three curious students</p>
       <div class="social-links">
         <a href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener" title="Instagram">
           <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-        </a>
-        <a href="#" title="YouTube">
-          <svg viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-        </a>
-        <a href="#" title="TikTok">
-          <svg viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
         </a>
       </div>
     </footer>
   </div>
 
+  <!-- Settings Modal -->
+  <div class="settings-modal" id="settings-modal">
+    <div class="settings-modal-content">
+      <div class="settings-header">
+        <h2 id="settings-title">Settings</h2>
+        <button class="settings-close" id="settings-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-group">
+          <label for="language-select" id="language-label">Language</label>
+          <select id="language-select">
+            <option value="en">English</option>
+            <option value="el">Ελληνικά</option>
+          </select>
+        </div></div>
+    </div>
+  </div>
+
   <script src="js/starfield.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/ui.js"></script>
 </body>
 </html>
+
+

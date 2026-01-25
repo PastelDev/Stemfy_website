@@ -1,10 +1,10 @@
-<!DOCTYPE html>
-<html lang="el">
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Προσομοιώσεις - STEMfy.gr</title>
-  <meta name="description" content="Διαδραστικές προσομοιώσεις φυσικής και μαθηματικών. Εξερεύνησε το χάος, τα fractals και πολλά άλλα.">
+  <title>Simulations - STEMfy.gr</title>
+  <meta name="description" content="Interactive visualizations of physics and mathematics for exploration and learning.">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" href="assets/logo.png">
   <meta name="theme-color" content="#b08af0">
 
   <link rel="stylesheet" href="css/main.css">
@@ -20,14 +20,14 @@
     .simulations-page {
       position: relative;
       z-index: 1;
-      min-height: 100vh;
-      padding: 2rem;
+      flex: 1;
+      padding: 2rem 2rem 4rem;
     }
 
     .simulations-header {
       text-align: center;
       margin-bottom: 3rem;
-      padding-top: 2rem;
+      padding-top: 1rem;
     }
 
     .simulations-header h1 {
@@ -157,63 +157,113 @@
 <body>
   <canvas id="starfield"></canvas>
 
-  <div class="simulations-page">
-    <header class="simulations-header">
-      <h1>Προσομοιώσεις</h1>
-      <p>Διαδραστικές απεικονίσεις φυσικής &amp; μαθηματικών για εξερεύνηση και μάθηση</p>
-    </header>
-
-    <div class="sims-grid">
-      <a href="double-pendulum.html" class="sim-tile">
-        <div class="icon">
-          <svg viewBox="0 0 64 64" fill="none">
-            <circle cx="32" cy="8" r="4" fill="currentColor"/>
-            <line x1="32" y1="12" x2="24" y2="32" stroke="currentColor" stroke-width="3"/>
-            <circle cx="24" cy="32" r="5" fill="currentColor"/>
-            <line x1="24" y1="37" x2="36" y2="56" stroke="currentColor" stroke-width="3"/>
-            <circle cx="36" cy="56" r="5" fill="currentColor"/>
-          </svg>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="logo">
+        <div class="logo-icon">
+          <img src="assets/logo.png" alt="STEMfy.gr logo">
         </div>
-        <h3>Διπλό Εκκρεμές</h3>
-        <p>Εξερεύνησε το χάος σε ένα απλό σύστημα. Δες πώς μικρές αλλαγές οδηγούν σε τελείως διαφορετικά αποτελέσματα.</p>
-        <span class="badge badge--live">Διαθέσιμο</span>
+        <div class="logo-text">STEM<span>fy.gr</span></div>
       </a>
+      <div class="nav-right">
+        <ul class="nav-links">
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <button class="settings-btn" id="settings-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l1.72-1.35c.15-.12.19-.34.1-.51l-1.63-2.83c-.12-.22-.37-.29-.59-.22l-2.03.81c-.42-.32-.9-.6-1.42-.82l-.31-2.15c-.04-.24-.24-.41-.48-.41h-3.26c-.24 0-.43.17-.47.41l-.31 2.15c-.52.23-1 .5-1.42.82l-2.03-.81c-.22-.09-.47 0-.59.22L2.74 8.87c-.12.21-.08.44.1.51l1.72 1.35c-.05.3-.07.62-.07.94s.02.64.07.94l-1.72 1.35c-.15.12-.19.34-.1.51l1.63 2.83c.12.22.37.29.59.22l2.03-.81c.42.32.9.6 1.42.82l.31 2.15c.05.24.24.41.48.41h3.26c.24 0 .43-.17.47-.41l.31-2.15c.52-.23 1-.5 1.42-.82l2.03.81c.22.09.47 0 .59-.22l1.63-2.83c.12-.22.07-.44-.1-.51l-1.72-1.35zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
+    </nav>
 
-      <div class="sim-tile sim-tile--disabled">
-        <div class="icon">
-          <svg viewBox="0 0 64 64" fill="none">
-            <rect x="8" y="48" width="48" height="4" fill="currentColor"/>
-            <path d="M12 48 L20 32 L32 40 L44 24 L52 48" stroke="currentColor" stroke-width="3" fill="none"/>
-            <circle cx="20" cy="32" r="3" fill="currentColor"/>
-            <circle cx="32" cy="40" r="3" fill="currentColor"/>
-            <circle cx="44" cy="24" r="3" fill="currentColor"/>
-          </svg>
+    <main class="simulations-page">
+      <header class="simulations-header">
+        <h1 id="simulations-title">Simulations</h1>
+        <p id="simulations-subtitle">Interactive visualizations of physics &amp; mathematics for exploration and learning</p>
+      </header>
+
+      <div class="sims-grid">
+        <a href="double-pendulum.html" class="sim-tile">
+          <div class="icon">
+            <svg viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="8" r="4" fill="currentColor"/>
+              <line x1="32" y1="12" x2="24" y2="32" stroke="currentColor" stroke-width="3"/>
+              <circle cx="24" cy="32" r="5" fill="currentColor"/>
+              <line x1="24" y1="37" x2="36" y2="56" stroke="currentColor" stroke-width="3"/>
+              <circle cx="36" cy="56" r="5" fill="currentColor"/>
+            </svg>
+          </div>
+          <h3 id="sim-pendulum-title">Double Pendulum</h3>
+          <p id="sim-pendulum-desc">Explore chaos in a simple system. See how small changes lead to completely different outcomes.</p>
+          <span class="badge badge--live" id="sim-pendulum-badge">Available</span>
+        </a>
+
+        <div class="sim-tile sim-tile--disabled">
+          <div class="icon">
+            <svg viewBox="0 0 64 64" fill="none">
+              <rect x="8" y="48" width="48" height="4" fill="currentColor"/>
+              <path d="M12 48 L20 32 L32 40 L44 24 L52 48" stroke="currentColor" stroke-width="3" fill="none"/>
+              <circle cx="20" cy="32" r="3" fill="currentColor"/>
+              <circle cx="32" cy="40" r="3" fill="currentColor"/>
+              <circle cx="44" cy="24" r="3" fill="currentColor"/>
+            </svg>
+          </div>
+          <h3 id="sim-bridge-title">Bridge Builder</h3>
+          <p id="sim-bridge-desc">Design and test bridges. Learn about structural engineering and material stress.</p>
+          <span class="badge badge--soon" id="sim-bridge-badge">Coming Soon</span>
         </div>
-        <h3>Κατασκευαστής Γεφυρών</h3>
-        <p>Σχεδίασε και δοκίμασε γέφυρες. Μάθε για τη δομική μηχανική και την καταπόνηση υλικών.</p>
-        <span class="badge badge--soon">Έρχεται Σύντομα</span>
+
+        <div class="sim-tile sim-tile--disabled">
+          <div class="icon">
+            <svg viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="24" stroke="currentColor" stroke-width="2" fill="none"/>
+              <circle cx="32" cy="32" r="16" stroke="currentColor" stroke-width="2" fill="none"/>
+              <circle cx="32" cy="32" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
+              <circle cx="32" cy="32" r="3" fill="currentColor"/>
+            </svg>
+          </div>
+          <h3 id="sim-mandelbrot-title">Mandelbrot Set</h3>
+          <p id="sim-mandelbrot-desc">Dive into infinite complexity. Explore the most famous fractal in mathematics.</p>
+          <span class="badge badge--soon" id="sim-mandelbrot-badge">Coming Soon</span>
+        </div>
       </div>
 
-      <div class="sim-tile sim-tile--disabled">
-        <div class="icon">
-          <svg viewBox="0 0 64 64" fill="none">
-            <circle cx="32" cy="32" r="24" stroke="currentColor" stroke-width="2" fill="none"/>
-            <circle cx="32" cy="32" r="16" stroke="currentColor" stroke-width="2" fill="none"/>
-            <circle cx="32" cy="32" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
-            <circle cx="32" cy="32" r="3" fill="currentColor"/>
-          </svg>
-        </div>
-        <h3>Σύνολο Mandelbrot</h3>
-        <p>Βουτιά στην άπειρη πολυπλοκότητα. Εξερεύνησε το πιο διάσημο fractal στα μαθηματικά.</p>
-        <span class="badge badge--soon">Έρχεται Σύντομα</span>
+      <div class="back-home">
+        <a href="index.html" id="simulations-back-link">&larr; Back to Home</a>
       </div>
-    </div>
+    </main>
 
-    <div class="back-home">
-      <a href="index.html">&larr; Πίσω στην Αρχική</a>
+    <footer>
+      <p>&copy; 2025 STEMfy.gr - Made with &#10084; by three curious students</p>
+      <div class="social-links">
+        <a href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener" title="Instagram">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="settings-modal" id="settings-modal">
+    <div class="settings-modal-content">
+      <div class="settings-header">
+        <h2 id="settings-title">Settings</h2>
+        <button class="settings-close" id="settings-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-group">
+          <label for="language-select" id="language-label">Language</label>
+          <select id="language-select">
+            <option value="en">English</option>
+            <option value="el">Ελληνικά</option>
+          </select>
+        </div></div>
     </div>
   </div>
 
   <script src="js/starfield.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/ui.js"></script>
 </body>
 </html>
+

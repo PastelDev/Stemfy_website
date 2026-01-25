@@ -1,206 +1,10 @@
 /* ============================================
    STEMfy.gr — Common JavaScript
-   Starfield, Galaxy Logo, and Shared Utilities
+   Shared Utilities
    ============================================ */
 
-/**
- * Initialize animated pixel starfield background
- * @param {string} canvasId - Canvas element ID
- */
-function initStarfield(canvasId) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    let stars = [];
-    let animationId;
-    
-    // Resize canvas to window
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        generateStars();
-    }
-    
-    // Generate star positions
-    function generateStars() {
-        stars = [];
-        const numStars = Math.floor((canvas.width * canvas.height) / 4000);
 
-        for (let i = 0; i < numStars; i++) {
-            // Color distribution: 30% white, 20% pink, 50% purple
-            const colorRand = Math.random();
-            let hue, saturation;
 
-            if (colorRand < 0.3) {
-                // White/lavender pixels
-                hue = 270;
-                saturation = 10 + Math.random() * 15;
-            } else if (colorRand < 0.5) {
-                // Pink/magenta pixels (hue 300-320)
-                hue = 300 + Math.random() * 20;
-                saturation = 40 + Math.random() * 40;
-            } else {
-                // Purple pixels (hue 260-290)
-                hue = 260 + Math.random() * 30;
-                saturation = 45 + Math.random() * 40;
-            }
-
-            stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() < 0.9 ? 1 : Math.random() < 0.95 ? 2 : 3,
-                brightness: Math.random(),
-                twinkleSpeed: 0.005 + Math.random() * 0.015,
-                twinkleOffset: Math.random() * Math.PI * 2,
-                hue: hue,
-                saturation: saturation
-            });
-        }
-    }
-    
-    // Draw frame
-    function draw(time) {
-        ctx.fillStyle = '#0a0812';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        stars.forEach(star => {
-            // Twinkle effect
-            const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
-            const alpha = 0.3 + star.brightness * 0.5 + twinkle * 0.2;
-            
-            if (star.saturation === 0) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            } else {
-                ctx.fillStyle = `hsla(${star.hue}, ${star.saturation}%, 80%, ${alpha})`;
-            }
-            
-            // Pixel-perfect rendering
-            const x = Math.floor(star.x);
-            const y = Math.floor(star.y);
-            ctx.fillRect(x, y, star.size, star.size);
-        });
-        
-        animationId = requestAnimationFrame(draw);
-    }
-    
-    // Initialize
-    resize();
-    window.addEventListener('resize', resize);
-    animationId = requestAnimationFrame(draw);
-    
-    // Cleanup function
-    return () => {
-        window.removeEventListener('resize', resize);
-        cancelAnimationFrame(animationId);
-    };
-}
-
-/**
- * Initialize pixel art galaxy logo
- * @param {string} canvasId - Canvas element ID
- */
-function initGalaxyLogo(canvasId) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    const size = canvas.width;
-    const center = size / 2;
-    
-    // Galaxy parameters
-    const arms = 2;
-    const pixelSize = 4;
-    const numParticles = 800;
-    
-    let particles = [];
-    let animationId;
-    let rotation = 0;
-    
-    // Generate galaxy particles
-    function generateGalaxy() {
-        particles = [];
-        
-        for (let i = 0; i < numParticles; i++) {
-            // Logarithmic spiral
-            const arm = i % arms;
-            const armOffset = (arm / arms) * Math.PI * 2;
-            
-            const t = Math.random();
-            const r = t * (size * 0.4);
-            const spread = (1 - t) * 0.8 + 0.2;
-            
-            // Base angle on spiral
-            const spiralAngle = armOffset + t * Math.PI * 3;
-            
-            // Add randomness
-            const angle = spiralAngle + (Math.random() - 0.5) * spread;
-            const radiusJitter = r + (Math.random() - 0.5) * 20 * spread;
-            
-            const brightness = 0.3 + Math.random() * 0.7 * (1 - t * 0.5);
-            
-            particles.push({
-                angle: angle,
-                radius: Math.max(2, radiusJitter),
-                brightness: brightness,
-                size: Math.random() < 0.9 ? pixelSize : pixelSize * 1.5,
-                // Core particles are brighter and whiter
-                isCore: t < 0.15,
-                hue: 270 + Math.random() * 30
-            });
-        }
-
-        // Add central glow particles
-        for (let i = 0; i < 50; i++) {
-            const r = Math.random() * 15;
-            const angle = Math.random() * Math.PI * 2;
-            particles.push({
-                angle: angle,
-                radius: r,
-                brightness: 0.8 + Math.random() * 0.2,
-                size: pixelSize,
-                isCore: true,
-                hue: 280
-            });
-        }
-    }
-    
-    // Draw frame
-    function draw() {
-        ctx.clearRect(0, 0, size, size);
-        
-        // Slow rotation
-        rotation += 0.002;
-        
-        particles.forEach(p => {
-            const x = center + Math.cos(p.angle + rotation) * p.radius;
-            const y = center + Math.sin(p.angle + rotation) * p.radius;
-            
-            // Pixel-perfect positions
-            const px = Math.floor(x / pixelSize) * pixelSize;
-            const py = Math.floor(y / pixelSize) * pixelSize;
-            
-            if (p.isCore) {
-                ctx.fillStyle = `rgba(220, 200, 255, ${p.brightness})`;
-            } else {
-                ctx.fillStyle = `hsla(${p.hue}, 70%, 70%, ${p.brightness})`;
-            }
-            
-            ctx.fillRect(px, py, p.size, p.size);
-        });
-        
-        animationId = requestAnimationFrame(draw);
-    }
-    
-    // Initialize
-    generateGalaxy();
-    animationId = requestAnimationFrame(draw);
-    
-    // Cleanup function
-    return () => {
-        cancelAnimationFrame(animationId);
-    };
-}
 
 /**
  * Format number with specified decimal places
@@ -263,37 +67,6 @@ function degToRad(degrees) {
  */
 function radToDeg(radians) {
     return radians * 180 / Math.PI;
-}
-
-/**
- * HSL to RGB conversion for canvas rendering
- * @param {number} h - Hue (0-360)
- * @param {number} s - Saturation (0-100)
- * @param {number} l - Lightness (0-100)
- * @returns {object} {r, g, b} values 0-255
- */
-function hslToRgb(h, s, l) {
-    s /= 100;
-    l /= 100;
-    
-    const c = (1 - Math.abs(2 * l - 1)) * s;
-    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-    const m = l - c / 2;
-    
-    let r, g, b;
-    
-    if (h < 60) { r = c; g = x; b = 0; }
-    else if (h < 120) { r = x; g = c; b = 0; }
-    else if (h < 180) { r = 0; g = c; b = x; }
-    else if (h < 240) { r = 0; g = x; b = c; }
-    else if (h < 300) { r = x; g = 0; b = c; }
-    else { r = c; g = 0; b = x; }
-    
-    return {
-        r: Math.round((r + m) * 255),
-        g: Math.round((g + m) * 255),
-        b: Math.round((b + m) * 255)
-    };
 }
 
 /**
@@ -364,15 +137,12 @@ function throttle(func, limit) {
 // Export for use in other modules (if using modules)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-        initStarfield,
-        initGalaxyLogo,
         formatNumber,
         clamp,
         lerp,
         mapRange,
         degToRad,
         radToDeg,
-        hslToRgb,
         getChaosColor,
         debounce,
         throttle

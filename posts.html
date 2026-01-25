@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contact - STEMfy.gr</title>
-  <meta name="description" content="Get in touch with STEMfy.gr via Instagram or email.">
+  <title>Posts - STEMfy.gr</title>
+  <meta name="description" content="Thoughts, insights, and educational resources from STEMfy.gr.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,19 +13,16 @@
   <meta name="theme-color" content="#b08af0">
   <link rel="stylesheet" href="css/main.css">
   <style>
-    .contact-page {
+    .posts-page {
       position: relative;
       z-index: 1;
       flex: 1;
       padding: 2rem 2rem 4rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
 
     .page-header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
     }
 
     .page-header h1 {
@@ -42,76 +39,87 @@
     .page-header p {
       color: rgba(248, 244, 255, 0.7);
       font-size: 1.05rem;
-      max-width: 520px;
+      max-width: 620px;
       margin: 0 auto;
     }
 
-    .contact-card {
+    .posts-section {
       background: rgba(18, 12, 28, 0.85);
       border: 1px solid rgba(176, 138, 240, 0.25);
       border-radius: 24px;
       padding: 2rem;
-      width: min(520px, 100%);
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
+      margin: 0 auto 2rem;
+      max-width: 1050px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
     }
 
-    .contact-item {
+    .section-heading {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-desc {
+      color: rgba(248, 244, 255, 0.7);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .posts-grid,
+    .resources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .post-card,
+    .resource-card {
+      background: rgba(18, 12, 28, 0.65);
+      border: 1px dashed rgba(176, 138, 240, 0.35);
+      border-radius: 18px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      min-height: 220px;
+      justify-content: center;
+    }
+
+    .post-media {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      background: rgba(176, 138, 240, 0.12);
+      border: 1px dashed rgba(176, 138, 240, 0.4);
       display: flex;
       align-items: center;
-      gap: 1rem;
-      padding: 1rem 1.25rem;
+      justify-content: center;
+      color: rgba(248, 244, 255, 0.7);
+      font-size: 0.85rem;
+    }
+
+    .resource-icon {
+      width: 60px;
+      height: 60px;
       border-radius: 16px;
-      border: 1px solid rgba(176, 138, 240, 0.2);
-      text-decoration: none;
-      color: #f8f4ff;
-      background: rgba(18, 12, 28, 0.65);
-      transition: all 0.3s ease;
-    }
-
-    .contact-item:hover {
-      border-color: rgba(176, 138, 240, 0.5);
-      background: rgba(176, 138, 240, 0.12);
-      transform: translateY(-2px);
-    }
-
-    .contact-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      background: rgba(176, 138, 240, 0.15);
+      border: 1px solid rgba(176, 138, 240, 0.35);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #b08af0;
-      background: rgba(176, 138, 240, 0.15);
-      border: 1px solid rgba(176, 138, 240, 0.3);
-      flex-shrink: 0;
     }
 
-    .contact-icon svg {
-      width: 22px;
-      height: 22px;
+    .resource-icon svg {
+      width: 28px;
+      height: 28px;
     }
 
-    .contact-text {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .contact-label {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: rgba(248, 244, 255, 0.65);
-      font-weight: 600;
-    }
-
-    .contact-value {
-      font-size: 1rem;
-      font-weight: 600;
+    .posts-placeholder-text {
+      color: rgba(248, 244, 255, 0.7);
+      font-size: 0.9rem;
     }
   </style>
 </head>
@@ -137,40 +145,70 @@
       </div>
     </nav>
 
-    <main class="contact-page">
+    <main class="posts-page">
       <header class="page-header">
-        <h1 id="contact-title">Contact</h1>
-        <p id="contact-subtitle">Get in touch with us</p>
+        <h1 id="posts-title">Posts</h1>
+        <p id="posts-subtitle">Thoughts, insights &amp; discoveries</p>
       </header>
 
-      <div class="contact-card">
-        <a class="contact-item" href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener">
-          <div class="contact-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-            </svg>
+      <section class="posts-section">
+        <h2 class="section-heading" id="posts-instagram-title">From Instagram</h2>
+        <p class="section-desc" id="posts-instagram-desc">Our latest posts from @stemfy.gr</p>
+        <div class="posts-grid">
+          <div class="post-card">
+            <div class="post-media">Instagram Post</div>
+            <p class="posts-placeholder-text">Content coming soon!</p>
           </div>
-          <div class="contact-text">
-            <span class="contact-label" id="contact-instagram-label">Instagram</span>
-            <span class="contact-value">@stemfy.gr</span>
+          <div class="post-card">
+            <div class="post-media">Instagram Post</div>
+            <p class="posts-placeholder-text">Content coming soon!</p>
           </div>
-        </a>
+          <div class="post-card">
+            <div class="post-media">Instagram Post</div>
+            <p class="posts-placeholder-text">Content coming soon!</p>
+          </div>
+        </div>
+      </section>
 
-        <a class="contact-item" href="mailto:team@stemfy.gr">
-          <div class="contact-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
+      <section class="posts-section">
+        <h2 class="section-heading" id="posts-resources-title">Educational Resources</h2>
+        <p class="section-desc" id="posts-resources-desc">PDFs and visual guides explaining STEM concepts</p>
+        <div class="resources-grid">
+          <div class="resource-card">
+            <div class="resource-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M8 13h8" />
+                <path d="M8 17h5" />
+              </svg>
+            </div>
+            <p class="posts-placeholder-text">Content coming soon!</p>
           </div>
-          <div class="contact-text">
-            <span class="contact-label" id="contact-email-label">Email</span>
-            <span class="contact-value">team@stemfy.gr</span>
+          <div class="resource-card">
+            <div class="resource-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M8 13h8" />
+                <path d="M8 17h5" />
+              </svg>
+            </div>
+            <p class="posts-placeholder-text">Content coming soon!</p>
           </div>
-        </a>
-      </div>
+          <div class="resource-card">
+            <div class="resource-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M8 13h8" />
+                <path d="M8 17h5" />
+              </svg>
+            </div>
+            <p class="posts-placeholder-text">Content coming soon!</p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer>
