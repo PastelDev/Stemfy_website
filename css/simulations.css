@@ -124,34 +124,6 @@ body.sim-view-mobile .sim-nav .sim-help-btn {
     white-space: nowrap;
 }
 
-@media (max-width: 900px) {
-    .simulation-page .sim-nav .nav-right {
-        width: 100%;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        gap: 0.75rem;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding-bottom: 0.25rem;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .simulation-page .sim-nav .nav-right > * {
-        flex: 0 0 auto;
-    }
-
-    .simulation-page .sim-nav .nav-links {
-        flex-wrap: nowrap;
-        gap: 0.5rem;
-    }
-
-    .simulation-page .sim-nav .nav-links a,
-    .simulation-page .sim-nav .settings-btn,
-    .simulation-page .sim-nav .sim-help-btn {
-        flex: 0 0 auto;
-        white-space: nowrap;
-    }
-}
 
 /* Main Content Area */
 .sim-content {
@@ -1103,7 +1075,7 @@ body.chaos-panel-open:not(.sim-view-mobile) .simulation-page {
     background: var(--bg-panel);
     border-top: 1px solid rgba(176, 138, 240, 0.25);
     backdrop-filter: blur(12px);
-    z-index: 1100;
+    z-index: 1200;
     padding: 0 var(--space-sm);
 }
 
@@ -1181,7 +1153,7 @@ body.sim-view-mobile .chaos-panel {
     width: 100%;
     height: calc(100vh - var(--sim-nav-height) - 64px);
     top: var(--sim-nav-height);
-    bottom: 64px;
+    bottom: auto;
     left: 0;
     right: 0;
     border-radius: 0;
@@ -1191,6 +1163,7 @@ body.sim-view-mobile .chaos-panel {
     opacity: 0;
     pointer-events: none;
     transition: transform var(--transition-normal), opacity var(--transition-normal);
+    z-index: 950;
 }
 
 body.sim-view-mobile .control-panel.mobile-active,
