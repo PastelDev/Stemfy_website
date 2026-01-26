@@ -88,6 +88,9 @@ const CONFIG = {
     }
 };
 
+const PENDULUM_CANVAS_MARGIN_RATIO = 0.12;
+const PREVIEW_CANVAS_MARGIN_RATIO = 0.17;
+const LENGTH_PARAMETER_KEYS = new Set(['L1', 'L2']);
 const VIEW_STORAGE_KEY = 'pendulumViewPreference';
 const VIEW_MODES = {
     auto: 'auto',
@@ -96,6 +99,7 @@ const VIEW_MODES = {
 };
 
 const CHAOS_WARNING_STORAGE_KEY = 'pendulumChaosWarningDismissed';
+const EXPORT_TITLE_MAX_LENGTH = 60;
 
 // ============================================
 // STATE
@@ -376,6 +380,11 @@ function initViewMode() {
 let canvas, ctx;
 let chaosCanvas, chaosCtx;
 let previewCanvas, previewCtx;
+let exportCanvas, exportCtx;
+let exportVideo = {
+    active: false,
+    title: ''
+};
 let elements = {};
 let chaosWarning = {
     modal: null,
@@ -550,6 +559,33 @@ function getPosition(theta1, theta2, params) {
     return { x1, y1, x2, y2 };
 }
 
+function computePendulumScale(size, totalLength, marginRatio = PENDULUM_CANVAS_MARGIN_RATIO, fallbackScale = 1) {
+    if (size <= 0 || totalLength <= 0) {
+        return fallbackScale > 0 ? fallbackScale : 1;
+    }
+    const minMargin = 8;
+    const desiredMargin = size * marginRatio;
+    const maxMargin = size / 4;
+    const margin = Math.min(maxMargin, Math.max(desiredMargin, minMargin));
+    const usableRadius = Math.max(size / 2 - margin, 1);
+    return usableRadius / totalLength;
+}
+
+function updatePendulumScale(sizeOverride) {
+    if (!canvas) return;
+    const size = typeof sizeOverride === 'number' && sizeOverride > 0 ? sizeOverride : canvas.width;
+    const totalLength = state.params.L1 + state.params.L2;
+    if (totalLength <= 0 || size <= 0) return;
+    const fallbackScale = CONFIG.render.scale > 0 ? CONFIG.render.scale : 1;
+    const newScale = computePendulumScale(size, totalLength, PENDULUM_CANVAS_MARGIN_RATIO, fallbackScale);
+    CONFIG.render.scale = Math.max(newScale, 0.01);
+}
+
+function refreshPendulumSizing() {
+    updatePendulumScale();
+    render();
+}
+
 /**
  * Render the pendulum
  */
@@ -560,7 +596,7 @@ function render() {
     const width = canvas.width;
     const height = canvas.height;
     const centerX = width / 2;
-    const centerY = height * 0.38;
+    const centerY = height / 2;
 
     // Size-adaptive rendering: scale elements based on canvas size
     // Reference size is 400px - elements scale proportionally
@@ -680,6 +716,8 @@ function render() {
     if (state.mobilePreviewVisible) {
         renderPreview();
     }
+
+    syncExportCanvas();
 }
 
 /**
@@ -768,6 +806,191 @@ function cloneCanvas(sourceCanvas) {
         cloneCtx.drawImage(sourceCanvas, 0, 0);
     }
     return clone;
+}
+
+function sanitizeExportTitle(value) {
+    if (!value) return '';
+    return String(value)
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+        .slice(0, EXPORT_TITLE_MAX_LENGTH);
+}
+
+function splitTitleIntoLines(ctx, text, maxWidth) {
+    const words = text.split(' ').filter(Boolean);
+    if (!words.length) return [''];
+    const lines = [];
+    let current = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        const next = `${current} ${words[i]}`;
+        if (ctx.measureText(next).width <= maxWidth) {
+            current = next;
+            continue;
+        }
+        lines.push(current);
+        current = words[i];
+    }
+    lines.push(current);
+
+    const expanded = [];
+    lines.forEach((line) => {
+        if (ctx.measureText(line).width <= maxWidth) {
+            expanded.push(line);
+            return;
+        }
+        let chunk = '';
+        for (const ch of line) {
+            const next = chunk + ch;
+            if (ctx.measureText(next).width > maxWidth && chunk.length > 0) {
+                expanded.push(chunk);
+                chunk = ch;
+            } else {
+                chunk = next;
+            }
+        }
+        if (chunk) expanded.push(chunk);
+    });
+
+    return expanded;
+}
+
+function layoutTitleText(ctx, text, maxWidth, options) {
+    const minFontSize = options.minFontSize ?? 12;
+    const maxFontSize = options.maxFontSize ?? 28;
+    const maxLines = options.maxLines ?? 2;
+    let fontSize = options.fontSize ?? clamp(Math.round(Math.min(ctx.canvas.width, ctx.canvas.height) * 0.05), minFontSize, maxFontSize);
+
+    let lines = [];
+    let attempts = 0;
+
+    while (fontSize >= minFontSize && attempts < 60) {
+        ctx.font = `600 ${fontSize}px Outfit, sans-serif`;
+        lines = splitTitleIntoLines(ctx, text, maxWidth);
+        if (lines.length <= maxLines) {
+            break;
+        }
+        fontSize -= 1;
+        attempts += 1;
+    }
+
+    if (fontSize < minFontSize) {
+        fontSize = minFontSize;
+        ctx.font = `600 ${fontSize}px Outfit, sans-serif`;
+        lines = splitTitleIntoLines(ctx, text, maxWidth);
+    }
+
+    return { lines, fontSize };
+}
+
+function drawTitleBadge(ctx, text, options = {}) {
+    if (!ctx || !text) return null;
+    const canvasWidth = ctx.canvas?.width || 0;
+    const canvasHeight = ctx.canvas?.height || 0;
+    const margin = options.margin ?? Math.round(Math.min(canvasWidth, canvasHeight) * 0.04);
+    const maxWidth = options.maxWidth ?? Math.max(0, canvasWidth - margin * 2);
+    const paddingScale = options.paddingScale ?? 1;
+    let paddingX = Math.round((options.fontSize ?? 18) * 0.7 * paddingScale);
+    let paddingY = Math.round((options.fontSize ?? 18) * 0.45 * paddingScale);
+    let maxTextWidth = Math.max(1, maxWidth - paddingX * 2);
+    let layout = layoutTitleText(ctx, text, maxTextWidth, options);
+
+    paddingX = Math.round(layout.fontSize * 0.7 * paddingScale);
+    paddingY = Math.max(4, Math.round(layout.fontSize * 0.45 * paddingScale));
+    maxTextWidth = Math.max(1, maxWidth - paddingX * 2);
+    layout = layoutTitleText(ctx, text, maxTextWidth, { ...options, fontSize: layout.fontSize });
+
+    const fontSize = layout.fontSize;
+    ctx.font = `600 ${fontSize}px Outfit, sans-serif`;
+
+    const lineHeight = Math.round(fontSize * 1.2);
+    const lineWidths = layout.lines.map((line) => ctx.measureText(line).width);
+    const textWidth = lineWidths.length ? Math.max(...lineWidths) : 0;
+    const boxWidth = textWidth + paddingX * 2;
+    const boxHeight = lineHeight * layout.lines.length + paddingY * 2;
+    const x = options.x ?? margin;
+    const y = options.position === 'bottom'
+        ? Math.max(margin, canvasHeight - margin - boxHeight)
+        : (options.y ?? margin);
+    const radius = Math.round(Math.min(14, fontSize * 0.6));
+
+    ctx.save();
+    drawRoundedRect(ctx, x, y, boxWidth, boxHeight, radius);
+    ctx.fillStyle = options.background || INFO_THEME.panel;
+    ctx.fill();
+    ctx.strokeStyle = options.border || INFO_THEME.border;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = options.color || INFO_THEME.text;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = `600 ${fontSize}px Outfit, sans-serif`;
+    layout.lines.forEach((line, index) => {
+        ctx.fillText(line, x + paddingX, y + paddingY + index * lineHeight);
+    });
+    ctx.restore();
+
+    return { width: boxWidth, height: boxHeight };
+}
+
+function buildTitledCanvas(sourceCanvas, title) {
+    if (!sourceCanvas) return null;
+    const cleanTitle = sanitizeExportTitle(title);
+    if (!cleanTitle) return sourceCanvas;
+    const copy = cloneCanvas(sourceCanvas);
+    if (!copy) return copy;
+    const copyCtx = copy.getContext('2d');
+    if (!copyCtx) return copy;
+    drawTitleBadge(copyCtx, cleanTitle, {
+        x: 20,
+        position: 'bottom',
+        maxWidth: Math.round(copy.width * 0.55),
+        minFontSize: 9,
+        maxFontSize: 18,
+        maxLines: 2,
+        paddingScale: 0.65
+    });
+    return copy;
+}
+
+function promptForTitle(i18n, fallbackPrompt) {
+    const promptText = i18n?.t('download_title_prompt') || fallbackPrompt;
+    const input = window.prompt(promptText, '');
+    if (input === null) return null;
+    return sanitizeExportTitle(input);
+}
+
+function ensureExportCanvas() {
+    if (!canvas) return null;
+    if (!exportCanvas) {
+        exportCanvas = document.createElement('canvas');
+        exportCtx = exportCanvas.getContext('2d');
+    }
+    if (!exportCanvas || !exportCtx) return null;
+    if (exportCanvas.width !== canvas.width || exportCanvas.height !== canvas.height) {
+        exportCanvas.width = canvas.width;
+        exportCanvas.height = canvas.height;
+    }
+    return exportCanvas;
+}
+
+function syncExportCanvas() {
+    if (!exportVideo.active) return;
+    const target = ensureExportCanvas();
+    if (!target || !exportCtx || !canvas) return;
+    exportCtx.setTransform(1, 0, 0, 1, 0, 0);
+    exportCtx.clearRect(0, 0, target.width, target.height);
+    exportCtx.drawImage(canvas, 0, 0);
+    if (exportVideo.title) {
+        drawTitleBadge(exportCtx, exportVideo.title, {
+            x: 24,
+            y: 24,
+            maxWidth: target.width - 48,
+            minFontSize: 12,
+            maxFontSize: 30
+        });
+    }
 }
 
 function getInfoText(key, fallback) {
@@ -960,7 +1183,7 @@ function drawChaosMapPreview(ctx, mapCanvas, x, y, size, coordinate) {
     }
 }
 
-function createTrajectoryInfoCanvas(snapshot, mapCanvas) {
+function createTrajectoryInfoCanvas(snapshot, mapCanvas, titleText) {
     const { width, height } = INFO_CANVAS_SIZES.trajectory;
     const infoCanvas = document.createElement('canvas');
     infoCanvas.width = width;
@@ -977,11 +1200,25 @@ function createTrajectoryInfoCanvas(snapshot, mapCanvas) {
     infoCtx.textBaseline = 'top';
     infoCtx.fillText(title, 60, 48);
 
+    const exportTitle = sanitizeExportTitle(titleText);
+    const badgeMetrics = exportTitle
+        ? drawTitleBadge(infoCtx, exportTitle, {
+            x: 60,
+            y: 92,
+            maxWidth: width - 120,
+            fontSize: 20,
+            minFontSize: 14,
+            maxFontSize: 22,
+            maxLines: 2
+        })
+        : null;
+
     const paramsTitle = getInfoText('snapshot_parameters_title', 'Parameters');
     const mapTitle = getInfoText('chaos_title', 'Chaos Map');
     const coordinateTitle = getInfoText('snapshot_coordinate_title', 'Selected coordinate');
 
-    const cardTop = 120;
+    const badgeBottom = badgeMetrics ? 92 + badgeMetrics.height : 0;
+    const cardTop = Math.max(120, badgeBottom + 24);
     const cardPadding = 32;
     const cardGap = 40;
     const leftWidth = 740;
@@ -1043,7 +1280,7 @@ function createTrajectoryInfoCanvas(snapshot, mapCanvas) {
     return infoCanvas;
 }
 
-function createChaosMapInfoCanvas(snapshot, mapCanvas) {
+function createChaosMapInfoCanvas(snapshot, mapCanvas, titleText) {
     const { width, height } = INFO_CANVAS_SIZES.chaos;
     const infoCanvas = document.createElement('canvas');
     infoCanvas.width = width;
@@ -1060,10 +1297,24 @@ function createChaosMapInfoCanvas(snapshot, mapCanvas) {
     infoCtx.textBaseline = 'top';
     infoCtx.fillText(title, 60, 48);
 
+    const exportTitle = sanitizeExportTitle(titleText);
+    const badgeMetrics = exportTitle
+        ? drawTitleBadge(infoCtx, exportTitle, {
+            x: 60,
+            y: 90,
+            maxWidth: width - 120,
+            fontSize: 19,
+            minFontSize: 13,
+            maxFontSize: 22,
+            maxLines: 2
+        })
+        : null;
+
     const paramsTitle = getInfoText('snapshot_parameters_title', 'Parameters');
     const axesTitle = getInfoText('snapshot_axes_title', 'Axes');
 
-    const cardTop = 120;
+    const badgeBottom = badgeMetrics ? 90 + badgeMetrics.height : 0;
+    const cardTop = Math.max(120, badgeBottom + 24);
     const cardPadding = 28;
     const cardGap = 40;
     const leftWidth = 460;
@@ -1271,29 +1522,37 @@ function downloadCanvasImage(targetCanvas, name) {
 }
 
 async function downloadPendulumImage() {
+    const i18n = window.i18nManager;
+    const title = promptForTitle(i18n, 'Enter a title (optional):');
+    if (title === null) return;
     render();
-    downloadCanvasImage(canvas, 'double-pendulum');
+    const titledCanvas = buildTitledCanvas(canvas, title);
+    downloadCanvasImage(titledCanvas || canvas, 'double-pendulum');
 
     const info = await prepareTrajectoryInfoDownload();
     if (!info.ready) return;
-    const infoCanvas = createTrajectoryInfoCanvas(info.snapshot, info.mapCanvas);
+    const infoCanvas = createTrajectoryInfoCanvas(info.snapshot, info.mapCanvas, title);
     if (infoCanvas) {
         downloadCanvasImage(infoCanvas, 'double-pendulum-info');
     }
 }
 
 async function downloadChaosImage() {
+    const i18n = window.i18nManager;
+    const title = promptForTitle(i18n, 'Enter a title (optional):');
+    if (title === null) return;
     const hasMap = state.chaosMapData || await ensureChaosMapAvailable();
     if (!hasMap) return;
     renderChaosMap();
-    downloadCanvasImage(chaosCanvas, 'chaos-map');
+    const titledCanvas = buildTitledCanvas(chaosCanvas, title);
+    downloadCanvasImage(titledCanvas || chaosCanvas, 'chaos-map');
 
     const snapshot = state.chaosMapSnapshot || {
         params: { ...state.params },
         axisX: state.chaosMapData?.axisX || state.chaosAxisX,
         axisY: state.chaosMapData?.axisY || state.chaosAxisY
     };
-    const infoCanvas = createChaosMapInfoCanvas(snapshot, cloneCanvas(chaosCanvas));
+    const infoCanvas = createChaosMapInfoCanvas(snapshot, cloneCanvas(chaosCanvas), title);
     if (infoCanvas) {
         downloadCanvasImage(infoCanvas, 'chaos-map-info');
     }
@@ -1316,6 +1575,9 @@ async function downloadPendulumVideo() {
         return;
     }
 
+    const title = promptForTitle(i18n, 'Enter a title (optional):');
+    if (title === null) return;
+
     const promptText = i18n?.t('download_video_prompt') || 'Enter video duration in seconds (max 15):';
     const input = window.prompt(promptText, '5');
     if (input === null) return;
@@ -1328,13 +1590,31 @@ async function downloadPendulumVideo() {
 
     const duration = Math.min(parsed, 15);
     const info = await prepareTrajectoryInfoDownload();
-    const stream = canvas.captureStream(60);
+
+    exportVideo.active = Boolean(title);
+    exportVideo.title = title;
+
+    let streamCanvas = canvas;
+    if (exportVideo.active) {
+        const target = ensureExportCanvas();
+        render();
+        if (target) {
+            streamCanvas = target;
+        } else {
+            exportVideo.active = false;
+            exportVideo.title = '';
+        }
+    }
+
+    const stream = streamCanvas.captureStream(60);
     const mimeType = getSupportedVideoMimeType();
     let recorder;
 
     try {
         recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
     } catch (err) {
+        exportVideo.active = false;
+        exportVideo.title = '';
         alert(i18n?.t('download_video_unsupported') || 'Video recording is not supported in this browser.');
         return;
     }
@@ -1356,8 +1636,11 @@ async function downloadPendulumVideo() {
         link.click();
         URL.revokeObjectURL(url);
 
+        exportVideo.active = false;
+        exportVideo.title = '';
+
         if (info.ready) {
-            const infoCanvas = createTrajectoryInfoCanvas(info.snapshot, info.mapCanvas);
+            const infoCanvas = createTrajectoryInfoCanvas(info.snapshot, info.mapCanvas, title);
             if (infoCanvas) {
                 downloadCanvasImage(infoCanvas, 'double-pendulum-info');
             }
@@ -1585,6 +1868,10 @@ function setParameter(name, value) {
         }
     }
 
+    if (LENGTH_PARAMETER_KEYS.has(name)) {
+        refreshPendulumSizing();
+    }
+
     updateChaosCoordinateDisplay();
 }
 
@@ -1806,6 +2093,11 @@ function handleChaosMapClick(event) {
     const sliderY = document.getElementById(axisY);
     if (sliderX) sliderX.value = valueX;
     if (sliderY) sliderY.value = valueY;
+
+    const lengthsTouched = LENGTH_PARAMETER_KEYS.has(axisX) || LENGTH_PARAMETER_KEYS.has(axisY);
+    if (lengthsTouched) {
+        updatePendulumScale();
+    }
 
     // Trigger mobile preview if in mobile mode
     if (isMobileViewActive() && state.mobileActivePanel === 'chaos') {
@@ -2113,7 +2405,7 @@ function renderPreview() {
     const width = rect.width || 120;
     const height = rect.height || 120;
     const centerX = width / 2;
-    const centerY = height * 0.45;
+    const centerY = height / 2;
 
     // Use reduced DPR for preview canvas on mobile for better performance
     const dpr = CONFIG.mobile.reducedDPR ? Math.min(window.devicePixelRatio || 1, 1.5) : (window.devicePixelRatio || 1);
@@ -2126,9 +2418,11 @@ function renderPreview() {
     previewCtx.fillStyle = '#0a0812';
     previewCtx.fillRect(0, 0, width, height);
 
-    // Calculate scale based on pendulum size and box size
+    // Calculate scale so the preview always fits inside its square with padding
     const totalLength = state.params.L1 + state.params.L2;
-    const scale = (Math.min(width, height) * 0.35) / totalLength;
+    const previewSize = Math.min(width, height);
+    const scale = computePendulumScale(previewSize, totalLength, PREVIEW_CANVAS_MARGIN_RATIO, CONFIG.render.scale);
+    const trailScaleFactor = CONFIG.render.scale > 0 ? scale / CONFIG.render.scale : scale;
 
     // Use current simulation state (not initial params)
     const theta1 = state.theta1;
@@ -2155,18 +2449,18 @@ function renderPreview() {
 
         previewCtx.beginPath();
         previewCtx.moveTo(
-            centerX + state.trail[0].x * scale,
-            centerY + state.trail[0].y * scale
+            centerX + state.trail[0].x * trailScaleFactor,
+            centerY + state.trail[0].y * trailScaleFactor
         );
 
         for (let i = trailSkip; i < state.trail.length; i += trailSkip) {
             const point = state.trail[i];
-            previewCtx.lineTo(centerX + point.x * scale, centerY + point.y * scale);
+            previewCtx.lineTo(centerX + point.x * trailScaleFactor, centerY + point.y * trailScaleFactor);
         }
 
         // Always include the last point
         const lastPoint = state.trail[state.trail.length - 1];
-        previewCtx.lineTo(centerX + lastPoint.x * scale, centerY + lastPoint.y * scale);
+        previewCtx.lineTo(centerX + lastPoint.x * trailScaleFactor, centerY + lastPoint.y * trailScaleFactor);
         previewCtx.stroke();
     }
 
@@ -2401,9 +2695,8 @@ function resizeCanvas() {
     canvas.width = size;
     canvas.height = size;
     
-    // Adjust scale based on canvas size
-    const totalLength = state.params.L1 + state.params.L2;
-    CONFIG.render.scale = (size * 0.42) / totalLength;
+    // Adjust scale so the pendulum always fits inside the square with padding
+    updatePendulumScale(size);
     
     render();
 }

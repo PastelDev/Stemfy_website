@@ -142,8 +142,8 @@ body.sim-view-mobile .sim-nav .settings-btn svg {
 }
 
 body.sim-view-mobile .sim-help-btn {
-    padding: 0.25rem 0.4rem;
-    gap: 0.35rem;
+    padding: 0.25rem;
+    gap: 0;
 }
 
 body.sim-view-mobile .sim-help-icon {
@@ -157,20 +157,11 @@ body.sim-view-mobile .sim-help-icon svg {
 }
 
 body.sim-view-mobile .sim-help-text {
-    font-size: 0.55rem;
-    letter-spacing: 0.12em;
+    display: none;
 }
 
-/* Hide Tutorial text on very small screens, keep icon only */
+/* Extra-tight spacing for very small screens */
 @media (max-width: 400px) {
-    body.sim-view-mobile .sim-help-text {
-        display: none;
-    }
-
-    body.sim-view-mobile .sim-help-btn {
-        padding: 0.25rem;
-    }
-
     body.sim-view-mobile .sim-nav .nav-links a {
         font-size: 0.75rem;
         padding: 0.35rem 0.5rem;
@@ -208,6 +199,12 @@ body.sim-view-mobile .sim-help-text {
     box-shadow: var(--shadow-card);
 }
 
+#pendulum-canvas-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .sim-canvas-actions {
     position: absolute;
     top: 12px;
@@ -232,6 +229,7 @@ body.sim-view-mobile .sim-help-text {
 #pendulum-canvas {
     display: block;
     background: transparent;
+    margin: 0 auto;
 }
 
 /* ============================================
@@ -450,6 +448,7 @@ body.sim-view-mobile .sim-help-text {
     border-color: var(--color-blue-bright);
     outline: none;
 }
+
 
 /* ============================================
    BUTTONS
@@ -1006,7 +1005,8 @@ body.sim-view-mobile .sim-help-text {
 .tutorial-tooltip__actions {
     display: flex;
     gap: var(--space-sm);
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .tutorial-tooltip__btn {
@@ -1023,13 +1023,24 @@ body.sim-view-mobile .sim-help-text {
     text-transform: uppercase;
 }
 
-.tutorial-tooltip__btn--skip {
+.tutorial-tooltip__btn--nav {
+    width: 42px;
+    height: 36px;
+    padding: 0;
+    font-size: 1rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.tutorial-tooltip__btn--prev,
+.tutorial-tooltip__btn--leave {
     background: transparent;
     border-color: var(--color-gray);
     color: var(--color-gray);
 }
 
-.tutorial-tooltip__btn--skip:hover {
+.tutorial-tooltip__btn--prev:hover,
+.tutorial-tooltip__btn--leave:hover {
     border-color: var(--color-white);
     color: var(--color-white);
 }
@@ -1043,6 +1054,11 @@ body.sim-view-mobile .sim-help-text {
 .tutorial-tooltip__btn--next:hover {
     background: var(--purple-glow);
     border-color: var(--purple-glow);
+}
+
+.tutorial-tooltip__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 /* ============================================

@@ -355,27 +355,36 @@ function updateTooltip(step, target, stepIndex) {
 
     const hintEl = document.createElement('p');
     hintEl.className = 'tutorial-tooltip__hint';
-    hintEl.textContent = t('tutorial_hint', 'Tip: Press Enter to continue • Esc to exit');
+    hintEl.textContent = t('tutorial_hint', 'Tip: Use left/right arrows to navigate • Esc to exit');
 
     const actions = document.createElement('div');
     actions.className = 'tutorial-tooltip__actions';
 
-    const skipBtn = document.createElement('button');
-    skipBtn.className = 'tutorial-tooltip__btn tutorial-tooltip__btn--skip';
-    skipBtn.type = 'button';
-    skipBtn.textContent = t('tutorial_skip', 'Skip');
-    skipBtn.addEventListener('click', endTutorial);
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'tutorial-tooltip__btn tutorial-tooltip__btn--prev tutorial-tooltip__btn--nav';
+    prevBtn.type = 'button';
+    prevBtn.setAttribute('aria-label', t('tutorial_prev', 'Previous'));
+    prevBtn.innerHTML = '&#8592;';
+    prevBtn.disabled = stepIndex === 0;
+    prevBtn.addEventListener('click', prevTutorialStep);
 
     const nextBtn = document.createElement('button');
-    nextBtn.className = 'tutorial-tooltip__btn tutorial-tooltip__btn--next';
+    nextBtn.className = 'tutorial-tooltip__btn tutorial-tooltip__btn--next tutorial-tooltip__btn--nav';
     nextBtn.type = 'button';
-    nextBtn.textContent = stepIndex === totalSteps - 1
-        ? t('tutorial_finish', 'Finish')
-        : t('tutorial_next', 'Next');
+    const isLastStep = stepIndex === totalSteps - 1;
+    nextBtn.setAttribute('aria-label', isLastStep ? t('tutorial_finish', 'Finish') : t('tutorial_next', 'Next'));
+    nextBtn.innerHTML = '&#8594;';
     nextBtn.addEventListener('click', nextTutorialStep);
 
-    actions.appendChild(skipBtn);
+    const leaveBtn = document.createElement('button');
+    leaveBtn.className = 'tutorial-tooltip__btn tutorial-tooltip__btn--leave';
+    leaveBtn.type = 'button';
+    leaveBtn.textContent = t('tutorial_leave', 'Leave');
+    leaveBtn.addEventListener('click', endTutorial);
+
+    actions.appendChild(prevBtn);
     actions.appendChild(nextBtn);
+    actions.appendChild(leaveBtn);
 
     tooltip.appendChild(stepEl);
     tooltip.appendChild(titleEl);
@@ -445,6 +454,12 @@ function nextTutorialStep() {
     }
 }
 
+function prevTutorialStep() {
+    const prevIndex = tutorialState.currentStep - 1;
+    if (prevIndex < 0) return;
+    showTutorialStep(prevIndex);
+}
+
 // Handle window resize during tutorial
 window.addEventListener('resize', debounce(() => {
     if (tutorialState.active) {
@@ -464,5 +479,15 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
         nextTutorialStep();
+    }
+
+    if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextTutorialStep();
+    }
+
+    if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevTutorialStep();
     }
 }, true);

@@ -75,20 +75,90 @@
     }
 
     .challenge-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 16px;
-      background: rgba(176, 138, 240, 0.12);
+      width: 132px;
+      height: 132px;
+      border-radius: 24px;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15), rgba(176, 138, 240, 0.25));
       border: 1px solid rgba(176, 138, 240, 0.35);
+      overflow: hidden;
+    }
+
+    .challenge-icon-link {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: none;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .challenge-icon-link img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .challenge-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 4, 10, 0.7);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #b08af0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 999;
+      padding: 1.5rem;
     }
 
-    .challenge-icon svg {
+    .challenge-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .challenge-modal-content {
+      background: rgba(18, 12, 28, 0.95);
+      border: 1px solid rgba(176, 138, 240, 0.3);
+      border-radius: 24px;
+      width: min(860px, 95vw);
+      max-height: 90vh;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .challenge-modal-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      max-height: 90vh;
+      object-fit: contain;
+      background: rgba(10, 8, 18, 0.9);
+    }
+
+    .challenge-modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(10, 8, 18, 0.7);
+      border: 1px solid rgba(176, 138, 240, 0.4);
+      color: #f8f4ff;
       width: 36px;
       height: 36px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    body.modal-open {
+      overflow: hidden;
     }
 
     .challenge-title {
@@ -211,13 +281,18 @@
       <div class="challenges-grid">
         <article class="challenge-card">
           <div class="challenge-icon">
-            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
-              <circle cx="32" cy="10" r="5" fill="currentColor" stroke="none"/>
-              <line x1="32" y1="15" x2="22" y2="36" />
-              <circle cx="22" cy="36" r="6" fill="currentColor" stroke="none"/>
-              <line x1="22" y1="42" x2="40" y2="56" />
-              <circle cx="40" cy="56" r="6" fill="currentColor" stroke="none"/>
-            </svg>
+            <button
+              type="button"
+              class="challenge-icon-link"
+              data-full="icons/double-pendulum-info-2026-01-26_17-13-40-707.png"
+              data-alt="Pendulum trajectory detailed preview"
+              aria-label="Open detailed double pendulum preview"
+            >
+              <img
+                src="icons/double-pendulum-2026-01-26_17-13-35-521.png"
+                alt="Pendulum trajectory preview"
+              />
+            </button>
           </div>
           <span class="badge badge--live" id="challenge-pendulum-badge">Available</span>
           <h3 class="challenge-title" id="challenge-pendulum-title">Pendulum Trajectory</h3>
@@ -230,12 +305,18 @@
 
         <article class="challenge-card">
           <div class="challenge-icon">
-            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
-              <rect x="12" y="12" width="40" height="40" rx="6" />
-              <path d="M20 40 C28 28, 36 44, 44 24" />
-              <circle cx="24" cy="30" r="2" fill="currentColor" stroke="none"/>
-              <circle cx="40" cy="34" r="2" fill="currentColor" stroke="none"/>
-            </svg>
+            <button
+              type="button"
+              class="challenge-icon-link"
+              data-full="icons/chaos-map-info-2026-01-26_17-12-18-270.png"
+              data-alt="Chaos map detailed preview"
+              aria-label="Open detailed chaos map preview"
+            >
+              <img
+                src="icons/chaos-map-2026-01-26_17-12-18-258.png"
+                alt="Chaos map explorer preview"
+              />
+            </button>
           </div>
           <span class="badge badge--live" id="challenge-chaos-badge">Available</span>
           <h3 class="challenge-title" id="challenge-chaos-title">Chaos Map Explorer</h3>
@@ -259,6 +340,13 @@
     </footer>
   </div>
 
+  <div class="challenge-modal" id="challenge-modal" aria-hidden="true">
+    <div class="challenge-modal-content" role="dialog" aria-modal="true">
+      <button class="challenge-modal-close" type="button" id="challenge-modal-close" aria-label="Close">&times;</button>
+      <img class="challenge-modal-image" id="challenge-modal-image" alt="">
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div class="settings-modal" id="settings-modal">
     <div class="settings-modal-content">
@@ -280,6 +368,57 @@
   <script src="js/starfield.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/ui.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('challenge-modal');
+      const modalImage = document.getElementById('challenge-modal-image');
+      const modalClose = document.getElementById('challenge-modal-close');
+      const modalButtons = document.querySelectorAll('.challenge-icon-link');
+
+      if (!modal || !modalImage) return;
+
+      function openModal(src, altText) {
+        if (!src) return;
+        modalImage.src = src;
+        modalImage.alt = altText || '';
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+      }
+
+      function closeModal() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        modalImage.src = '';
+      }
+
+      modalButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const src = btn.dataset.full;
+          const altText = btn.dataset.alt || btn.querySelector('img')?.alt || '';
+          openModal(src, altText);
+        });
+      });
+
+      if (modalClose) {
+        modalClose.addEventListener('click', closeModal);
+      }
+
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (!modal.classList.contains('open')) return;
+        if (event.key === 'Escape') {
+          closeModal();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
 

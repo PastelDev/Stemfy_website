@@ -11,7 +11,7 @@ const I18N = {
 
     // Hero section
     badge_text: 'Now available \u2014 Double pendulum simulation',
-    hero_title: 'Make STEM addictive',
+    hero_title: 'STEM, for you.',
     hero_subtitle: 'Three minds. One mission. Interactive simulations, scientific news and challenges that make learning impossible to ignore.',
 
     // Navigation cards
@@ -106,6 +106,7 @@ const I18N = {
     chaos_loading: 'Computing... {percent}%',
     download_image: 'Download image',
     download_video: 'Download video',
+    download_title_prompt: 'Enter a title (optional):',
     download_video_prompt: 'Enter video duration in seconds (max 15):',
     download_video_invalid: 'Please enter a valid number of seconds (1–15).',
     download_video_unsupported: 'Video recording isn\'t supported in this browser.',
@@ -137,8 +138,10 @@ const I18N = {
     // Tutorial
     tutorial_step_label: 'Step {current} / {total}',
     tutorial_skip: 'Skip',
+    tutorial_prev: 'Previous',
     tutorial_next: 'Next',
     tutorial_finish: 'Finish',
+    tutorial_leave: 'Leave',
     tutorial_canvas_title: 'Simulation Canvas',
     tutorial_canvas_text: 'Watch the double pendulum in motion. The first arm hangs from the pivot, and the second hangs from the first.',
     tutorial_play_title: 'Play / Pause',
@@ -165,7 +168,7 @@ const I18N = {
     tutorial_chaos_panel_text: 'Each point corresponds to a different set of initial conditions. Click a point to see the resulting motion.',
     tutorial_challenges_title: 'Challenges',
     tutorial_challenges_text: 'Explore the two challenges below and share your results. Happy experimenting!',
-    tutorial_hint: 'Tip: Press Enter to continue • Esc to exit',
+    tutorial_hint: 'Tip: Use left/right arrows to navigate • Esc to exit',
 
     // Challenges page
     challenges_title: 'Challenges',
@@ -218,9 +221,6 @@ const I18N = {
     selection_research_title: 'Science &amp; Research',
     selection_research_national: 'Greece: The <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">Hellenic Physical Society</a> coordinates Greek participation and team formation for IYPT and IYNT.',
     selection_research_international: 'International: <a href="https://www.iypt.org/" target="_blank" rel="noopener">IYPT</a>, <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">IYNT</a>.',
-    ioai_selection_title: 'IOAI team selection (separate track)',
-    ioai_selection_intro: 'IOAI follows its own pathway that emphasizes AI fundamentals and practical ML skills, so it does not use the standard informatics selection.',
-    ioai_selection_list: '<li>Phase 1: National call and eligibility check (Greek students who meet the IOAI age rules).</li><li>Phase 2: AI screening test (math + programming + basic ML concepts).</li><li>Phase 3: Training camp focused on machine learning, data handling, and ethical AI.</li><li>Phase 4: Final evaluation with model-building and problem-solving tasks to select the team.</li>',
 
     // Posts page
     posts_title: 'Posts',
@@ -257,7 +257,7 @@ const I18N = {
 
     // Hero section
     badge_text: 'Τώρα διαθέσιμη — Προσομοίωση διπλού εκκρεμούς',
-    hero_title: 'Κάνε το STEM εθιστικό',
+    hero_title: 'STEM, for you.',
     hero_subtitle: 'Τρία μυαλά. Μία αποστολή. Διαδραστικές προσομοιώσεις, επιστημονικά νέα και προκλήσεις που κάνουν τη μάθηση αδύνατο να αγνοηθεί.',
 
     // Navigation cards
@@ -352,6 +352,7 @@ const I18N = {
     chaos_loading: 'Υπολογισμός... {percent}%',
     download_image: 'Λήψη εικόνας',
     download_video: 'Λήψη βίντεο',
+    download_title_prompt: 'Δώσε τίτλο (προαιρετικό):',
     download_video_prompt: 'Δώσε διάρκεια βίντεο σε δευτερόλεπτα (μέγιστο 15):',
     download_video_invalid: 'Δώσε έγκυρο αριθμό δευτερολέπτων (1–15).',
     download_video_unsupported: 'Η εγγραφή βίντεο δεν υποστηρίζεται σε αυτόν τον browser.',
@@ -383,8 +384,10 @@ const I18N = {
     // Tutorial
     tutorial_step_label: 'Βήμα {current} / {total}',
     tutorial_skip: 'Παράλειψη',
+    tutorial_prev: 'Προηγούμενο',
     tutorial_next: 'Επόμενο',
     tutorial_finish: 'Τέλος',
+    tutorial_leave: 'Έξοδος',
     tutorial_canvas_title: 'Καμβάς Προσομοίωσης',
     tutorial_canvas_text: 'Παρακολούθησε το διπλό εκκρεμές σε κίνηση. Ο πρώτος βραχίονας κρέμεται από τον άξονα και ο δεύτερος από τον πρώτο.',
     tutorial_play_title: 'Αναπαραγωγή / Παύση',
@@ -411,7 +414,7 @@ const I18N = {
     tutorial_chaos_panel_text: 'Κάθε σημείο αντιστοιχεί σε διαφορετικές αρχικές συνθήκες. Κάνε κλικ σε ένα σημείο για να δεις την κίνηση που προκύπτει.',
     tutorial_challenges_title: 'Προκλήσεις',
     tutorial_challenges_text: 'Δες τις δύο προκλήσεις παρακάτω και μοιράσου τα αποτελέσματά σου. Καλή εξερεύνηση!',
-    tutorial_hint: 'Συμβουλή: Πάτησε Enter για συνέχεια • Esc για έξοδο',
+    tutorial_hint: 'Συμβουλή: Χρησιμοποίησε τα βέλη για πλοήγηση • Esc για έξοδο',
 
     // Challenges page
     challenges_title: 'Προκλήσεις',
@@ -457,9 +460,6 @@ const I18N = {
     selection_research_title: 'Επιστήμη & Έρευνα',
     selection_research_national: 'Ελλάδα: Η <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">Ελληνική Φυσική Εταιρεία</a> συντονίζει την ελληνική συμμετοχή και τον σχηματισμό ομάδων για το IYPT και το IYNT.',
     selection_research_international: 'Διεθνείς: <a href="https://www.iypt.org/" target="_blank" rel="noopener">IYPT</a>, <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">IYNT</a>.',
-    ioai_selection_title: 'Επιλογή ομάδας IOAI (ξεχωριστή διαδρομή)',
-    ioai_selection_intro: 'Η IOAI έχει δικό της μονοπάτι που δίνει έμφαση στα θεμέλια της ΤΝ και στις πρακτικές δεξιότητες ML, άρα δεν ακολουθεί τη βασική επιλογή πληροφορικής.',
-    ioai_selection_list: '<li>Φάση 1: Εθνική πρόσκληση και έλεγχος επιλεξιμότητας (μαθητές που καλύπτουν τα όρια ηλικίας της IOAI).</li><li>Φάση 2: Εισαγωγική εξέταση ΤΝ (μαθηματικά + προγραμματισμός + βασικές έννοιες ML).</li><li>Φάση 3: Προπονητικό camp με έμφαση σε μηχανική μάθηση, διαχείριση δεδομένων και ηθική ΤΝ.</li><li>Φάση 4: Τελική αξιολόγηση με κατασκευή μοντέλων και επίλυση προβλημάτων για την επιλογή της ομάδας.</li>',
     competitions_title: 'Διεθνείς Διαγωνισμοί',
     competitions_intro: 'Πληροφορίες για επιστημονικές και μαθηματικές ολυμπιάδες διαθέσιμες σε Έλληνες μαθητές',
     comp_math: 'Μαθηματικά',
@@ -919,9 +919,6 @@ class I18nManager {
     this.setHTMLById('selection-research-national', 'selection_research_national');
     this.setHTMLById('selection-research-international', 'selection_research_international');
 
-    this.setTextById('ioai-selection-title', 'ioai_selection_title');
-    this.setTextById('ioai-selection-intro', 'ioai_selection_intro');
-    this.setHTMLById('ioai-selection-list', 'ioai_selection_list');
   }
 
   updatePostsPage() {
