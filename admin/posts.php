@@ -7,6 +7,7 @@ $error = '';
 $errors = [];
 $action = $_GET['action'] ?? 'list';
 $editId = $_GET['id'] ?? null;
+$uploadFolderValue = '';
 
 $data = getJsonData(POSTS_FILE);
 if (!isset($data['posts'])) {
@@ -21,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $existingPost = null;
         $existingMedia = [];
         $removedMedia = [];
+        $uploadFolderValue = $_POST['upload_folder'] ?? '';
 
         if ($postAction === 'update') {
             foreach ($data['posts'] as $postItem) {
@@ -40,7 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return !in_array($item['url'], $removedMedia, true);
         }));
 
-        $newMedia = uploadMediaFiles('media_files', UPLOAD_POSTS_DIR, UPLOAD_BASE_URL . 'posts/', $errors);
+        $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
+        [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_POSTS_DIR, UPLOAD_BASE_URL . 'posts/', $uploadSubdir);
+        $newMedia = uploadMediaFiles('media_files', $targetDir, $targetUrlBase, $errors);
         $media = array_merge($keptMedia, $newMedia);
 
         if (empty($media)) {
@@ -288,6 +292,12 @@ include 'templates/header.php';
                         </div>
                     <?php endif; ?>
                 <?php endif; ?>
+
+                <div class="form-group">
+                    <label for="upload_folder">Upload Folder (optional)</label>
+                    <input type="text" id="upload_folder" name="upload_folder" value="<?php echo htmlspecialchars($uploadFolderValue); ?>" placeholder="e.g. 2024/instagram">
+                    <p class="form-hint">Files will be stored in /admin/uploads/posts/{folder}. Use letters, numbers, dashes, underscores, and slashes.</p>
+                </div>
 
                 <div class="form-group">
                     <label for="media_files">Upload Media (Images &amp; Videos)</label>

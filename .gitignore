@@ -29,3 +29,6 @@ package-lock.json
 
 # Admin credentials (create manually on server)
 admin/credentials.php
+
+# Runtime content storage (Plesk host)
+/posts/

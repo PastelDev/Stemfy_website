@@ -9,8 +9,10 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
 header('Cache-Control: public, max-age=300'); // Cache for 5 minutes
 
-// Data file paths
-define('DATA_DIR', __DIR__ . '/data/');
+// Data file paths (allow override for deployments)
+$dataDir = defined('STEMFY_DATA_DIR') ? STEMFY_DATA_DIR : getenv('STEMFY_DATA_DIR');
+$dataDir = $dataDir ?: (dirname(__DIR__) . '/posts/');
+define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
 define('POSTS_FILE', DATA_DIR . 'posts.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
 
