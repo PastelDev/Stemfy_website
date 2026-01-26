@@ -614,6 +614,11 @@ function render() {
     );
     ctx.fill();
     ctx.shadowBlur = 0;
+
+    // Also render to preview canvas if visible
+    if (state.mobilePreviewVisible) {
+        renderPreview();
+    }
 }
 
 /**
@@ -1440,7 +1445,7 @@ function updatePlayButton() {
     const btn = elements.playBtn;
     if (!btn) return;
     const i18n = window.i18nManager;
-    
+
     if (state.isPlaying) {
         btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16"/>
@@ -1453,6 +1458,9 @@ function updatePlayButton() {
         </svg>`;
         btn.setAttribute('aria-label', i18n?.t('play_label') || 'Play');
     }
+
+    // Also update preview play button
+    updatePreviewPlayButton();
 }
 
 function setParameter(name, value) {
@@ -1789,17 +1797,18 @@ function setMobileActivePanel(panelName) {
 
     // Handle preview box based on panel
     if (panelName === 'simulation') {
-        // Expand preview to center then fade out
-        if (state.mobilePreviewVisible) {
-            expandPreviewToCenter();
-        }
+        // Just hide preview - simulation continues seamlessly on main canvas
+        hideMobilePreview();
     } else {
-        // Show preview in corner for controls/chaos panels
+        // Show preview for controls/chaos panels
         showMobilePreview();
     }
 
     syncPanelStateClasses();
     resizeCanvas();
+
+    // Update preview play button to match current state
+    updatePreviewPlayButton();
 }
 
 function initMobileTabNavigation() {
@@ -1825,16 +1834,14 @@ function updateMobileTabLabels() {
     const tabSimLabel = document.getElementById('tab-simulation-label');
     const tabControlsLabel = document.getElementById('tab-controls-label');
     const tabChaosLabel = document.getElementById('tab-chaos-label');
-    const previewLabelText = document.getElementById('preview-label-text');
 
     if (tabSimLabel) tabSimLabel.textContent = i18n.t('mobile_tab_simulation');
     if (tabControlsLabel) tabControlsLabel.textContent = i18n.t('mobile_tab_controls');
     if (tabChaosLabel) tabChaosLabel.textContent = i18n.t('mobile_tab_chaos');
-    if (previewLabelText) previewLabelText.textContent = i18n.t('mobile_panel_preview');
 }
 
 // ============================================
-// MOBILE PREVIEW BOX (Picture-in-Picture)
+// MOBILE PREVIEW BOX (Picture-in-Picture Simulation)
 // ============================================
 
 function initPreviewCanvas() {
@@ -1843,6 +1850,119 @@ function initPreviewCanvas() {
 
     previewCtx = previewCanvas.getContext('2d');
     resizePreviewCanvas();
+
+    // Initialize preview controls
+    initPreviewControls();
+    initPreviewResize();
+}
+
+function initPreviewControls() {
+    const playBtn = document.getElementById('preview-play-btn');
+    const resetBtn = document.getElementById('preview-reset-btn');
+
+    if (playBtn) {
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePlay();
+            updatePreviewPlayButton();
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            reset();
+            renderPreview();
+        });
+    }
+}
+
+function updatePreviewPlayButton() {
+    const playIcon = document.querySelector('#preview-play-btn .preview-play-icon');
+    const pauseIcon = document.querySelector('#preview-play-btn .preview-pause-icon');
+
+    if (playIcon && pauseIcon) {
+        if (state.isPlaying) {
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+        } else {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+        }
+    }
+}
+
+function initPreviewResize() {
+    const resizeHandle = document.getElementById('preview-resize-handle');
+    if (!resizeHandle) return;
+
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    const handleResizeStart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const box = document.getElementById('mobile-preview-box');
+        if (!box) return;
+
+        isResizing = true;
+        const rect = box.getBoundingClientRect();
+        startWidth = rect.width;
+        startHeight = rect.height;
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+        box.style.transition = 'none';
+    };
+
+    const handleResizeMove = (e) => {
+        if (!isResizing) return;
+        e.preventDefault();
+
+        const box = document.getElementById('mobile-preview-box');
+        if (!box) return;
+
+        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        const deltaX = clientX - startX;
+        const deltaY = clientY - startY;
+        const delta = Math.max(deltaX, deltaY);
+
+        // Keep aspect ratio square
+        let newSize = startWidth + delta;
+
+        // Constrain size
+        const minSize = 100;
+        const maxSize = Math.min(window.innerWidth - 48, window.innerHeight - 200);
+        newSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+        box.style.width = newSize + 'px';
+        box.style.height = newSize + 'px';
+
+        // Resize canvas
+        resizePreviewCanvas();
+        renderPreview();
+    };
+
+    const handleResizeEnd = () => {
+        if (!isResizing) return;
+        isResizing = false;
+
+        const box = document.getElementById('mobile-preview-box');
+        if (box) {
+            box.style.transition = '';
+        }
+    };
+
+    resizeHandle.addEventListener('mousedown', handleResizeStart);
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+
+    resizeHandle.addEventListener('touchstart', handleResizeStart, { passive: false });
+    document.addEventListener('touchmove', handleResizeMove, { passive: false });
+    document.addEventListener('touchend', handleResizeEnd);
 }
 
 function resizePreviewCanvas() {
@@ -1851,34 +1971,33 @@ function resizePreviewCanvas() {
     const box = document.getElementById('mobile-preview-box');
     if (!box) return;
 
-    // Get the current size of the preview box
     const rect = box.getBoundingClientRect();
-    const size = Math.min(rect.width, rect.height) || 120;
+    const width = rect.width || 120;
+    const height = rect.height || 120;
 
-    // Set canvas resolution (higher for clarity)
     const dpr = window.devicePixelRatio || 1;
-    previewCanvas.width = size * dpr;
-    previewCanvas.height = size * dpr;
+    previewCanvas.width = width * dpr;
+    previewCanvas.height = height * dpr;
 
     if (previewCtx) {
+        previewCtx.setTransform(1, 0, 0, 1, 0, 0);
         previewCtx.scale(dpr, dpr);
     }
 }
 
 function renderPreview() {
-    if (!previewCtx || !previewCanvas) return;
+    if (!previewCtx || !previewCanvas || !state.mobilePreviewVisible) return;
 
     const box = document.getElementById('mobile-preview-box');
     if (!box) return;
 
     const rect = box.getBoundingClientRect();
-    const displaySize = Math.min(rect.width, rect.height) || 120;
-
-    const dpr = window.devicePixelRatio || 1;
-    const width = displaySize;
-    const height = displaySize;
+    const width = rect.width || 120;
+    const height = rect.height || 120;
     const centerX = width / 2;
     const centerY = height * 0.45;
+
+    const dpr = window.devicePixelRatio || 1;
 
     // Reset transform and clear
     previewCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1888,37 +2007,55 @@ function renderPreview() {
     previewCtx.fillStyle = '#0a0812';
     previewCtx.fillRect(0, 0, width, height);
 
-    // Calculate scale based on pendulum size
+    // Calculate scale based on pendulum size and box size
     const totalLength = state.params.L1 + state.params.L2;
-    const scale = (width * 0.35) / totalLength;
+    const scale = (Math.min(width, height) * 0.35) / totalLength;
 
-    // Get preview positions from current params (initial state)
-    const theta1 = degToRad(state.params.theta1);
-    const theta2 = degToRad(state.params.theta2);
+    // Use current simulation state (not initial params)
+    const theta1 = state.theta1;
+    const theta2 = state.theta2;
 
     const x1 = state.params.L1 * Math.sin(theta1) * scale;
     const y1 = state.params.L1 * Math.cos(theta1) * scale;
     const x2 = x1 + state.params.L2 * Math.sin(theta2) * scale;
     const y2 = y1 + state.params.L2 * Math.cos(theta2) * scale;
 
-    // Adjust sizes based on preview box size (smaller when in corner)
-    const isCorner = box.classList.contains('corner');
-    const rodWidth = isCorner ? 2 : CONFIG.render.rodWidth;
-    const pivotSize = isCorner ? 3 : 6;
-    const massScale = isCorner ? 0.5 : 1;
+    // Adjust sizes based on preview box size
+    const sizeRatio = Math.min(width, height) / 120;
+    const rodWidth = Math.max(2, CONFIG.render.rodWidth * sizeRatio * 0.6);
+    const pivotSize = Math.max(3, 6 * sizeRatio * 0.6);
+    const massSize = Math.max(5, 10 * sizeRatio * 0.6);
+
+    // Draw trail if enabled
+    if (state.trailEnabled && state.trail.length > 1) {
+        previewCtx.lineCap = 'round';
+        previewCtx.lineJoin = 'round';
+
+        for (let i = 1; i < state.trail.length; i++) {
+            const prev = state.trail[i - 1];
+            const curr = state.trail[i];
+
+            const alpha = state.trailInfinite ? 0.6 : (i / state.trail.length) * 0.8;
+            previewCtx.strokeStyle = `rgba(255, 122, 236, ${alpha})`;
+            previewCtx.lineWidth = Math.max(1, CONFIG.render.trailWidth * sizeRatio * 0.5);
+
+            previewCtx.beginPath();
+            previewCtx.moveTo(centerX + prev.x * scale, centerY + prev.y * scale);
+            previewCtx.lineTo(centerX + curr.x * scale, centerY + curr.y * scale);
+            previewCtx.stroke();
+        }
+    }
 
     // Draw rods
     previewCtx.strokeStyle = CONFIG.colors.rod;
     previewCtx.lineWidth = rodWidth;
     previewCtx.lineCap = 'round';
 
-    // Rod 1
     previewCtx.beginPath();
     previewCtx.moveTo(centerX, centerY);
     previewCtx.lineTo(centerX + x1, centerY + y1);
     previewCtx.stroke();
 
-    // Rod 2
     previewCtx.beginPath();
     previewCtx.moveTo(centerX + x1, centerY + y1);
     previewCtx.lineTo(centerX + x2, centerY + y2);
@@ -1936,63 +2073,24 @@ function renderPreview() {
     previewCtx.arc(
         centerX + x1,
         centerY + y1,
-        (isCorner ? 5 : 10) * Math.sqrt(state.params.m1 / CONFIG.defaults.m1) * massScale,
+        massSize * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
         0, Math.PI * 2
     );
     previewCtx.fill();
 
     // Draw mass 2 with glow
     previewCtx.shadowColor = CONFIG.colors.mass2;
-    previewCtx.shadowBlur = isCorner ? 6 : 12;
+    previewCtx.shadowBlur = Math.max(4, 12 * sizeRatio * 0.5);
     previewCtx.fillStyle = CONFIG.colors.mass2;
     previewCtx.beginPath();
     previewCtx.arc(
         centerX + x2,
         centerY + y2,
-        (isCorner ? 5 : 10) * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * massScale,
+        massSize * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
         0, Math.PI * 2
     );
     previewCtx.fill();
     previewCtx.shadowBlur = 0;
-
-    // Draw velocity arrows only when not in corner (too small)
-    if (!isCorner && (Math.abs(state.params.omega1) > 0.1 || Math.abs(state.params.omega2) > 0.1)) {
-        previewCtx.strokeStyle = 'rgba(255, 122, 236, 0.6)';
-        previewCtx.lineWidth = 2;
-
-        if (Math.abs(state.params.omega1) > 0.1) {
-            const arrowScale = 8;
-            const vx1 = -state.params.omega1 * state.params.L1 * Math.cos(theta1) * arrowScale;
-            const vy1 = state.params.omega1 * state.params.L1 * Math.sin(theta1) * arrowScale;
-            drawArrow(previewCtx, centerX + x1, centerY + y1, centerX + x1 + vx1, centerY + y1 + vy1);
-        }
-
-        if (Math.abs(state.params.omega2) > 0.1) {
-            const arrowScale = 8;
-            const vx2 = -state.params.omega2 * state.params.L2 * Math.cos(theta2) * arrowScale;
-            const vy2 = state.params.omega2 * state.params.L2 * Math.sin(theta2) * arrowScale;
-            drawArrow(previewCtx, centerX + x2, centerY + y2, centerX + x2 + vx2, centerY + y2 + vy2);
-        }
-    }
-}
-
-function drawArrow(ctx, fromX, fromY, toX, toY) {
-    const headLength = 8;
-    const angle = Math.atan2(toY - fromY, toX - fromX);
-
-    ctx.beginPath();
-    ctx.moveTo(fromX, fromY);
-    ctx.lineTo(toX, toY);
-    ctx.lineTo(
-        toX - headLength * Math.cos(angle - Math.PI / 6),
-        toY - headLength * Math.sin(angle - Math.PI / 6)
-    );
-    ctx.moveTo(toX, toY);
-    ctx.lineTo(
-        toX - headLength * Math.cos(angle + Math.PI / 6),
-        toY - headLength * Math.sin(angle + Math.PI / 6)
-    );
-    ctx.stroke();
 }
 
 function showMobilePreview() {
@@ -2001,18 +2099,21 @@ function showMobilePreview() {
     const box = document.getElementById('mobile-preview-box');
     if (!box) return;
 
-    // Show in corner when not on simulation tab
+    // Show when not on simulation tab
     if (state.mobileActivePanel !== 'simulation') {
         // Reset to default position if not custom dragged
         if (!state.previewDrag.customPosition) {
             resetPreviewPosition();
         }
 
-        box.classList.remove('expanding', 'hidden');
+        box.classList.remove('hidden');
         box.classList.add('corner', 'visible');
         state.mobilePreviewVisible = true;
 
-        // Re-init canvas for corner size and render
+        // Update preview play button state
+        updatePreviewPlayButton();
+
+        // Re-init canvas for current size and render
         requestAnimationFrame(() => {
             resizePreviewCanvas();
             renderPreview();
@@ -2023,51 +2124,16 @@ function showMobilePreview() {
 function hideMobilePreview() {
     const box = document.getElementById('mobile-preview-box');
     if (box) {
-        box.classList.remove('visible', 'corner', 'expanding');
+        box.classList.remove('visible', 'corner');
         box.classList.add('hidden');
         state.mobilePreviewVisible = false;
     }
-}
-
-function expandPreviewToCenter() {
-    const box = document.getElementById('mobile-preview-box');
-    if (!box || !state.mobilePreviewVisible) return;
-
-    // Reset position for centered animation
-    resetPreviewPosition();
-
-    // Animate from corner to center
-    box.classList.remove('corner');
-    box.classList.add('expanding', 'visible');
-
-    // Re-render at larger size after animation starts
-    requestAnimationFrame(() => {
-        resizePreviewCanvas();
-        renderPreview();
-    });
-
-    // After expansion animation completes, fade out and let main canvas take over
-    setTimeout(() => {
-        box.classList.add('hidden');
-        box.classList.remove('expanding', 'visible');
-        state.mobilePreviewVisible = false;
-        // Reset custom position flag for next time
-        state.previewDrag.customPosition = false;
-    }, 500); // Match CSS transition duration
 }
 
 function triggerMobilePreview() {
     if (!isMobileViewActive() || state.mobileActivePanel === 'simulation') return;
 
-    // Clear any existing timeout
-    if (state.mobilePreviewTimeout) {
-        clearTimeout(state.mobilePreviewTimeout);
-    }
-
     showMobilePreview();
-
-    // Keep the preview visible while user is adjusting parameters
-    // It will expand when switching to simulation tab
 }
 
 // ============================================
@@ -2091,7 +2157,13 @@ function initPreviewDrag() {
 
 function handleDragStart(e) {
     const box = document.getElementById('mobile-preview-box');
-    if (!box || box.classList.contains('expanding')) return;
+    if (!box) return;
+
+    // Don't start drag if clicking on controls or resize handle
+    if (e.target.closest('.mobile-preview-box__controls') ||
+        e.target.closest('.mobile-preview-box__resize')) {
+        return;
+    }
 
     // Prevent default to avoid text selection and scrolling
     e.preventDefault();

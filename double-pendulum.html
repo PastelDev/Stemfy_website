@@ -141,13 +141,32 @@
         <!-- Mobile Preview Box (Picture-in-Picture) -->
         <div class="mobile-preview-box" id="mobile-preview-box">
             <canvas class="mobile-preview-box__canvas" id="preview-canvas"></canvas>
-            <div class="mobile-preview-box__label" id="preview-label">
+            <!-- Preview Controls -->
+            <div class="mobile-preview-box__controls">
+                <button class="mobile-preview-box__btn" id="preview-reset-btn" aria-label="Reset">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                </button>
+                <button class="mobile-preview-box__btn mobile-preview-box__btn--play" id="preview-play-btn" aria-label="Play">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="preview-play-icon">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="preview-pause-icon" style="display:none;">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Resize Handle -->
+            <div class="mobile-preview-box__resize" id="preview-resize-handle">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="5" r="3"/>
-                    <line x1="12" y1="8" x2="12" y2="14"/>
-                    <circle cx="12" cy="17" r="3"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/>
+                    <line x1="3" y1="21" x2="10" y2="14"/>
                 </svg>
-                <span id="preview-label-text">Preview</span>
             </div>
         </div>
 

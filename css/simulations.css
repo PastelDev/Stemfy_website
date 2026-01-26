@@ -1270,18 +1270,15 @@ body.sim-view-mobile .mobile-preview-box.corner {
     transform: none;
 }
 
-/* Preview expanding to center (simulation tab active) */
-body.sim-view-mobile .mobile-preview-box.expanding {
-    --preview-size: min(85vw, calc(100vh - var(--sim-nav-height) - 64px - 48px));
-    top: calc(var(--sim-nav-height) + 24px);
-    left: 50%;
-    right: auto;
-    width: var(--preview-size);
-    height: var(--preview-size);
-    transform: translateX(-50%);
+/* Preview box size constraints */
+body.sim-view-mobile .mobile-preview-box {
+    min-width: 100px;
+    min-height: 100px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - var(--sim-nav-height) - 64px - 24px);
 }
 
-/* Hide when fully expanded and main canvas takes over */
+/* Hide when switching to simulation tab */
 body.sim-view-mobile .mobile-preview-box.hidden {
     opacity: 0;
     pointer-events: none;
@@ -1293,36 +1290,89 @@ body.sim-view-mobile .mobile-preview-box.hidden {
     display: block;
 }
 
-.mobile-preview-box__label {
+/* Preview Box Controls */
+.mobile-preview-box__controls {
     position: absolute;
-    bottom: 6px;
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    background: rgba(10, 8, 18, 0.85);
-    border: 1px solid rgba(176, 138, 240, 0.3);
-    border-radius: 6px;
-    font-family: var(--font-display);
-    font-size: 0.55rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--white-dim);
-    white-space: nowrap;
-    opacity: 1;
-    transition: opacity 0.2s ease;
+    gap: 8px;
+    padding: 4px 8px;
+    background: rgba(10, 8, 18, 0.9);
+    border: 1px solid rgba(176, 138, 240, 0.35);
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
 }
 
-body.sim-view-mobile .mobile-preview-box.expanding .mobile-preview-box__label {
-    opacity: 0;
-}
-
-.mobile-preview-box__label svg {
-    width: 12px;
-    height: 12px;
+.mobile-preview-box__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(176, 138, 240, 0.15);
     color: var(--purple-bright);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.mobile-preview-box__btn:hover {
+    background: rgba(176, 138, 240, 0.3);
+    transform: scale(1.1);
+}
+
+.mobile-preview-box__btn:active {
+    transform: scale(0.95);
+}
+
+.mobile-preview-box__btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.mobile-preview-box__btn--play {
+    width: 32px;
+    height: 32px;
+    background: var(--purple-bright);
+    color: var(--bg-deep);
+}
+
+.mobile-preview-box__btn--play:hover {
+    background: var(--purple-glow);
+}
+
+.mobile-preview-box__btn--play svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Resize Handle */
+.mobile-preview-box__resize {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: nwse-resize;
+    color: rgba(176, 138, 240, 0.5);
+    transition: color var(--transition-fast);
+    touch-action: none;
+}
+
+.mobile-preview-box__resize:hover {
+    color: var(--purple-bright);
+}
+
+.mobile-preview-box__resize svg {
+    width: 14px;
+    height: 14px;
 }
 
 /* Global View Mode Switcher (for all pages) */
