@@ -237,6 +237,10 @@ function showTutorialStep(stepIndex) {
 }
 
 function getPanelTransitionDelay(step) {
+    if (isMobileTutorialView()) {
+        return ensureMobilePanel(step);
+    }
+
     if (step.requiresPanel === 'controls') {
         const controlPanel = document.querySelector('.control-panel');
         const wasCollapsed = controlPanel && controlPanel.classList.contains('collapsed');
@@ -252,6 +256,35 @@ function getPanelTransitionDelay(step) {
     }
 
     return 0;
+}
+
+function isMobileTutorialView() {
+    if (typeof isMobileViewActive === 'function') {
+        return isMobileViewActive();
+    }
+    return document.body.classList.contains('sim-view-mobile');
+}
+
+function getStepMobilePanel(step) {
+    if (step.requiresPanel === 'controls') {
+        return 'controls';
+    }
+    if (step.requiresPanel === 'chaos') {
+        return 'chaos';
+    }
+    return 'simulation';
+}
+
+function ensureMobilePanel(step) {
+    if (typeof setMobileActivePanel !== 'function') return 0;
+
+    const desiredPanel = getStepMobilePanel(step);
+    const currentPanel = state && state.mobileActivePanel;
+    const isChangingPanel = currentPanel !== desiredPanel;
+
+    setMobileActivePanel(desiredPanel);
+
+    return isChangingPanel ? PANEL_TRANSITION_DELAY : 0;
 }
 
 function openPanel(panel) {
