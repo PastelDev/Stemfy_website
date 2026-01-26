@@ -526,90 +526,104 @@ function getPosition(theta1, theta2, params) {
  */
 function render() {
     if (!ctx) return;
-    
+
     const width = canvas.width;
     const height = canvas.height;
     const centerX = width / 2;
     const centerY = height * 0.38;
-    
+
+    // Size-adaptive rendering: scale elements based on canvas size
+    // Reference size is 400px - elements scale proportionally
+    const referenceSize = 400;
+    const canvasSize = Math.min(width, height);
+    const sizeRatio = Math.min(1, canvasSize / referenceSize);
+
+    // Calculate adaptive sizes
+    const pivotRadius = Math.max(4, CONFIG.render.pivotRadius * sizeRatio);
+    const mass1Radius = Math.max(6, CONFIG.render.mass1Radius * sizeRatio);
+    const mass2Radius = Math.max(6, CONFIG.render.mass2Radius * sizeRatio);
+    const rodWidth = Math.max(2, CONFIG.render.rodWidth * sizeRatio);
+    const trailWidth = Math.max(1, CONFIG.render.trailWidth * sizeRatio);
+    const glowBlur = Math.max(5, 15 * sizeRatio);
+
     // Clear canvas
     ctx.fillStyle = 'rgba(10, 8, 18, 0.35)';
     ctx.fillRect(0, 0, width, height);
-    
+
     // Get positions
     const pos = getPosition(state.theta1, state.theta2, state.params);
-    
+
     // Draw trail
     if (state.trailEnabled && state.trail.length > 1) {
         ctx.beginPath();
         ctx.moveTo(centerX + state.trail[0].x, centerY + state.trail[0].y);
-        
+
         for (let i = 1; i < state.trail.length; i++) {
             const point = state.trail[i];
-            const alpha = state.trailInfinite ? 
-                0.8 : 
+            const alpha = state.trailInfinite ?
+                0.8 :
                 mapRange(i, 0, state.trail.length, 0.1, 0.8);
-            
+
             ctx.strokeStyle = `rgba(255, 107, 157, ${alpha})`;
-            ctx.lineWidth = CONFIG.render.trailWidth;
+            ctx.lineWidth = trailWidth;
             ctx.lineTo(centerX + point.x, centerY + point.y);
         }
         ctx.stroke();
     }
-    
+
     // Draw rods
     ctx.strokeStyle = CONFIG.colors.rod;
-    ctx.lineWidth = CONFIG.render.rodWidth;
+    ctx.lineWidth = rodWidth;
     ctx.lineCap = 'round';
-    
+
     // Rod 1
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(centerX + pos.x1, centerY + pos.y1);
     ctx.stroke();
-    
+
     // Rod 2
     ctx.beginPath();
     ctx.moveTo(centerX + pos.x1, centerY + pos.y1);
     ctx.lineTo(centerX + pos.x2, centerY + pos.y2);
     ctx.stroke();
-    
+
     // Draw pivot
     ctx.fillStyle = CONFIG.colors.pivot;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, CONFIG.render.pivotRadius, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, pivotRadius, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Draw mass 1
     ctx.fillStyle = CONFIG.colors.mass1;
     ctx.beginPath();
     ctx.arc(
-        centerX + pos.x1, 
-        centerY + pos.y1, 
-        CONFIG.render.mass1Radius * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
+        centerX + pos.x1,
+        centerY + pos.y1,
+        mass1Radius * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
         0, Math.PI * 2
     );
     ctx.fill();
-    
+
     // Draw mass 2
     ctx.fillStyle = CONFIG.colors.mass2;
     ctx.beginPath();
     ctx.arc(
-        centerX + pos.x2, 
+        centerX + pos.x2,
         centerY + pos.y2,
-        CONFIG.render.mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
+        mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
         0, Math.PI * 2
     );
     ctx.fill();
-    
+
     // Add glow effect to mass 2
     ctx.shadowColor = CONFIG.colors.mass2;
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = glowBlur;
     ctx.beginPath();
     ctx.arc(
-        centerX + pos.x2, 
+        centerX + pos.x2,
         centerY + pos.y2,
-        CONFIG.render.mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * 0.5,
+        mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * 0.5,
         0, Math.PI * 2
     );
     ctx.fill();
