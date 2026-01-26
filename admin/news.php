@@ -7,6 +7,7 @@ $error = '';
 $errors = [];
 $action = $_GET['action'] ?? 'list';
 $editId = $_GET['id'] ?? null;
+$uploadFolderValue = '';
 
 $data = getJsonData(NEWS_FILE);
 if (!isset($data['announcements'])) {
@@ -20,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($postAction === 'create' || $postAction === 'update') {
         $existingAnnouncement = null;
         $existingFileUrl = null;
+        $uploadFolderValue = $_POST['upload_folder'] ?? '';
 
         if ($postAction === 'update') {
             foreach ($data['announcements'] as $announcementItem) {
@@ -31,7 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $existingFileUrl = $existingAnnouncement['file_url'] ?? null;
         }
 
-        $uploadedFileUrl = uploadPdfFile('file_upload', UPLOAD_NEWS_DIR, UPLOAD_BASE_URL . 'news/', $errors);
+        $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
+        [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_NEWS_DIR, UPLOAD_BASE_URL . 'news/', $uploadSubdir);
+        $uploadedFileUrl = uploadPdfFile('file_upload', $targetDir, $targetUrlBase, $errors);
         $fileUrl = $uploadedFileUrl ?: $existingFileUrl;
 
         if (empty($errors)) {
@@ -223,6 +227,11 @@ include 'templates/header.php';
                 </div>
 
                 <div class="form-row">
+                    <div class="form-group">
+                        <label for="upload_folder">Upload Folder (optional)</label>
+                        <input type="text" id="upload_folder" name="upload_folder" value="<?php echo htmlspecialchars($uploadFolderValue); ?>" placeholder="e.g. 2024/announcements">
+                        <p class="form-hint">Files will be stored in /admin/uploads/news/{folder}. Use letters, numbers, dashes, underscores, and slashes.</p>
+                    </div>
                     <div class="form-group">
                         <label for="file_upload">PDF Attachment (optional)</label>
                         <input type="file" id="file_upload" name="file_upload" accept="application/pdf">

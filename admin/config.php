@@ -27,7 +27,7 @@ if (file_exists($credentialsFile)) {
 
 // Data file paths (allow override for deployments)
 $dataDir = defined('STEMFY_DATA_DIR') ? STEMFY_DATA_DIR : getenv('STEMFY_DATA_DIR');
-$dataDir = $dataDir ?: (__DIR__ . '/data/');
+$dataDir = $dataDir ?: (dirname(__DIR__) . '/posts/');
 define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
 define('POSTS_FILE', DATA_DIR . 'posts.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
@@ -94,6 +94,38 @@ function ensureDir($dir) {
     if (!is_dir($dir)) {
         mkdir($dir, 0755, true);
     }
+}
+
+function getUploadSubdir($input, &$errors) {
+    $raw = trim((string) $input);
+    if ($raw === '') {
+        return '';
+    }
+    $normalized = str_replace('\\', '/', $raw);
+    $normalized = trim($normalized, '/');
+    if ($normalized === '') {
+        return '';
+    }
+    if (strpos($normalized, '..') !== false) {
+        $errors[] = 'Upload folder cannot include "..".';
+        return '';
+    }
+    if (!preg_match('#^[a-zA-Z0-9/_-]+$#', $normalized)) {
+        $errors[] = 'Upload folder contains invalid characters.';
+        return '';
+    }
+    return $normalized;
+}
+
+function getUploadTarget($baseDir, $baseUrl, $subdir) {
+    $destDir = rtrim($baseDir, '/\\') . DIRECTORY_SEPARATOR;
+    $destUrlBase = rtrim($baseUrl, '/') . '/';
+    if ($subdir) {
+        $destDir .= str_replace('/', DIRECTORY_SEPARATOR, $subdir) . DIRECTORY_SEPARATOR;
+        $destUrlBase .= $subdir . '/';
+    }
+    ensureDir($destDir);
+    return [$destDir, $destUrlBase];
 }
 
 function normalizeFilesArray($files) {
