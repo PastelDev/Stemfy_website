@@ -1245,11 +1245,19 @@ body.sim-view-mobile .mobile-preview-box {
     display: block;
     opacity: 0;
     pointer-events: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
 }
 
 body.sim-view-mobile .mobile-preview-box.visible {
     opacity: 1;
     pointer-events: auto;
+}
+
+body.sim-view-mobile .mobile-preview-box.visible:active {
+    cursor: grabbing;
 }
 
 /* Preview in corner state (controls/chaos tabs active) */

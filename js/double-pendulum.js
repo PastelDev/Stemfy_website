@@ -130,7 +130,17 @@ const state = {
     // Mobile UI
     mobileActivePanel: 'simulation', // 'simulation', 'controls', 'chaos'
     mobilePreviewVisible: false,
-    mobilePreviewTimeout: null
+    mobilePreviewTimeout: null,
+
+    // Preview box drag
+    previewDrag: {
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        offsetX: 0,
+        offsetY: 0,
+        customPosition: false // true if user has dragged to custom position
+    }
 };
 
 const INFO_CANVAS_SIZES = {
@@ -1993,6 +2003,11 @@ function showMobilePreview() {
 
     // Show in corner when not on simulation tab
     if (state.mobileActivePanel !== 'simulation') {
+        // Reset to default position if not custom dragged
+        if (!state.previewDrag.customPosition) {
+            resetPreviewPosition();
+        }
+
         box.classList.remove('expanding', 'hidden');
         box.classList.add('corner', 'visible');
         state.mobilePreviewVisible = true;
@@ -2018,6 +2033,9 @@ function expandPreviewToCenter() {
     const box = document.getElementById('mobile-preview-box');
     if (!box || !state.mobilePreviewVisible) return;
 
+    // Reset position for centered animation
+    resetPreviewPosition();
+
     // Animate from corner to center
     box.classList.remove('corner');
     box.classList.add('expanding', 'visible');
@@ -2033,6 +2051,8 @@ function expandPreviewToCenter() {
         box.classList.add('hidden');
         box.classList.remove('expanding', 'visible');
         state.mobilePreviewVisible = false;
+        // Reset custom position flag for next time
+        state.previewDrag.customPosition = false;
     }, 500); // Match CSS transition duration
 }
 
@@ -2048,6 +2068,110 @@ function triggerMobilePreview() {
 
     // Keep the preview visible while user is adjusting parameters
     // It will expand when switching to simulation tab
+}
+
+// ============================================
+// PREVIEW BOX DRAG FUNCTIONALITY
+// ============================================
+
+function initPreviewDrag() {
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Mouse events
+    box.addEventListener('mousedown', handleDragStart);
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+
+    // Touch events
+    box.addEventListener('touchstart', handleDragStart, { passive: false });
+    document.addEventListener('touchmove', handleDragMove, { passive: false });
+    document.addEventListener('touchend', handleDragEnd);
+}
+
+function handleDragStart(e) {
+    const box = document.getElementById('mobile-preview-box');
+    if (!box || box.classList.contains('expanding')) return;
+
+    // Prevent default to avoid text selection and scrolling
+    e.preventDefault();
+
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+    const rect = box.getBoundingClientRect();
+
+    state.previewDrag.isDragging = true;
+    state.previewDrag.startX = clientX;
+    state.previewDrag.startY = clientY;
+    state.previewDrag.offsetX = clientX - rect.left;
+    state.previewDrag.offsetY = clientY - rect.top;
+
+    box.style.cursor = 'grabbing';
+    box.style.transition = 'none'; // Disable transition during drag
+}
+
+function handleDragMove(e) {
+    if (!state.previewDrag.isDragging) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    e.preventDefault();
+
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+    // Calculate new position
+    let newX = clientX - state.previewDrag.offsetX;
+    let newY = clientY - state.previewDrag.offsetY;
+
+    // Get boundaries
+    const boxRect = box.getBoundingClientRect();
+    const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sim-nav-height')) || 108;
+    const tabBarHeight = 64;
+
+    // Constrain to viewport
+    const minX = 8;
+    const maxX = window.innerWidth - boxRect.width - 8;
+    const minY = navHeight + 8;
+    const maxY = window.innerHeight - tabBarHeight - boxRect.height - 8;
+
+    newX = Math.max(minX, Math.min(maxX, newX));
+    newY = Math.max(minY, Math.min(maxY, newY));
+
+    // Apply position
+    box.style.left = newX + 'px';
+    box.style.top = newY + 'px';
+    box.style.right = 'auto';
+    box.style.transform = 'none';
+
+    state.previewDrag.customPosition = true;
+}
+
+function handleDragEnd() {
+    if (!state.previewDrag.isDragging) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (box) {
+        box.style.cursor = 'grab';
+        // Re-enable transitions but keep custom position
+        box.style.transition = '';
+    }
+
+    state.previewDrag.isDragging = false;
+}
+
+function resetPreviewPosition() {
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Reset to default corner position
+    box.style.left = '';
+    box.style.top = '';
+    box.style.right = '';
+    box.style.transform = '';
+    state.previewDrag.customPosition = false;
 }
 
 // ============================================
@@ -2321,6 +2445,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initViewMode();
     initMobileTabNavigation();
     initViewModeSwitcher();
+    initPreviewDrag();
     initState();
 
     // Initial render
