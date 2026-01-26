@@ -1393,11 +1393,22 @@ body.sim-view-mobile #chaos-toggle {
 body.sim-view-mobile .sim-canvas-actions {
     top: 8px;
     right: 8px;
+    gap: var(--space-xs);
 }
 
 body.sim-view-mobile .sim-canvas-actions .btn--icon {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 40px;
+    min-height: 40px;
+    background: rgba(10, 8, 18, 0.85);
+    border: 1.5px solid rgba(176, 138, 240, 0.5);
+    color: var(--purple-bright);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.sim-view-mobile .sim-canvas-actions .btn--icon svg {
+    width: 22px;
+    height: 22px;
 }
 
 /* Ensure simulation canvas fills available space on mobile */
