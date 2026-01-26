@@ -124,6 +124,59 @@ body.sim-view-mobile .sim-nav .sim-help-btn {
     white-space: nowrap;
 }
 
+/* Responsive nav button sizing for mobile */
+body.sim-view-mobile .sim-nav .nav-links a {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+}
+
+body.sim-view-mobile .sim-nav .settings-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0.4rem;
+}
+
+body.sim-view-mobile .sim-nav .settings-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+body.sim-view-mobile .sim-help-btn {
+    padding: 0.25rem 0.4rem;
+    gap: 0.35rem;
+}
+
+body.sim-view-mobile .sim-help-icon {
+    width: 28px;
+    height: 28px;
+}
+
+body.sim-view-mobile .sim-help-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+body.sim-view-mobile .sim-help-text {
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+}
+
+/* Hide Tutorial text on very small screens, keep icon only */
+@media (max-width: 400px) {
+    body.sim-view-mobile .sim-help-text {
+        display: none;
+    }
+
+    body.sim-view-mobile .sim-help-btn {
+        padding: 0.25rem;
+    }
+
+    body.sim-view-mobile .sim-nav .nav-links a {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.5rem;
+    }
+}
+
 
 /* Main Content Area */
 .sim-content {
@@ -1393,22 +1446,11 @@ body.sim-view-mobile #chaos-toggle {
 body.sim-view-mobile .sim-canvas-actions {
     top: 8px;
     right: 8px;
-    gap: var(--space-xs);
 }
 
 body.sim-view-mobile .sim-canvas-actions .btn--icon {
-    min-width: 40px;
-    min-height: 40px;
-    background: rgba(10, 8, 18, 0.85);
-    border: 1.5px solid rgba(176, 138, 240, 0.5);
-    color: var(--purple-bright);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-body.sim-view-mobile .sim-canvas-actions .btn--icon svg {
-    width: 22px;
-    height: 22px;
+    min-width: 36px;
+    min-height: 36px;
 }
 
 /* Ensure simulation canvas fills available space on mobile */
