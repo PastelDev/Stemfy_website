@@ -138,21 +138,17 @@
             </button>
         </nav>
 
-        <!-- Mobile Preview Overlay -->
-        <div class="mobile-preview-overlay" id="mobile-preview-overlay">
-            <div class="mobile-preview-label">
-                <span class="mobile-preview-label__icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                </span>
-                <span class="mobile-preview-label__text" id="preview-label">Preview</span>
+        <!-- Mobile Preview Box (Picture-in-Picture) -->
+        <div class="mobile-preview-box" id="mobile-preview-box">
+            <canvas class="mobile-preview-box__canvas" id="preview-canvas"></canvas>
+            <div class="mobile-preview-box__label" id="preview-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="5" r="3"/>
+                    <line x1="12" y1="8" x2="12" y2="14"/>
+                    <circle cx="12" cy="17" r="3"/>
+                </svg>
+                <span id="preview-label-text">Preview</span>
             </div>
-            <div class="mobile-preview-canvas-container">
-                <canvas id="preview-canvas"></canvas>
-            </div>
-            <p class="mobile-preview-hint" id="preview-hint">Adjust parameters to see initial positions</p>
         </div>
 
         <!-- View Mode Switcher (Floating Button) -->

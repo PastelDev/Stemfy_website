@@ -1777,9 +1777,15 @@ function setMobileActivePanel(panelName) {
         computeChaosMap();
     }
 
-    // Hide preview when switching to simulation panel
+    // Handle preview box based on panel
     if (panelName === 'simulation') {
-        hideMobilePreview();
+        // Expand preview to center then fade out
+        if (state.mobilePreviewVisible) {
+            expandPreviewToCenter();
+        }
+    } else {
+        // Show preview in corner for controls/chaos panels
+        showMobilePreview();
     }
 
     syncPanelStateClasses();
@@ -1809,18 +1815,16 @@ function updateMobileTabLabels() {
     const tabSimLabel = document.getElementById('tab-simulation-label');
     const tabControlsLabel = document.getElementById('tab-controls-label');
     const tabChaosLabel = document.getElementById('tab-chaos-label');
-    const previewLabel = document.getElementById('preview-label');
-    const previewHint = document.getElementById('preview-hint');
+    const previewLabelText = document.getElementById('preview-label-text');
 
     if (tabSimLabel) tabSimLabel.textContent = i18n.t('mobile_tab_simulation');
     if (tabControlsLabel) tabControlsLabel.textContent = i18n.t('mobile_tab_controls');
     if (tabChaosLabel) tabChaosLabel.textContent = i18n.t('mobile_tab_chaos');
-    if (previewLabel) previewLabel.textContent = i18n.t('mobile_panel_preview');
-    if (previewHint) previewHint.textContent = i18n.t('mobile_panel_preview_hint');
+    if (previewLabelText) previewLabelText.textContent = i18n.t('mobile_panel_preview');
 }
 
 // ============================================
-// MOBILE PREVIEW OVERLAY
+// MOBILE PREVIEW BOX (Picture-in-Picture)
 // ============================================
 
 function initPreviewCanvas() {
@@ -1828,21 +1832,47 @@ function initPreviewCanvas() {
     if (!previewCanvas) return;
 
     previewCtx = previewCanvas.getContext('2d');
+    resizePreviewCanvas();
+}
 
-    // Set canvas size
-    const container = previewCanvas.parentElement;
-    const size = Math.min(container.offsetWidth, container.offsetHeight) || 280;
-    previewCanvas.width = size;
-    previewCanvas.height = size;
+function resizePreviewCanvas() {
+    if (!previewCanvas) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Get the current size of the preview box
+    const rect = box.getBoundingClientRect();
+    const size = Math.min(rect.width, rect.height) || 120;
+
+    // Set canvas resolution (higher for clarity)
+    const dpr = window.devicePixelRatio || 1;
+    previewCanvas.width = size * dpr;
+    previewCanvas.height = size * dpr;
+
+    if (previewCtx) {
+        previewCtx.scale(dpr, dpr);
+    }
 }
 
 function renderPreview() {
     if (!previewCtx || !previewCanvas) return;
 
-    const width = previewCanvas.width;
-    const height = previewCanvas.height;
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    const rect = box.getBoundingClientRect();
+    const displaySize = Math.min(rect.width, rect.height) || 120;
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = displaySize;
+    const height = displaySize;
     const centerX = width / 2;
-    const centerY = height * 0.4;
+    const centerY = height * 0.45;
+
+    // Reset transform and clear
+    previewCtx.setTransform(1, 0, 0, 1, 0, 0);
+    previewCtx.scale(dpr, dpr);
 
     // Clear canvas
     previewCtx.fillStyle = '#0a0812';
@@ -1850,7 +1880,7 @@ function renderPreview() {
 
     // Calculate scale based on pendulum size
     const totalLength = state.params.L1 + state.params.L2;
-    const scale = (width * 0.38) / totalLength;
+    const scale = (width * 0.35) / totalLength;
 
     // Get preview positions from current params (initial state)
     const theta1 = degToRad(state.params.theta1);
@@ -1861,9 +1891,15 @@ function renderPreview() {
     const x2 = x1 + state.params.L2 * Math.sin(theta2) * scale;
     const y2 = y1 + state.params.L2 * Math.cos(theta2) * scale;
 
+    // Adjust sizes based on preview box size (smaller when in corner)
+    const isCorner = box.classList.contains('corner');
+    const rodWidth = isCorner ? 2 : CONFIG.render.rodWidth;
+    const pivotSize = isCorner ? 3 : 6;
+    const massScale = isCorner ? 0.5 : 1;
+
     // Draw rods
     previewCtx.strokeStyle = CONFIG.colors.rod;
-    previewCtx.lineWidth = CONFIG.render.rodWidth;
+    previewCtx.lineWidth = rodWidth;
     previewCtx.lineCap = 'round';
 
     // Rod 1
@@ -1881,7 +1917,7 @@ function renderPreview() {
     // Draw pivot
     previewCtx.fillStyle = CONFIG.colors.pivot;
     previewCtx.beginPath();
-    previewCtx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+    previewCtx.arc(centerX, centerY, pivotSize, 0, Math.PI * 2);
     previewCtx.fill();
 
     // Draw mass 1
@@ -1890,31 +1926,30 @@ function renderPreview() {
     previewCtx.arc(
         centerX + x1,
         centerY + y1,
-        10 * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
+        (isCorner ? 5 : 10) * Math.sqrt(state.params.m1 / CONFIG.defaults.m1) * massScale,
         0, Math.PI * 2
     );
     previewCtx.fill();
 
     // Draw mass 2 with glow
     previewCtx.shadowColor = CONFIG.colors.mass2;
-    previewCtx.shadowBlur = 12;
+    previewCtx.shadowBlur = isCorner ? 6 : 12;
     previewCtx.fillStyle = CONFIG.colors.mass2;
     previewCtx.beginPath();
     previewCtx.arc(
         centerX + x2,
         centerY + y2,
-        10 * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
+        (isCorner ? 5 : 10) * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * massScale,
         0, Math.PI * 2
     );
     previewCtx.fill();
     previewCtx.shadowBlur = 0;
 
-    // Draw velocity arrows if angular velocities are non-zero
-    if (Math.abs(state.params.omega1) > 0.1 || Math.abs(state.params.omega2) > 0.1) {
+    // Draw velocity arrows only when not in corner (too small)
+    if (!isCorner && (Math.abs(state.params.omega1) > 0.1 || Math.abs(state.params.omega2) > 0.1)) {
         previewCtx.strokeStyle = 'rgba(255, 122, 236, 0.6)';
         previewCtx.lineWidth = 2;
 
-        // Velocity arrow for mass 1
         if (Math.abs(state.params.omega1) > 0.1) {
             const arrowScale = 8;
             const vx1 = -state.params.omega1 * state.params.L1 * Math.cos(theta1) * arrowScale;
@@ -1922,7 +1957,6 @@ function renderPreview() {
             drawArrow(previewCtx, centerX + x1, centerY + y1, centerX + x1 + vx1, centerY + y1 + vy1);
         }
 
-        // Velocity arrow for mass 2
         if (Math.abs(state.params.omega2) > 0.1) {
             const arrowScale = 8;
             const vx2 = -state.params.omega2 * state.params.L2 * Math.cos(theta2) * arrowScale;
@@ -1930,13 +1964,6 @@ function renderPreview() {
             drawArrow(previewCtx, centerX + x2, centerY + y2, centerX + x2 + vx2, centerY + y2 + vy2);
         }
     }
-
-    // Draw angle labels
-    previewCtx.fillStyle = 'rgba(248, 244, 255, 0.7)';
-    previewCtx.font = '12px Outfit, sans-serif';
-    previewCtx.textAlign = 'center';
-    previewCtx.fillText(`θ₁: ${state.params.theta1}°`, centerX, height - 40);
-    previewCtx.fillText(`θ₂: ${state.params.theta2}°`, centerX, height - 20);
 }
 
 function drawArrow(ctx, fromX, fromY, toX, toY) {
@@ -1959,26 +1986,59 @@ function drawArrow(ctx, fromX, fromY, toX, toY) {
 }
 
 function showMobilePreview() {
-    if (!isMobileViewActive() || state.mobileActivePanel === 'simulation') return;
+    if (!isMobileViewActive()) return;
 
-    const overlay = document.getElementById('mobile-preview-overlay');
-    if (overlay) {
-        overlay.classList.add('active');
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Show in corner when not on simulation tab
+    if (state.mobileActivePanel !== 'simulation') {
+        box.classList.remove('expanding', 'hidden');
+        box.classList.add('corner', 'visible');
         state.mobilePreviewVisible = true;
-        initPreviewCanvas();
-        renderPreview();
+
+        // Re-init canvas for corner size and render
+        requestAnimationFrame(() => {
+            resizePreviewCanvas();
+            renderPreview();
+        });
     }
 }
 
 function hideMobilePreview() {
-    const overlay = document.getElementById('mobile-preview-overlay');
-    if (overlay) {
-        overlay.classList.remove('active');
+    const box = document.getElementById('mobile-preview-box');
+    if (box) {
+        box.classList.remove('visible', 'corner', 'expanding');
+        box.classList.add('hidden');
         state.mobilePreviewVisible = false;
     }
 }
 
+function expandPreviewToCenter() {
+    const box = document.getElementById('mobile-preview-box');
+    if (!box || !state.mobilePreviewVisible) return;
+
+    // Animate from corner to center
+    box.classList.remove('corner');
+    box.classList.add('expanding', 'visible');
+
+    // Re-render at larger size after animation starts
+    requestAnimationFrame(() => {
+        resizePreviewCanvas();
+        renderPreview();
+    });
+
+    // After expansion animation completes, fade out and let main canvas take over
+    setTimeout(() => {
+        box.classList.add('hidden');
+        box.classList.remove('expanding', 'visible');
+        state.mobilePreviewVisible = false;
+    }, 500); // Match CSS transition duration
+}
+
 function triggerMobilePreview() {
+    if (!isMobileViewActive() || state.mobileActivePanel === 'simulation') return;
+
     // Clear any existing timeout
     if (state.mobilePreviewTimeout) {
         clearTimeout(state.mobilePreviewTimeout);
@@ -1986,10 +2046,8 @@ function triggerMobilePreview() {
 
     showMobilePreview();
 
-    // Auto-hide after 2 seconds of inactivity
-    state.mobilePreviewTimeout = setTimeout(() => {
-        hideMobilePreview();
-    }, 2000);
+    // Keep the preview visible while user is adjusting parameters
+    // It will expand when switching to simulation tab
 }
 
 // ============================================
