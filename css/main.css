@@ -1130,3 +1130,55 @@ footer a:hover {
         height: 56px;
     }
 }
+
+/* ============================================
+   GLOBAL VIEW MODE SWITCHER
+   ============================================ */
+
+.global-view-switcher {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1200;
+    display: none;
+}
+
+.global-view-switcher.visible {
+    display: block;
+}
+
+.global-view-switcher__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-panel);
+    border: 1px solid rgba(176, 138, 240, 0.35);
+    color: var(--purple-bright);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition:
+        transform var(--transition-fast),
+        background-color var(--transition-fast),
+        border-color var(--transition-fast);
+}
+
+.global-view-switcher__btn:hover {
+    transform: scale(1.08);
+    background: rgba(176, 138, 240, 0.15);
+    border-color: var(--purple-bright);
+}
+
+.global-view-switcher__btn:active {
+    transform: scale(0.95);
+}
+
+.global-view-switcher__btn svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}

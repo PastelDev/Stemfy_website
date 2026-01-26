@@ -1067,12 +1067,342 @@ body.sim-view-mobile .tutorial-tooltip {
     body:not(.sim-view-desktop) .simulation-page {
         --sim-nav-height: 140px;
     }
-    
+
     body:not(.sim-view-desktop) .playback-controls {
         flex-wrap: wrap;
     }
-    
+
     body:not(.sim-view-desktop) .control-panel__content {
         padding: var(--space-sm);
     }
+}
+
+/* ============================================
+   MOBILE REDESIGN - Tab Navigation System
+   ============================================ */
+
+/* Mobile Tab Bar */
+.mobile-tab-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--bg-panel);
+    border-top: 1px solid rgba(176, 138, 240, 0.25);
+    backdrop-filter: blur(12px);
+    z-index: 1100;
+    padding: 0 var(--space-sm);
+}
+
+body.sim-view-mobile .mobile-tab-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--white-dim);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    padding: var(--space-xs);
+    position: relative;
+}
+
+.mobile-tab:hover,
+.mobile-tab:focus {
+    color: var(--purple-bright);
+    outline: none;
+}
+
+.mobile-tab.active {
+    color: var(--purple-bright);
+}
+
+.mobile-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 3px;
+    background: var(--purple-bright);
+    border-radius: 3px 3px 0 0;
+}
+
+.mobile-tab__icon {
+    width: 24px;
+    height: 24px;
+}
+
+.mobile-tab__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.mobile-tab__label {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Mobile Panel Container */
+body.sim-view-mobile .sim-content {
+    padding-bottom: 64px; /* Space for tab bar */
+}
+
+/* Mobile Panels - Full screen with tab switching */
+body.sim-view-mobile .control-panel,
+body.sim-view-mobile .chaos-panel {
+    width: 100%;
+    height: calc(100vh - var(--sim-nav-height) - 64px);
+    top: var(--sim-nav-height);
+    bottom: 64px;
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid rgba(176, 138, 240, 0.15);
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+body.sim-view-mobile .control-panel.mobile-active,
+body.sim-view-mobile .chaos-panel.mobile-active {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Hide old toggle buttons in new mobile mode */
+body.sim-view-mobile .panel-toggle {
+    display: none;
+}
+
+/* Simulation panel (main canvas) */
+body.sim-view-mobile .sim-main {
+    position: fixed;
+    top: var(--sim-nav-height);
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    padding: var(--space-sm);
+    z-index: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity var(--transition-normal);
+}
+
+body.sim-view-mobile .sim-main.mobile-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Preview Overlay for Initial Positions */
+.mobile-preview-overlay {
+    display: none;
+    position: fixed;
+    top: var(--sim-nav-height);
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    background: rgba(10, 8, 18, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 850;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+body.sim-view-mobile .mobile-preview-overlay.active {
+    display: flex;
+}
+
+.mobile-preview-canvas-container {
+    position: relative;
+    width: min(320px, 80vw);
+    height: min(320px, 80vw);
+    background: var(--bg-surface);
+    border: 2px solid rgba(176, 138, 240, 0.35);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+}
+
+#preview-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.mobile-preview-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(176, 138, 240, 0.15);
+    border: 1px solid rgba(176, 138, 240, 0.25);
+    border-radius: var(--border-radius);
+}
+
+.mobile-preview-label__icon {
+    width: 20px;
+    height: 20px;
+    color: var(--purple-bright);
+}
+
+.mobile-preview-label__text {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--white-dim);
+}
+
+.mobile-preview-hint {
+    font-size: 0.75rem;
+    color: var(--color-gray);
+    text-align: center;
+    max-width: 280px;
+}
+
+/* Global View Mode Switcher (for all pages) */
+.view-mode-switcher {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    z-index: 1200;
+    display: none;
+}
+
+/* Show on mobile simulation page */
+body.sim-view-mobile .view-mode-switcher {
+    display: block;
+    bottom: 80px;
+}
+
+/* Show on all pages when in forced mobile mode */
+body.sim-view-mobile:not(.simulation-page-active) .view-mode-switcher {
+    bottom: 16px;
+}
+
+.view-mode-switcher__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-panel);
+    border: 1px solid rgba(176, 138, 240, 0.35);
+    color: var(--purple-bright);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition:
+        transform var(--transition-fast),
+        background-color var(--transition-fast),
+        border-color var(--transition-fast);
+}
+
+.view-mode-switcher__btn:hover {
+    transform: scale(1.08);
+    background: rgba(176, 138, 240, 0.15);
+    border-color: var(--purple-bright);
+}
+
+.view-mode-switcher__btn:active {
+    transform: scale(0.95);
+}
+
+.view-mode-switcher__btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Adjustments for mobile control panel header */
+body.sim-view-mobile .control-panel__header,
+body.sim-view-mobile .chaos-panel__header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Mobile playback controls - compact layout */
+body.sim-view-mobile .playback-controls {
+    padding: var(--space-sm) 0;
+    gap: var(--space-md);
+}
+
+body.sim-view-mobile .btn--play {
+    width: 48px;
+    height: 48px;
+}
+
+/* Chaos panel adjustments for mobile */
+body.sim-view-mobile .chaos-map-container {
+    max-width: 280px;
+    margin: 0 auto var(--space-md);
+}
+
+/* Hide chaos toggle button in control panel on mobile */
+body.sim-view-mobile #chaos-toggle {
+    display: none;
+}
+
+/* Mobile canvas actions positioning */
+body.sim-view-mobile .sim-canvas-actions {
+    top: 8px;
+    right: 8px;
+}
+
+body.sim-view-mobile .sim-canvas-actions .btn--icon {
+    min-width: 36px;
+    min-height: 36px;
+}
+
+/* Ensure simulation canvas fills available space on mobile */
+body.sim-view-mobile .sim-canvas-container {
+    width: 100%;
+    max-width: calc(100vh - var(--sim-nav-height) - 64px - 32px);
+    aspect-ratio: 1;
+}
+
+/* Tutorial adjustments for new mobile layout */
+body.sim-view-mobile .tutorial-tooltip {
+    bottom: 80px !important;
+    top: auto !important;
+}
+
+/* ============================================
+   View Mode Switcher - Desktop Styles
+   ============================================ */
+
+/* Always show view toggle in nav on simulation page */
+.sim-view-btn {
+    display: flex;
+}
+
+/* Desktop mode indicator when forced */
+body.sim-view-desktop .sim-view-btn {
+    color: var(--color-gray);
+}
+
+body.sim-view-desktop .sim-view-btn svg {
+    opacity: 0.6;
 }

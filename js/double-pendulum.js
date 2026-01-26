@@ -95,24 +95,24 @@ const CHAOS_WARNING_STORAGE_KEY = 'pendulumChaosWarningDismissed';
 const state = {
     // Current parameters
     params: { ...CONFIG.defaults },
-    
+
     // Simulation state
     theta1: 0,
     theta2: 0,
     omega1: 0,
     omega2: 0,
-    
+
     // Animation state
     isPlaying: false,
     animationId: null,
     lastTime: 0,
-    
+
     // Trail
     trail: [],
     trailEnabled: true,
     trailInfinite: false,
     trailDuration: CONFIG.trail.defaultDuration,
-    
+
     // Chaos map
     chaosMapVisible: false,
     chaosMapData: null,
@@ -122,10 +122,15 @@ const state = {
     chaosAxisX: 'theta1',
     chaosAxisY: 'theta2',
     chaosGridEnabled: true,
-    
+
     // UI
     controlPanelOpen: true,
-    chaosPanelOpen: true
+    chaosPanelOpen: true,
+
+    // Mobile UI
+    mobileActivePanel: 'simulation', // 'simulation', 'controls', 'chaos'
+    mobilePreviewVisible: false,
+    mobilePreviewTimeout: null
 };
 
 const INFO_CANVAS_SIZES = {
@@ -234,24 +239,59 @@ function applyViewPreference(preference) {
     }
 
     const controlPanel = document.querySelector('.control-panel');
+    const chaosPanel = document.querySelector('.chaos-panel');
+    const simMain = document.querySelector('.sim-main');
+
+    // Handle transition to mobile
     if (effective === VIEW_MODES.mobile && !wasMobile) {
+        // Reset to simulation panel view
+        state.mobileActivePanel = 'simulation';
+        state.controlPanelOpen = false;
+        state.chaosPanelOpen = false;
+
         if (controlPanel) {
             controlPanel.classList.add('collapsed');
-            controlPanel.classList.remove('open');
+            controlPanel.classList.remove('open', 'mobile-active');
         }
-        state.controlPanelOpen = false;
+        if (chaosPanel) {
+            chaosPanel.classList.add('collapsed');
+            chaosPanel.classList.remove('open', 'mobile-active');
+        }
+        if (simMain) {
+            simMain.classList.remove('mobile-hidden');
+        }
+
+        // Update tabs
+        const tabs = document.querySelectorAll('.mobile-tab');
+        tabs.forEach(tab => {
+            tab.classList.toggle('active', tab.getAttribute('data-panel') === 'simulation');
+        });
+
+        // Hide preview
+        hideMobilePreview();
     }
 
+    // Handle transition to desktop
     if (effective === VIEW_MODES.desktop && wasMobile) {
         if (controlPanel) {
-            controlPanel.classList.remove('collapsed');
+            controlPanel.classList.remove('collapsed', 'mobile-active');
             controlPanel.classList.add('open');
         }
+        if (chaosPanel) {
+            chaosPanel.classList.remove('collapsed', 'mobile-active');
+            chaosPanel.classList.add('open');
+        }
+        if (simMain) {
+            simMain.classList.remove('mobile-hidden');
+        }
         state.controlPanelOpen = true;
+        state.chaosPanelOpen = true;
     }
 
     updateViewToggleLabel(effective);
     updateNavHeightVariable();
+    updateViewModeSwitcherIcon();
+
     if (typeof syncPanelStateClasses === 'function') {
         syncPanelStateClasses();
     }
@@ -296,6 +336,7 @@ function initViewMode() {
 
 let canvas, ctx;
 let chaosCanvas, chaosCtx;
+let previewCanvas, previewCtx;
 let elements = {};
 let chaosWarning = {
     modal: null,
@@ -1406,16 +1447,24 @@ function updatePlayButton() {
 
 function setParameter(name, value) {
     state.params[name] = value;
-    
+
     // Update display
     const valueEl = document.getElementById(`${name}-value`);
     if (valueEl) {
         valueEl.textContent = formatNumber(value, name.includes('theta') || name.includes('omega') ? 1 : 2);
     }
-    
+
     // If changing initial conditions while paused, reset
     if (!state.isPlaying && ['theta1', 'theta2', 'omega1', 'omega2'].includes(name)) {
         reset();
+    }
+
+    // Trigger mobile preview when changing visual parameters
+    if (isMobileViewActive() && state.mobileActivePanel !== 'simulation') {
+        const visualParams = ['theta1', 'theta2', 'omega1', 'omega2', 'L1', 'L2', 'm1', 'm2'];
+        if (visualParams.includes(name)) {
+            triggerMobilePreview();
+        }
     }
 }
 
@@ -1592,33 +1641,52 @@ function updateChaosProgress(progress) {
 
 function handleChaosMapClick(event) {
     if (!state.chaosMapData) return;
-    
+
     const rect = chaosCanvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    
+
     const resolution = state.chaosMapData.resolution;
     const pixelX = Math.floor(x / rect.width * resolution);
     const pixelY = Math.floor(y / rect.height * resolution);
-    
+
     const axisX = state.chaosAxisX;
     const axisY = state.chaosAxisY;
     const rangeX = CONFIG.ranges[axisX];
     const rangeY = CONFIG.ranges[axisY];
-    
+
     const valueX = mapRange(pixelX, 0, resolution - 1, rangeX.min, rangeX.max);
     const valueY = mapRange(pixelY, 0, resolution - 1, rangeY.max, rangeY.min);
-    
-    // Update parameters
-    setParameter(axisX, valueX);
-    setParameter(axisY, valueY);
-    
+
+    // Store old values temporarily to avoid double preview trigger
+    const oldParamX = state.params[axisX];
+    const oldParamY = state.params[axisY];
+
+    // Update parameters directly without triggering preview twice
+    state.params[axisX] = valueX;
+    state.params[axisY] = valueY;
+
+    // Update displays
+    const valueElX = document.getElementById(`${axisX}-value`);
+    const valueElY = document.getElementById(`${axisY}-value`);
+    if (valueElX) {
+        valueElX.textContent = formatNumber(valueX, axisX.includes('theta') || axisX.includes('omega') ? 1 : 2);
+    }
+    if (valueElY) {
+        valueElY.textContent = formatNumber(valueY, axisY.includes('theta') || axisY.includes('omega') ? 1 : 2);
+    }
+
     // Update sliders
     const sliderX = document.getElementById(axisX);
     const sliderY = document.getElementById(axisY);
     if (sliderX) sliderX.value = valueX;
     if (sliderY) sliderY.value = valueY;
-    
+
+    // Trigger mobile preview if in mobile mode
+    if (isMobileViewActive() && state.mobileActivePanel === 'chaos') {
+        triggerMobilePreview();
+    }
+
     // Reset and optionally start
     reset();
 }
@@ -1659,6 +1727,311 @@ function toggleControlPanel() {
     }
     syncPanelStateClasses();
     resizeCanvas();
+}
+
+// ============================================
+// MOBILE PANEL NAVIGATION
+// ============================================
+
+function isMobileViewActive() {
+    return document.body.classList.contains('sim-view-mobile');
+}
+
+function setMobileActivePanel(panelName) {
+    if (!isMobileViewActive()) return;
+
+    state.mobileActivePanel = panelName;
+
+    const simMain = document.querySelector('.sim-main');
+    const controlPanel = document.querySelector('.control-panel');
+    const chaosPanel = document.querySelector('.chaos-panel');
+    const tabs = document.querySelectorAll('.mobile-tab');
+
+    // Update tab active states
+    tabs.forEach(tab => {
+        const tabPanel = tab.getAttribute('data-panel');
+        tab.classList.toggle('active', tabPanel === panelName);
+    });
+
+    // Show/hide panels
+    if (simMain) {
+        simMain.classList.toggle('mobile-hidden', panelName !== 'simulation');
+    }
+    if (controlPanel) {
+        controlPanel.classList.toggle('mobile-active', panelName === 'controls');
+        controlPanel.classList.toggle('collapsed', panelName !== 'controls');
+        controlPanel.classList.toggle('open', panelName === 'controls');
+    }
+    if (chaosPanel) {
+        chaosPanel.classList.toggle('mobile-active', panelName === 'chaos');
+        chaosPanel.classList.toggle('collapsed', panelName !== 'chaos');
+        chaosPanel.classList.toggle('open', panelName === 'chaos');
+    }
+
+    // Update state
+    state.controlPanelOpen = panelName === 'controls';
+    state.chaosPanelOpen = panelName === 'chaos';
+
+    // If switching to chaos panel, compute map if needed
+    if (panelName === 'chaos' && !state.chaosMapData && !state.chaosMapComputing) {
+        computeChaosMap();
+    }
+
+    // Hide preview when switching to simulation panel
+    if (panelName === 'simulation') {
+        hideMobilePreview();
+    }
+
+    syncPanelStateClasses();
+    resizeCanvas();
+}
+
+function initMobileTabNavigation() {
+    const tabBar = document.getElementById('mobile-tab-bar');
+    if (!tabBar) return;
+
+    const tabs = tabBar.querySelectorAll('.mobile-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const panelName = tab.getAttribute('data-panel');
+            setMobileActivePanel(panelName);
+        });
+    });
+
+    // Update tab labels with translations
+    updateMobileTabLabels();
+}
+
+function updateMobileTabLabels() {
+    const i18n = window.i18nManager;
+    if (!i18n) return;
+
+    const tabSimLabel = document.getElementById('tab-simulation-label');
+    const tabControlsLabel = document.getElementById('tab-controls-label');
+    const tabChaosLabel = document.getElementById('tab-chaos-label');
+    const previewLabel = document.getElementById('preview-label');
+    const previewHint = document.getElementById('preview-hint');
+
+    if (tabSimLabel) tabSimLabel.textContent = i18n.t('mobile_tab_simulation');
+    if (tabControlsLabel) tabControlsLabel.textContent = i18n.t('mobile_tab_controls');
+    if (tabChaosLabel) tabChaosLabel.textContent = i18n.t('mobile_tab_chaos');
+    if (previewLabel) previewLabel.textContent = i18n.t('mobile_panel_preview');
+    if (previewHint) previewHint.textContent = i18n.t('mobile_panel_preview_hint');
+}
+
+// ============================================
+// MOBILE PREVIEW OVERLAY
+// ============================================
+
+function initPreviewCanvas() {
+    previewCanvas = document.getElementById('preview-canvas');
+    if (!previewCanvas) return;
+
+    previewCtx = previewCanvas.getContext('2d');
+
+    // Set canvas size
+    const container = previewCanvas.parentElement;
+    const size = Math.min(container.offsetWidth, container.offsetHeight) || 280;
+    previewCanvas.width = size;
+    previewCanvas.height = size;
+}
+
+function renderPreview() {
+    if (!previewCtx || !previewCanvas) return;
+
+    const width = previewCanvas.width;
+    const height = previewCanvas.height;
+    const centerX = width / 2;
+    const centerY = height * 0.4;
+
+    // Clear canvas
+    previewCtx.fillStyle = '#0a0812';
+    previewCtx.fillRect(0, 0, width, height);
+
+    // Calculate scale based on pendulum size
+    const totalLength = state.params.L1 + state.params.L2;
+    const scale = (width * 0.38) / totalLength;
+
+    // Get preview positions from current params (initial state)
+    const theta1 = degToRad(state.params.theta1);
+    const theta2 = degToRad(state.params.theta2);
+
+    const x1 = state.params.L1 * Math.sin(theta1) * scale;
+    const y1 = state.params.L1 * Math.cos(theta1) * scale;
+    const x2 = x1 + state.params.L2 * Math.sin(theta2) * scale;
+    const y2 = y1 + state.params.L2 * Math.cos(theta2) * scale;
+
+    // Draw rods
+    previewCtx.strokeStyle = CONFIG.colors.rod;
+    previewCtx.lineWidth = CONFIG.render.rodWidth;
+    previewCtx.lineCap = 'round';
+
+    // Rod 1
+    previewCtx.beginPath();
+    previewCtx.moveTo(centerX, centerY);
+    previewCtx.lineTo(centerX + x1, centerY + y1);
+    previewCtx.stroke();
+
+    // Rod 2
+    previewCtx.beginPath();
+    previewCtx.moveTo(centerX + x1, centerY + y1);
+    previewCtx.lineTo(centerX + x2, centerY + y2);
+    previewCtx.stroke();
+
+    // Draw pivot
+    previewCtx.fillStyle = CONFIG.colors.pivot;
+    previewCtx.beginPath();
+    previewCtx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+    previewCtx.fill();
+
+    // Draw mass 1
+    previewCtx.fillStyle = CONFIG.colors.mass1;
+    previewCtx.beginPath();
+    previewCtx.arc(
+        centerX + x1,
+        centerY + y1,
+        10 * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
+        0, Math.PI * 2
+    );
+    previewCtx.fill();
+
+    // Draw mass 2 with glow
+    previewCtx.shadowColor = CONFIG.colors.mass2;
+    previewCtx.shadowBlur = 12;
+    previewCtx.fillStyle = CONFIG.colors.mass2;
+    previewCtx.beginPath();
+    previewCtx.arc(
+        centerX + x2,
+        centerY + y2,
+        10 * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
+        0, Math.PI * 2
+    );
+    previewCtx.fill();
+    previewCtx.shadowBlur = 0;
+
+    // Draw velocity arrows if angular velocities are non-zero
+    if (Math.abs(state.params.omega1) > 0.1 || Math.abs(state.params.omega2) > 0.1) {
+        previewCtx.strokeStyle = 'rgba(255, 122, 236, 0.6)';
+        previewCtx.lineWidth = 2;
+
+        // Velocity arrow for mass 1
+        if (Math.abs(state.params.omega1) > 0.1) {
+            const arrowScale = 8;
+            const vx1 = -state.params.omega1 * state.params.L1 * Math.cos(theta1) * arrowScale;
+            const vy1 = state.params.omega1 * state.params.L1 * Math.sin(theta1) * arrowScale;
+            drawArrow(previewCtx, centerX + x1, centerY + y1, centerX + x1 + vx1, centerY + y1 + vy1);
+        }
+
+        // Velocity arrow for mass 2
+        if (Math.abs(state.params.omega2) > 0.1) {
+            const arrowScale = 8;
+            const vx2 = -state.params.omega2 * state.params.L2 * Math.cos(theta2) * arrowScale;
+            const vy2 = state.params.omega2 * state.params.L2 * Math.sin(theta2) * arrowScale;
+            drawArrow(previewCtx, centerX + x2, centerY + y2, centerX + x2 + vx2, centerY + y2 + vy2);
+        }
+    }
+
+    // Draw angle labels
+    previewCtx.fillStyle = 'rgba(248, 244, 255, 0.7)';
+    previewCtx.font = '12px Outfit, sans-serif';
+    previewCtx.textAlign = 'center';
+    previewCtx.fillText(`θ₁: ${state.params.theta1}°`, centerX, height - 40);
+    previewCtx.fillText(`θ₂: ${state.params.theta2}°`, centerX, height - 20);
+}
+
+function drawArrow(ctx, fromX, fromY, toX, toY) {
+    const headLength = 8;
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.lineTo(
+        toX - headLength * Math.cos(angle - Math.PI / 6),
+        toY - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(
+        toX - headLength * Math.cos(angle + Math.PI / 6),
+        toY - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.stroke();
+}
+
+function showMobilePreview() {
+    if (!isMobileViewActive() || state.mobileActivePanel === 'simulation') return;
+
+    const overlay = document.getElementById('mobile-preview-overlay');
+    if (overlay) {
+        overlay.classList.add('active');
+        state.mobilePreviewVisible = true;
+        initPreviewCanvas();
+        renderPreview();
+    }
+}
+
+function hideMobilePreview() {
+    const overlay = document.getElementById('mobile-preview-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        state.mobilePreviewVisible = false;
+    }
+}
+
+function triggerMobilePreview() {
+    // Clear any existing timeout
+    if (state.mobilePreviewTimeout) {
+        clearTimeout(state.mobilePreviewTimeout);
+    }
+
+    showMobilePreview();
+
+    // Auto-hide after 2 seconds of inactivity
+    state.mobilePreviewTimeout = setTimeout(() => {
+        hideMobilePreview();
+    }, 2000);
+}
+
+// ============================================
+// VIEW MODE SWITCHER
+// ============================================
+
+function initViewModeSwitcher() {
+    const switcherBtn = document.getElementById('view-mode-switcher-btn');
+    if (switcherBtn) {
+        switcherBtn.addEventListener('click', toggleViewPreference);
+    }
+
+    // Update switcher icon based on current mode
+    updateViewModeSwitcherIcon();
+}
+
+function updateViewModeSwitcherIcon() {
+    const switcherBtn = document.getElementById('view-mode-switcher-btn');
+    if (!switcherBtn) return;
+
+    const isMobile = document.body.classList.contains('sim-view-mobile');
+    const i18n = window.i18nManager;
+
+    // Desktop icon when in mobile mode, mobile icon when in desktop mode
+    if (isMobile) {
+        // Show desktop icon
+        switcherBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>`;
+        switcherBtn.setAttribute('aria-label', i18n?.t('view_desktop_label') || 'Switch to desktop view');
+        switcherBtn.setAttribute('title', i18n?.t('view_desktop_label') || 'Switch to desktop view');
+    } else {
+        // Show mobile icon
+        switcherBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="7" y="2" width="10" height="20" rx="2"/>
+            <line x1="11" y1="18" x2="13" y2="18"/>
+        </svg>`;
+        switcherBtn.setAttribute('aria-label', i18n?.t('view_mobile_label') || 'Switch to mobile view');
+        switcherBtn.setAttribute('title', i18n?.t('view_mobile_label') || 'Switch to mobile view');
+    }
 }
 
 // ============================================
@@ -1884,17 +2257,21 @@ function initState() {
 document.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     initChaosCanvas();
+    initPreviewCanvas();
     initControls();
     initChaosWarningModal();
     initViewMode();
+    initMobileTabNavigation();
+    initViewModeSwitcher();
     initState();
-    
+
     // Initial render
     render();
     updatePlayButton();
+    updateMobileTabLabels();
 
     // Ensure chaos panel state on load
-    if (state.chaosPanelOpen) {
+    if (state.chaosPanelOpen && !isMobileViewActive()) {
         const chaosPanel = document.querySelector('.chaos-panel');
         if (chaosPanel) {
             chaosPanel.classList.remove('collapsed');
@@ -1905,12 +2282,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-    
     // Initialize starfield background
     if (typeof initStarfield === 'function') {
         initStarfield('starfield');
     }
+
+    // Listen for language changes to update mobile tab labels
+    window.addEventListener('languageChanged', () => {
+        updateMobileTabLabels();
+        updateViewModeSwitcherIcon();
+    });
 });
 
 // Keyboard shortcuts
