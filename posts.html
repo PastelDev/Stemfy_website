@@ -582,10 +582,10 @@
   <script src="js/starfield.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/cms-api.js"></script>
   <script>
     // Fetch and display dynamic posts and resources
     (function() {
-      const API_URL = 'admin/api.php?type=posts';
       let postsCache = [];
 
       const modal = document.getElementById('post-modal');
@@ -607,13 +607,10 @@
       async function loadContent() {
         try {
           const lang = getLang();
-          const response = await fetch(API_URL);
-          const data = await response.json();
-
-          if (data.success) {
-            renderPosts(data.posts, lang);
-            renderResources(data.resources, lang);
-          }
+          const posts = await window.stemfyCms.fetchPosts(lang);
+          const resources = await window.stemfyCms.fetchResources(lang);
+          renderPosts(posts, lang);
+          renderResources(resources, lang);
         } catch (error) {
           console.log('Could not load dynamic content:', error);
           showPlaceholders();
