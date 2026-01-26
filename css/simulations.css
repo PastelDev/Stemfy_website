@@ -96,6 +96,34 @@ body.sim-view-mobile .sim-view-btn {
     stroke: currentColor;
 }
 
+/* Mobile top nav scrolling for simulation view */
+body.sim-view-mobile .sim-nav .nav-right {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.sim-view-mobile .sim-nav .nav-right > * {
+    flex: 0 0 auto;
+}
+
+body.sim-view-mobile .sim-nav .nav-links {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+}
+
+body.sim-view-mobile .sim-nav .nav-links a,
+body.sim-view-mobile .sim-nav .settings-btn,
+body.sim-view-mobile .sim-nav .sim-help-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 /* Main Content Area */
 .sim-content {
     margin-top: var(--sim-nav-height);
@@ -1373,59 +1401,6 @@ body.sim-view-mobile .mobile-preview-box.hidden {
 .mobile-preview-box__resize svg {
     width: 14px;
     height: 14px;
-}
-
-/* Global View Mode Switcher (for all pages) */
-.view-mode-switcher {
-    position: fixed;
-    bottom: 80px;
-    right: 16px;
-    z-index: 1200;
-    display: none;
-}
-
-/* Show on mobile simulation page */
-body.sim-view-mobile .view-mode-switcher {
-    display: block;
-    bottom: 80px;
-}
-
-/* Show on all pages when in forced mobile mode */
-body.sim-view-mobile:not(.simulation-page-active) .view-mode-switcher {
-    bottom: 16px;
-}
-
-.view-mode-switcher__btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--bg-panel);
-    border: 1px solid rgba(176, 138, 240, 0.35);
-    color: var(--purple-bright);
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    transition:
-        transform var(--transition-fast),
-        background-color var(--transition-fast),
-        border-color var(--transition-fast);
-}
-
-.view-mode-switcher__btn:hover {
-    transform: scale(1.08);
-    background: rgba(176, 138, 240, 0.15);
-    border-color: var(--purple-bright);
-}
-
-.view-mode-switcher__btn:active {
-    transform: scale(0.95);
-}
-
-.view-mode-switcher__btn svg {
-    width: 24px;
-    height: 24px;
 }
 
 /* Adjustments for mobile control panel header */

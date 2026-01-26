@@ -25,14 +25,19 @@ if (file_exists($credentialsFile)) {
     define('ADMIN_PASSWORD', false);
 }
 
-// Data file paths
-define('DATA_DIR', __DIR__ . '/data/');
+// Data file paths (allow override for deployments)
+$dataDir = defined('STEMFY_DATA_DIR') ? STEMFY_DATA_DIR : getenv('STEMFY_DATA_DIR');
+$dataDir = $dataDir ?: (__DIR__ . '/data/');
+define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
 define('POSTS_FILE', DATA_DIR . 'posts.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
 
-// Upload paths
-define('UPLOAD_DIR', __DIR__ . '/uploads/');
-define('UPLOAD_BASE_URL', '/admin/uploads/');
+// Upload paths (allow override for deployments)
+$uploadDir = defined('STEMFY_UPLOAD_DIR') ? STEMFY_UPLOAD_DIR : getenv('STEMFY_UPLOAD_DIR');
+$uploadDir = $uploadDir ?: (__DIR__ . '/uploads/');
+define('UPLOAD_DIR', rtrim($uploadDir, '/\\') . DIRECTORY_SEPARATOR);
+$uploadBaseUrl = defined('STEMFY_UPLOAD_BASE_URL') ? STEMFY_UPLOAD_BASE_URL : getenv('STEMFY_UPLOAD_BASE_URL');
+define('UPLOAD_BASE_URL', $uploadBaseUrl ?: '/admin/uploads/');
 define('UPLOAD_POSTS_DIR', UPLOAD_DIR . 'posts/');
 define('UPLOAD_RESOURCES_DIR', UPLOAD_DIR . 'resources/');
 define('UPLOAD_NEWS_DIR', UPLOAD_DIR . 'news/');
