@@ -1781,7 +1781,9 @@ function isMobileViewActive() {
 function setMobileActivePanel(panelName) {
     if (!isMobileViewActive()) return;
 
-    state.mobileActivePanel = panelName;
+    const allowedPanels = ['simulation', 'controls', 'chaos'];
+    const nextPanel = allowedPanels.includes(panelName) ? panelName : 'simulation';
+    state.mobileActivePanel = nextPanel;
 
     const simMain = document.querySelector('.sim-main');
     const controlPanel = document.querySelector('.control-panel');
@@ -1791,35 +1793,35 @@ function setMobileActivePanel(panelName) {
     // Update tab active states
     tabs.forEach(tab => {
         const tabPanel = tab.getAttribute('data-panel');
-        tab.classList.toggle('active', tabPanel === panelName);
+        tab.classList.toggle('active', tabPanel === nextPanel);
     });
 
     // Show/hide panels
     if (simMain) {
-        simMain.classList.toggle('mobile-hidden', panelName !== 'simulation');
+        simMain.classList.toggle('mobile-hidden', nextPanel !== 'simulation');
     }
     if (controlPanel) {
-        controlPanel.classList.toggle('mobile-active', panelName === 'controls');
-        controlPanel.classList.toggle('collapsed', panelName !== 'controls');
-        controlPanel.classList.toggle('open', panelName === 'controls');
+        controlPanel.classList.toggle('mobile-active', nextPanel === 'controls');
+        controlPanel.classList.toggle('collapsed', nextPanel !== 'controls');
+        controlPanel.classList.toggle('open', nextPanel === 'controls');
     }
     if (chaosPanel) {
-        chaosPanel.classList.toggle('mobile-active', panelName === 'chaos');
-        chaosPanel.classList.toggle('collapsed', panelName !== 'chaos');
-        chaosPanel.classList.toggle('open', panelName === 'chaos');
+        chaosPanel.classList.toggle('mobile-active', nextPanel === 'chaos');
+        chaosPanel.classList.toggle('collapsed', nextPanel !== 'chaos');
+        chaosPanel.classList.toggle('open', nextPanel === 'chaos');
     }
 
     // Update state
-    state.controlPanelOpen = panelName === 'controls';
-    state.chaosPanelOpen = panelName === 'chaos';
+    state.controlPanelOpen = nextPanel === 'controls';
+    state.chaosPanelOpen = nextPanel === 'chaos';
 
     // If switching to chaos panel, compute map if needed
-    if (panelName === 'chaos' && !state.chaosMapData && !state.chaosMapComputing) {
+    if (nextPanel === 'chaos' && !state.chaosMapData && !state.chaosMapComputing) {
         computeChaosMap();
     }
 
     // Handle preview box based on panel
-    if (panelName === 'simulation') {
+    if (nextPanel === 'simulation') {
         // Just hide preview - simulation continues seamlessly on main canvas
         hideMobilePreview();
     } else {
@@ -2445,18 +2447,6 @@ function initControls() {
                 renderChaosMap();
             }
         });
-    }
-    
-    // Mobile panel toggles
-    const controlsToggle = document.querySelector('.panel-toggle--controls');
-    const chaosToggleMobile = document.querySelector('.panel-toggle--chaos');
-    
-    if (controlsToggle) {
-        controlsToggle.addEventListener('click', toggleControlPanel);
-    }
-    
-    if (chaosToggleMobile) {
-        chaosToggleMobile.addEventListener('click', toggleChaosPanel);
     }
     
     // Recompute chaos map button
