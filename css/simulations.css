@@ -682,6 +682,44 @@ body.sim-view-mobile .sim-help-text {
     margin-top: var(--space-xs);
 }
 
+/* Chaos Coordinate Display */
+.chaos-coordinate {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(10, 8, 18, 0.7);
+    border: 1px solid rgba(176, 138, 240, 0.2);
+    border-radius: var(--border-radius);
+}
+
+.chaos-coordinate__title {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--purple-bright);
+    margin-bottom: 2px;
+}
+
+.chaos-coordinate__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    font-size: 0.75rem;
+}
+
+.chaos-coordinate__label {
+    color: var(--white-dim);
+}
+
+.chaos-coordinate__value {
+    font-weight: 600;
+    color: var(--white);
+}
+
 /* Axis Selection */
 .axis-selection {
     display: grid;
@@ -1451,6 +1489,37 @@ body.sim-view-mobile .sim-canvas-actions {
 body.sim-view-mobile .sim-canvas-actions .btn--icon {
     min-width: 36px;
     min-height: 36px;
+}
+
+/* Mobile playback controls on simulation canvas */
+.mobile-sim-controls {
+    display: none;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 6px 10px;
+    background: rgba(10, 8, 18, 0.75);
+    border: 1px solid rgba(176, 138, 240, 0.3);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    z-index: 2;
+}
+
+body.sim-view-mobile .mobile-sim-controls {
+    display: flex;
+}
+
+body.sim-view-mobile .mobile-sim-controls .btn {
+    min-width: 40px;
+    min-height: 40px;
+}
+
+body.sim-view-mobile .mobile-sim-controls .btn--play {
+    width: 44px;
+    height: 44px;
 }
 
 /* Ensure simulation canvas fills available space on mobile */

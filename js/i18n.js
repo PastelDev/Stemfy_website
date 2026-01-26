@@ -87,6 +87,7 @@ const I18N = {
     chaos_subtitle: 'Click to choose initial conditions',
     chaos_axis_x: 'Axis X',
     chaos_axis_y: 'Axis Y',
+    chaos_coordinate_title: 'Current coordinate',
     axis_theta1: '\u03B8\u2081 (angle 1)',
     axis_theta2: '\u03B8\u2082 (angle 2)',
     axis_omega1: '\u03C9\u2081 (angular velocity 1)',
@@ -203,20 +204,23 @@ const I18N = {
     selection_title: 'Panhellenic Competitions',
     selection_intro: 'Inside-Greece competitions and how they lead to international Olympiads.',
     selection_math_title: 'Mathematics',
-    selection_math_national: 'Greece: <a href="https://www.hms.gr/diagonismoi/" target="_blank" rel="noopener">Hellenic Mathematical Society rounds</a> (Thales \u2192 Euclid \u2192 Archimedes) lead to the preliminary selection exam for national teams.',
-    selection_math_international: 'International: <a href="https://imo-official.org/" target="_blank" rel="noopener">IMO</a>, <a href="https://bmo-olympiad.org/" target="_blank" rel="noopener">BMO (Balkan)</a>, <a href="https://www.egmo.org/" target="_blank" rel="noopener">EGMO</a>.',
+    selection_math_national: 'Greece: <a href="https://hms.gr/competitions/" target="_blank" rel="noopener">Hellenic Mathematical Society rounds</a> (Thales \u2192 Euclid \u2192 Archimedes) lead to the preliminary selection exam for national teams.',
+    selection_math_international: 'International: <a href="https://imo-official.org/" target="_blank" rel="noopener">IMO</a>, <a href="https://bmo2024.org/" target="_blank" rel="noopener">BMO (Balkan)</a>, <a href="https://www.egmo.org/" target="_blank" rel="noopener">EGMO</a>.',
     selection_physics_title: 'Physics',
     selection_physics_national: 'Greece: The Panhellenic Physics Competition "Aristotle" (<a href="https://www.eef.gr/" target="_blank" rel="noopener">EEF</a>) is the official selection route; top students enter training and the national team.',
-    selection_physics_international: 'International: <a href="https://www.ipho-new.org/" target="_blank" rel="noopener">IPhO</a>, <a href="https://balkanphysicsolympiad.com/" target="_blank" rel="noopener">BPO (Balkan)</a>, <a href="https://eupho.org/" target="_blank" rel="noopener">EuPhO</a>.',
+    selection_physics_international: 'International: <a href="https://www.ipho-new.org/" target="_blank" rel="noopener">IPhO</a>, <a href="https://balkanphysicalunion.info/?page_id=657" target="_blank" rel="noopener">BPO (Balkan)</a>, <a href="https://eupho.org/" target="_blank" rel="noopener">EuPhO</a>.',
     selection_informatics_title: 'Informatics',
-    selection_informatics_national: 'Greece: The <a href="https://www.e-olymp.gr/" target="_blank" rel="noopener">Panhellenic Informatics Competition</a> selects and prepares the national team.',
-    selection_informatics_international: 'International: <a href="https://ioinformatics.org/" target="_blank" rel="noopener">IOI</a>, BOI, EJOI, <a href="https://ioai-official.org/" target="_blank" rel="noopener">IOAI</a>.',
+    selection_informatics_national: 'Greece: The <a href="http://www.pdp.gr/" target="_blank" rel="noopener">Panhellenic Informatics Competition</a> selects and prepares the national team.',
+    selection_informatics_international: 'International: <a href="https://ioinformatics.org/" target="_blank" rel="noopener">IOI</a>, <a href="https://boi2023.zotks.si/" target="_blank" rel="noopener">BOI</a>, <a href="https://ejoi.org/" target="_blank" rel="noopener">EJOI</a>, <a href="https://ioai-official.org/" target="_blank" rel="noopener">IOAI</a>.',
     selection_astronomy_title: 'Astronomy',
     selection_astronomy_national: 'Greece: The <a href="https://astronomos.gr/apotelesmata-3is-fasis-ptolemaios-lykeiou-27os-panellinios-diagonismos-astronomias/" target="_blank" rel="noopener">Panhellenic Astronomy &amp; Astrophysics Competition</a> runs multiple phases; the final phase has been used to select IOAA teams.',
-    selection_astronomy_international: 'International: <a href="https://ioaastrophysics.org/" target="_blank" rel="noopener">IOAA</a>.',
+    selection_astronomy_international: 'International: <a href="https://ioaa2025.in/" target="_blank" rel="noopener">IOAA</a>.',
     selection_research_title: 'Science &amp; Research',
     selection_research_national: 'Greece: The <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">Hellenic Physical Society</a> coordinates Greek participation and team formation for IYPT and IYNT.',
     selection_research_international: 'International: <a href="https://www.iypt.org/" target="_blank" rel="noopener">IYPT</a>, <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">IYNT</a>.',
+    ioai_selection_title: 'IOAI team selection (separate track)',
+    ioai_selection_intro: 'IOAI follows its own pathway that emphasizes AI fundamentals and practical ML skills, so it does not use the standard informatics selection.',
+    ioai_selection_list: '<li>Phase 1: National call and eligibility check (Greek students who meet the IOAI age rules).</li><li>Phase 2: AI screening test (math + programming + basic ML concepts).</li><li>Phase 3: Training camp focused on machine learning, data handling, and ethical AI.</li><li>Phase 4: Final evaluation with model-building and problem-solving tasks to select the team.</li>',
 
     // Posts page
     posts_title: 'Posts',
@@ -329,6 +333,7 @@ const I18N = {
     chaos_subtitle: 'Κάνε κλικ για να επιλέξεις αρχικές συνθήκες',
     chaos_axis_x: 'Άξονας X',
     chaos_axis_y: 'Άξονας Y',
+    chaos_coordinate_title: 'Τρέχουσες συντεταγμένες',
     axis_theta1: 'θ₁ (γωνία 1)',
     axis_theta2: 'θ₂ (γωνία 2)',
     axis_omega1: 'ω₁ (γωνιακή ταχύτητα 1)',
@@ -438,20 +443,23 @@ const I18N = {
     selection_title: 'Πανελλήνιοι Διαγωνισμοί',
     selection_intro: 'Διαγωνισμοί εντός Ελλάδας και πώς οδηγούν σε διεθνείς Ολυμπιάδες.',
     selection_math_title: 'Μαθηματικά',
-    selection_math_national: 'Ελλάδα: Οι <a href="https://www.hms.gr/diagonismoi/" target="_blank" rel="noopener">γύροι της Ελληνικής Μαθηματικής Εταιρείας</a> (Θαλής → Ευκλείδης → Αρχιμήδης) οδηγούν στην προκριματική εξέταση για τις εθνικές ομάδες.',
-    selection_math_international: 'Διεθνείς: <a href="https://imo-official.org/" target="_blank" rel="noopener">IMO</a>, <a href="https://bmo-olympiad.org/" target="_blank" rel="noopener">BMO (Βαλκανική)</a>, <a href="https://www.egmo.org/" target="_blank" rel="noopener">EGMO</a>.',
+    selection_math_national: 'Ελλάδα: Οι <a href="https://hms.gr/competitions/" target="_blank" rel="noopener">γύροι της Ελληνικής Μαθηματικής Εταιρείας</a> (Θαλής → Ευκλείδης → Αρχιμήδης) οδηγούν στην προκριματική εξέταση για τις εθνικές ομάδες.',
+    selection_math_international: 'Διεθνείς: <a href="https://imo-official.org/" target="_blank" rel="noopener">IMO</a>, <a href="https://bmo2024.org/" target="_blank" rel="noopener">BMO (Βαλκανική)</a>, <a href="https://www.egmo.org/" target="_blank" rel="noopener">EGMO</a>.',
     selection_physics_title: 'Φυσική',
     selection_physics_national: 'Ελλάδα: Ο Πανελλήνιος Διαγωνισμός Φυσικής "Αριστοτέλης" (<a href="https://www.eef.gr/" target="_blank" rel="noopener">ΕΕΦ</a>) είναι η επίσημη διαδρομή επιλογής· οι κορυφαίοι μαθητές μπαίνουν σε προπόνηση και στην εθνική ομάδα.',
-    selection_physics_international: 'Διεθνείς: <a href="https://www.ipho-new.org/" target="_blank" rel="noopener">IPhO</a>, <a href="https://balkanphysicsolympiad.com/" target="_blank" rel="noopener">BPO (Βαλκανική)</a>, <a href="https://eupho.org/" target="_blank" rel="noopener">EuPhO</a>.',
+    selection_physics_international: 'Διεθνείς: <a href="https://www.ipho-new.org/" target="_blank" rel="noopener">IPhO</a>, <a href="https://balkanphysicalunion.info/?page_id=657" target="_blank" rel="noopener">BPO (Βαλκανική)</a>, <a href="https://eupho.org/" target="_blank" rel="noopener">EuPhO</a>.',
     selection_informatics_title: 'Πληροφορική',
-    selection_informatics_national: 'Ελλάδα: Ο <a href="https://www.e-olymp.gr/" target="_blank" rel="noopener">Πανελλήνιος Διαγωνισμός Πληροφορικής</a> επιλέγει και προετοιμάζει την εθνική ομάδα.',
-    selection_informatics_international: 'Διεθνείς: <a href="https://ioinformatics.org/" target="_blank" rel="noopener">IOI</a>, BOI, EJOI, <a href="https://ioai-official.org/" target="_blank" rel="noopener">IOAI</a>.',
+    selection_informatics_national: 'Ελλάδα: Ο <a href="http://www.pdp.gr/" target="_blank" rel="noopener">Πανελλήνιος Διαγωνισμός Πληροφορικής</a> επιλέγει και προετοιμάζει την εθνική ομάδα.',
+    selection_informatics_international: 'Διεθνείς: <a href="https://ioinformatics.org/" target="_blank" rel="noopener">IOI</a>, <a href="https://boi2023.zotks.si/" target="_blank" rel="noopener">BOI</a>, <a href="https://ejoi.org/" target="_blank" rel="noopener">EJOI</a>, <a href="https://ioai-official.org/" target="_blank" rel="noopener">IOAI</a>.',
     selection_astronomy_title: 'Αστρονομία',
     selection_astronomy_national: 'Ελλάδα: Ο <a href="https://astronomos.gr/apotelesmata-3is-fasis-ptolemaios-lykeiou-27os-panellinios-diagonismos-astronomias/" target="_blank" rel="noopener">Πανελλήνιος Διαγωνισμός Αστρονομίας & Αστροφυσικής</a> περιλαμβάνει πολλές φάσεις· η τελική φάση έχει χρησιμοποιηθεί για την επιλογή των ομάδων IOAA.',
-    selection_astronomy_international: 'Διεθνείς: <a href="https://ioaastrophysics.org/" target="_blank" rel="noopener">IOAA</a>.',
+    selection_astronomy_international: 'Διεθνείς: <a href="https://ioaa2025.in/" target="_blank" rel="noopener">IOAA</a>.',
     selection_research_title: 'Επιστήμη & Έρευνα',
     selection_research_national: 'Ελλάδα: Η <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">Ελληνική Φυσική Εταιρεία</a> συντονίζει την ελληνική συμμετοχή και τον σχηματισμό ομάδων για το IYPT και το IYNT.',
     selection_research_international: 'Διεθνείς: <a href="https://www.iypt.org/" target="_blank" rel="noopener">IYPT</a>, <a href="https://iynt.eef.gr/" target="_blank" rel="noopener">IYNT</a>.',
+    ioai_selection_title: 'Επιλογή ομάδας IOAI (ξεχωριστή διαδρομή)',
+    ioai_selection_intro: 'Η IOAI έχει δικό της μονοπάτι που δίνει έμφαση στα θεμέλια της ΤΝ και στις πρακτικές δεξιότητες ML, άρα δεν ακολουθεί τη βασική επιλογή πληροφορικής.',
+    ioai_selection_list: '<li>Φάση 1: Εθνική πρόσκληση και έλεγχος επιλεξιμότητας (μαθητές που καλύπτουν τα όρια ηλικίας της IOAI).</li><li>Φάση 2: Εισαγωγική εξέταση ΤΝ (μαθηματικά + προγραμματισμός + βασικές έννοιες ML).</li><li>Φάση 3: Προπονητικό camp με έμφαση σε μηχανική μάθηση, διαχείριση δεδομένων και ηθική ΤΝ.</li><li>Φάση 4: Τελική αξιολόγηση με κατασκευή μοντέλων και επίλυση προβλημάτων για την επιλογή της ομάδας.</li>',
     competitions_title: 'Διεθνείς Διαγωνισμοί',
     competitions_intro: 'Πληροφορίες για επιστημονικές και μαθηματικές ολυμπιάδες διαθέσιμες σε Έλληνες μαθητές',
     comp_math: 'Μαθηματικά',
@@ -783,6 +791,7 @@ class I18nManager {
     this.setTextById('chaos-axis-y-label', 'chaos_axis_y');
     this.setTextById('chaos-legend-stable', 'chaos_legend_stable');
     this.setTextById('chaos-legend-chaotic', 'chaos_legend_chaotic');
+    this.setTextById('chaos-coordinate-title', 'chaos_coordinate_title');
     this.setTextById('chaos-grid-label', 'chaos_grid_label');
     this.setTextById('recompute-chaos', 'recompute_chaos');
     this.setTextById('chaos-info-title', 'chaos_info_title');
@@ -806,6 +815,7 @@ class I18nManager {
     this.setAttrById('chaos-toggle-btn', 'aria-label', 'open_chaos');
     this.setAttrById('chaos-toggle', 'aria-label', 'toggle_chaos');
     this.setAttrById('reset-btn', 'aria-label', 'reset_label');
+    this.setAttrById('mobile-reset-btn', 'aria-label', 'reset_label');
     this.setAttrById('download-pendulum-image', 'aria-label', 'download_image');
     this.setAttrById('download-pendulum-image', 'title', 'download_image');
     this.setAttrById('download-pendulum-video', 'aria-label', 'download_video');
@@ -908,6 +918,10 @@ class I18nManager {
     this.setHTMLById('selection-astronomy-international', 'selection_astronomy_international');
     this.setHTMLById('selection-research-national', 'selection_research_national');
     this.setHTMLById('selection-research-international', 'selection_research_international');
+
+    this.setTextById('ioai-selection-title', 'ioai_selection_title');
+    this.setTextById('ioai-selection-intro', 'ioai_selection_intro');
+    this.setHTMLById('ioai-selection-list', 'ioai_selection_list');
   }
 
   updatePostsPage() {
@@ -934,4 +948,3 @@ document.addEventListener('DOMContentLoaded', () => {
   i18nManager = new I18nManager();
   window.i18nManager = i18nManager;
 });
-

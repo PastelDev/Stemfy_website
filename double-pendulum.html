@@ -207,6 +207,18 @@
                         <span id="chaos-legend-chaotic" style="font-size: 0.625rem; color: var(--color-gray);">Chaotic</span>
                     </div>
 
+                    <div class="chaos-coordinate">
+                        <div class="chaos-coordinate__title" id="chaos-coordinate-title">Current coordinate</div>
+                        <div class="chaos-coordinate__row">
+                            <span class="chaos-coordinate__label" id="chaos-coordinate-x-label">Axis X: --</span>
+                            <span class="chaos-coordinate__value" id="chaos-coordinate-x-value">--</span>
+                        </div>
+                        <div class="chaos-coordinate__row">
+                            <span class="chaos-coordinate__label" id="chaos-coordinate-y-label">Axis Y: --</span>
+                            <span class="chaos-coordinate__value" id="chaos-coordinate-y-value">--</span>
+                        </div>
+                    </div>
+
                     <div class="control-toggle">
                         <label class="control-toggle__label" for="chaos-grid-toggle" id="chaos-grid-label">Show grid</label>
                         <label class="toggle-switch">
@@ -262,6 +274,19 @@
                         </button>
                     </div>
                     <canvas id="pendulum-canvas"></canvas>
+                    <div class="mobile-sim-controls" aria-label="Playback controls">
+                        <button id="mobile-reset-btn" class="btn btn--secondary" aria-label="Reset">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                <path d="M3 3v5h5"/>
+                            </svg>
+                        </button>
+                        <button id="mobile-play-btn" class="btn btn--play" aria-label="Play">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5,3 19,12 5,21"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </main>
 

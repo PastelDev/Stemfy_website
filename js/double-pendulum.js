@@ -819,6 +819,33 @@ function getAxisShortLabel(axisKey) {
     return i18n?.t(meta.labelKey) || meta.key;
 }
 
+function updateChaosCoordinateDisplay() {
+    const labelXEl = document.getElementById('chaos-coordinate-x-label');
+    const labelYEl = document.getElementById('chaos-coordinate-y-label');
+    const valueXEl = document.getElementById('chaos-coordinate-x-value');
+    const valueYEl = document.getElementById('chaos-coordinate-y-value');
+
+    if (!labelXEl || !labelYEl || !valueXEl || !valueYEl) return;
+
+    const axisX = state.chaosAxisX;
+    const axisY = state.chaosAxisY;
+    const axisLabelX = getAxisShortLabel(axisX);
+    const axisLabelY = getAxisShortLabel(axisY);
+    const axisPrefixX = getInfoText('chaos_axis_x', 'Axis X');
+    const axisPrefixY = getInfoText('chaos_axis_y', 'Axis Y');
+
+    labelXEl.textContent = `${axisPrefixX}: ${axisLabelX}`;
+    labelYEl.textContent = `${axisPrefixY}: ${axisLabelY}`;
+
+    const metaX = PARAMETER_METADATA.find((item) => item.key === axisX);
+    const metaY = PARAMETER_METADATA.find((item) => item.key === axisY);
+    const valueX = metaX ? formatValueWithUnit(state.params[axisX], metaX.unit, metaX.decimals) : '--';
+    const valueY = metaY ? formatValueWithUnit(state.params[axisY], metaY.unit, metaY.decimals) : '--';
+
+    valueXEl.textContent = valueX;
+    valueYEl.textContent = valueY;
+}
+
 function drawInfoBackground(ctx, width, height) {
     const gradient = ctx.createLinearGradient(0, 0, width, height);
     gradient.addColorStop(0, INFO_THEME.backgroundStart);
@@ -1513,22 +1540,24 @@ function reset() {
 }
 
 function updatePlayButton() {
-    const btn = elements.playBtn;
-    if (!btn) return;
     const i18n = window.i18nManager;
+    const buttons = [elements.playBtn, elements.mobilePlayBtn].filter(Boolean);
+    if (!buttons.length) return;
 
-    if (state.isPlaying) {
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-            <rect x="6" y="4" width="4" height="16"/>
-            <rect x="14" y="4" width="4" height="16"/>
-        </svg>`;
-        btn.setAttribute('aria-label', i18n?.t('pause_label') || 'Pause');
-    } else {
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="5,3 19,12 5,21"/>
-        </svg>`;
-        btn.setAttribute('aria-label', i18n?.t('play_label') || 'Play');
-    }
+    buttons.forEach((btn) => {
+        if (state.isPlaying) {
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+            </svg>`;
+            btn.setAttribute('aria-label', i18n?.t('pause_label') || 'Pause');
+        } else {
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21"/>
+            </svg>`;
+            btn.setAttribute('aria-label', i18n?.t('play_label') || 'Play');
+        }
+    });
 
     // Also update preview play button
     updatePreviewPlayButton();
@@ -1555,6 +1584,8 @@ function setParameter(name, value) {
             triggerMobilePreview();
         }
     }
+
+    updateChaosCoordinateDisplay();
 }
 
 function setSpeed(multiplier) {
@@ -1781,6 +1812,8 @@ function handleChaosMapClick(event) {
         triggerMobilePreview();
     }
 
+    updateChaosCoordinateDisplay();
+
     // Reset and optionally start
     reset();
 }
@@ -1799,6 +1832,8 @@ function setChaosAxis(axis, param) {
     if (state.chaosPanelOpen) {
         computeChaosMap();
     }
+
+    updateChaosCoordinateDisplay();
 }
 
 // ============================================
@@ -2391,6 +2426,8 @@ function initControls() {
     // Cache element references
     elements.playBtn = document.getElementById('play-btn');
     elements.resetBtn = document.getElementById('reset-btn');
+    elements.mobilePlayBtn = document.getElementById('mobile-play-btn');
+    elements.mobileResetBtn = document.getElementById('mobile-reset-btn');
     elements.tutorialBtn = document.getElementById('tutorial-btn');
     elements.viewToggleBtn = document.getElementById('view-toggle-btn');
     elements.downloadPendulumImageBtn = document.getElementById('download-pendulum-image');
@@ -2401,10 +2438,18 @@ function initControls() {
     if (elements.playBtn) {
         elements.playBtn.addEventListener('click', togglePlay);
     }
-    
+
+    if (elements.mobilePlayBtn) {
+        elements.mobilePlayBtn.addEventListener('click', togglePlay);
+    }
+
     // Reset
     if (elements.resetBtn) {
         elements.resetBtn.addEventListener('click', reset);
+    }
+
+    if (elements.mobileResetBtn) {
+        elements.mobileResetBtn.addEventListener('click', reset);
     }
     
     // Tutorial
@@ -2537,6 +2582,8 @@ function initState() {
             valueEl.textContent = formatNumber(CONFIG.defaults[param], decimals);
         }
     });
+
+    updateChaosCoordinateDisplay();
 }
 
 // Main initialization
@@ -2576,6 +2623,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Listen for language changes to update mobile tab labels
     window.addEventListener('languageChanged', () => {
         updateMobileTabLabels();
+        updateChaosCoordinateDisplay();
     });
 });
 
