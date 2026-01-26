@@ -300,7 +300,6 @@ function applyViewPreference(preference) {
 
     updateViewToggleLabel(effective);
     updateNavHeightVariable();
-    updateViewModeSwitcherIcon();
 
     if (typeof syncPanelStateClasses === 'function') {
         syncPanelStateClasses();
@@ -1541,6 +1540,11 @@ function toggleDamping(enabled) {
 // ============================================
 
 function toggleChaosPanel() {
+    if (isMobileViewActive()) {
+        const nextPanel = state.chaosPanelOpen ? 'simulation' : 'chaos';
+        setMobileActivePanel(nextPanel);
+        return;
+    }
     state.chaosPanelOpen = !state.chaosPanelOpen;
     const panel = document.querySelector('.chaos-panel');
     if (panel) {
@@ -1751,6 +1755,11 @@ function syncPanelStateClasses() {
 }
 
 function toggleControlPanel() {
+    if (isMobileViewActive()) {
+        const nextPanel = state.controlPanelOpen ? 'simulation' : 'controls';
+        setMobileActivePanel(nextPanel);
+        return;
+    }
     state.controlPanelOpen = !state.controlPanelOpen;
     const panel = document.querySelector('.control-panel');
     if (panel) {
@@ -2261,48 +2270,6 @@ function resetPreviewPosition() {
 }
 
 // ============================================
-// VIEW MODE SWITCHER
-// ============================================
-
-function initViewModeSwitcher() {
-    const switcherBtn = document.getElementById('view-mode-switcher-btn');
-    if (switcherBtn) {
-        switcherBtn.addEventListener('click', toggleViewPreference);
-    }
-
-    // Update switcher icon based on current mode
-    updateViewModeSwitcherIcon();
-}
-
-function updateViewModeSwitcherIcon() {
-    const switcherBtn = document.getElementById('view-mode-switcher-btn');
-    if (!switcherBtn) return;
-
-    const isMobile = document.body.classList.contains('sim-view-mobile');
-    const i18n = window.i18nManager;
-
-    // Desktop icon when in mobile mode, mobile icon when in desktop mode
-    if (isMobile) {
-        // Show desktop icon
-        switcherBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="3" width="20" height="14" rx="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>`;
-        switcherBtn.setAttribute('aria-label', i18n?.t('view_desktop_label') || 'Switch to desktop view');
-        switcherBtn.setAttribute('title', i18n?.t('view_desktop_label') || 'Switch to desktop view');
-    } else {
-        // Show mobile icon
-        switcherBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="7" y="2" width="10" height="20" rx="2"/>
-            <line x1="11" y1="18" x2="13" y2="18"/>
-        </svg>`;
-        switcherBtn.setAttribute('aria-label', i18n?.t('view_mobile_label') || 'Switch to mobile view');
-        switcherBtn.setAttribute('title', i18n?.t('view_mobile_label') || 'Switch to mobile view');
-    }
-}
-
-// ============================================
 // INITIALIZATION
 // ============================================
 
@@ -2530,7 +2497,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initChaosWarningModal();
     initViewMode();
     initMobileTabNavigation();
-    initViewModeSwitcher();
     initPreviewDrag();
     initState();
 
@@ -2559,7 +2525,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Listen for language changes to update mobile tab labels
     window.addEventListener('languageChanged', () => {
         updateMobileTabLabels();
-        updateViewModeSwitcherIcon();
     });
 });
 
