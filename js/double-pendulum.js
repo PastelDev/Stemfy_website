@@ -76,6 +76,15 @@ const CONFIG = {
         mass2: '#ff7aec',
         trail: '#ff7aec',
         trailFade: '#b08af0'
+    },
+
+    // Mobile performance settings
+    mobile: {
+        stepsPerFrame: 5,       // Fewer physics steps on mobile (vs 10 on desktop)
+        maxTrailLength: 800,    // Shorter trail for better performance
+        trailSkipFactor: 2,     // Skip every N trail points when rendering
+        disableGlow: true,      // Disable expensive glow effects
+        reducedDPR: true        // Use reduced device pixel ratio for canvas
     }
 };
 
@@ -199,6 +208,27 @@ function prefersMobileLayout() {
     const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     return isMobileDevice() || coarsePointer || isCompactViewport();
 }
+
+// Mobile performance mode detection - cached for performance
+let _useMobilePerformance = null;
+function useMobilePerformance() {
+    if (_useMobilePerformance !== null) return _useMobilePerformance;
+
+    // Check for mobile device or touch-primary device
+    const isMobile = isMobileDevice();
+    const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const isSmallScreen = window.innerWidth <= 768 || window.innerHeight <= 600;
+
+    // Also check for low-end device indicators
+    const lowMemory = navigator.deviceMemory && navigator.deviceMemory < 4;
+    const slowCPU = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+
+    _useMobilePerformance = isMobile || isTouch || isSmallScreen || lowMemory || slowCPU;
+    return _useMobilePerformance;
+}
+
+// Reset cache on resize (viewport might have changed)
+window.addEventListener('resize', () => { _useMobilePerformance = null; });
 
 function getStoredViewPreference() {
     try {
@@ -526,6 +556,7 @@ function getPosition(theta1, theta2, params) {
 function render() {
     if (!ctx) return;
 
+    const isMobilePerf = useMobilePerformance();
     const width = canvas.width;
     const height = canvas.height;
     const centerX = width / 2;
@@ -543,7 +574,7 @@ function render() {
     const mass2Radius = Math.max(6, CONFIG.render.mass2Radius * sizeRatio);
     const rodWidth = Math.max(2, CONFIG.render.rodWidth * sizeRatio);
     const trailWidth = Math.max(1, CONFIG.render.trailWidth * sizeRatio);
-    const glowBlur = Math.max(5, 15 * sizeRatio);
+    const glowBlur = isMobilePerf && CONFIG.mobile.disableGlow ? 0 : Math.max(5, 15 * sizeRatio);
 
     // Clear canvas
     ctx.fillStyle = 'rgba(10, 8, 18, 0.35)';
@@ -552,22 +583,37 @@ function render() {
     // Get positions
     const pos = getPosition(state.theta1, state.theta2, state.params);
 
-    // Draw trail
+    // Draw trail - optimized for mobile by skipping points
     if (state.trailEnabled && state.trail.length > 1) {
+        const skipFactor = isMobilePerf ? CONFIG.mobile.trailSkipFactor : 1;
         ctx.beginPath();
         ctx.moveTo(centerX + state.trail[0].x, centerY + state.trail[0].y);
+        ctx.lineWidth = trailWidth;
 
-        for (let i = 1; i < state.trail.length; i++) {
-            const point = state.trail[i];
-            const alpha = state.trailInfinite ?
-                0.8 :
-                mapRange(i, 0, state.trail.length, 0.1, 0.8);
+        // Use a single color for the entire trail on mobile for better performance
+        if (isMobilePerf) {
+            ctx.strokeStyle = 'rgba(255, 107, 157, 0.6)';
+            for (let i = skipFactor; i < state.trail.length; i += skipFactor) {
+                const point = state.trail[i];
+                ctx.lineTo(centerX + point.x, centerY + point.y);
+            }
+            // Always include the last point
+            const lastPoint = state.trail[state.trail.length - 1];
+            ctx.lineTo(centerX + lastPoint.x, centerY + lastPoint.y);
+            ctx.stroke();
+        } else {
+            // Desktop: full quality with per-segment alpha
+            for (let i = 1; i < state.trail.length; i++) {
+                const point = state.trail[i];
+                const alpha = state.trailInfinite ?
+                    0.8 :
+                    mapRange(i, 0, state.trail.length, 0.1, 0.8);
 
-            ctx.strokeStyle = `rgba(255, 107, 157, ${alpha})`;
-            ctx.lineWidth = trailWidth;
-            ctx.lineTo(centerX + point.x, centerY + point.y);
+                ctx.strokeStyle = `rgba(255, 107, 157, ${alpha})`;
+                ctx.lineTo(centerX + point.x, centerY + point.y);
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
     }
 
     // Draw rods
@@ -615,18 +661,20 @@ function render() {
     );
     ctx.fill();
 
-    // Add glow effect to mass 2
-    ctx.shadowColor = CONFIG.colors.mass2;
-    ctx.shadowBlur = glowBlur;
-    ctx.beginPath();
-    ctx.arc(
-        centerX + pos.x2,
-        centerY + pos.y2,
-        mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * 0.5,
-        0, Math.PI * 2
-    );
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    // Add glow effect to mass 2 (skip on mobile for performance)
+    if (glowBlur > 0) {
+        ctx.shadowColor = CONFIG.colors.mass2;
+        ctx.shadowBlur = glowBlur;
+        ctx.beginPath();
+        ctx.arc(
+            centerX + pos.x2,
+            centerY + pos.y2,
+            mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * 0.5,
+            0, Math.PI * 2
+        );
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
 
     // Also render to preview canvas if visible
     if (state.mobilePreviewVisible) {
@@ -1367,42 +1415,52 @@ function drawChaosOverlay(data) {
 
 function animate(currentTime) {
     if (!state.isPlaying) return;
-    
+
+    const isMobilePerf = useMobilePerformance();
     const dt = CONFIG.simulation.dt * CONFIG.simulation.speedMultiplier;
-    
+
+    // Use fewer physics steps on mobile for better performance
+    const stepsPerFrame = isMobilePerf
+        ? CONFIG.mobile.stepsPerFrame
+        : CONFIG.simulation.stepsPerFrame;
+
     // Physics steps
-    for (let i = 0; i < CONFIG.simulation.stepsPerFrame; i++) {
+    for (let i = 0; i < stepsPerFrame; i++) {
         const result = rk4Step(
             state.theta1, state.theta2,
             state.omega1, state.omega2,
             dt, state.params
         );
-        
+
         state.theta1 = result[0];
         state.theta2 = result[1];
         state.omega1 = result[2];
         state.omega2 = result[3];
     }
-    
+
     // Update trail
     const pos = getPosition(state.theta1, state.theta2, state.params);
     state.trail.push({ x: pos.x2, y: pos.y2, time: currentTime });
-    
-    // Trim trail
+
+    // Trim trail - use shorter max length on mobile
+    const maxTrailLength = isMobilePerf
+        ? CONFIG.mobile.maxTrailLength
+        : CONFIG.trail.maxLength;
+
     if (!state.trailInfinite) {
         const maxAge = state.trailDuration * 1000;
         while (state.trail.length > 0 && currentTime - state.trail[0].time > maxAge) {
             state.trail.shift();
         }
     }
-    
-    if (state.trail.length > CONFIG.trail.maxLength) {
-        state.trail = state.trail.slice(-CONFIG.trail.maxLength);
+
+    if (state.trail.length > maxTrailLength) {
+        state.trail = state.trail.slice(-maxTrailLength);
     }
-    
+
     // Render
     render();
-    
+
     state.animationId = requestAnimationFrame(animate);
 }
 
@@ -2022,7 +2080,8 @@ function renderPreview() {
     const centerX = width / 2;
     const centerY = height * 0.45;
 
-    const dpr = window.devicePixelRatio || 1;
+    // Use reduced DPR for preview canvas on mobile for better performance
+    const dpr = CONFIG.mobile.reducedDPR ? Math.min(window.devicePixelRatio || 1, 1.5) : (window.devicePixelRatio || 1);
 
     // Reset transform and clear
     previewCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2051,24 +2110,29 @@ function renderPreview() {
     const pivotSize = Math.max(3, 6 * sizeRatio * 0.6);
     const massSize = Math.max(5, 10 * sizeRatio * 0.6);
 
-    // Draw trail if enabled
+    // Draw trail if enabled - optimized: use single path and skip points
     if (state.trailEnabled && state.trail.length > 1) {
+        const trailSkip = 4; // Skip more points in preview for performance
         previewCtx.lineCap = 'round';
         previewCtx.lineJoin = 'round';
+        previewCtx.strokeStyle = 'rgba(255, 122, 236, 0.5)';
+        previewCtx.lineWidth = Math.max(1, CONFIG.render.trailWidth * sizeRatio * 0.5);
 
-        for (let i = 1; i < state.trail.length; i++) {
-            const prev = state.trail[i - 1];
-            const curr = state.trail[i];
+        previewCtx.beginPath();
+        previewCtx.moveTo(
+            centerX + state.trail[0].x * scale,
+            centerY + state.trail[0].y * scale
+        );
 
-            const alpha = state.trailInfinite ? 0.6 : (i / state.trail.length) * 0.8;
-            previewCtx.strokeStyle = `rgba(255, 122, 236, ${alpha})`;
-            previewCtx.lineWidth = Math.max(1, CONFIG.render.trailWidth * sizeRatio * 0.5);
-
-            previewCtx.beginPath();
-            previewCtx.moveTo(centerX + prev.x * scale, centerY + prev.y * scale);
-            previewCtx.lineTo(centerX + curr.x * scale, centerY + curr.y * scale);
-            previewCtx.stroke();
+        for (let i = trailSkip; i < state.trail.length; i += trailSkip) {
+            const point = state.trail[i];
+            previewCtx.lineTo(centerX + point.x * scale, centerY + point.y * scale);
         }
+
+        // Always include the last point
+        const lastPoint = state.trail[state.trail.length - 1];
+        previewCtx.lineTo(centerX + lastPoint.x * scale, centerY + lastPoint.y * scale);
+        previewCtx.stroke();
     }
 
     // Draw rods
@@ -2103,9 +2167,7 @@ function renderPreview() {
     );
     previewCtx.fill();
 
-    // Draw mass 2 with glow
-    previewCtx.shadowColor = CONFIG.colors.mass2;
-    previewCtx.shadowBlur = Math.max(4, 12 * sizeRatio * 0.5);
+    // Draw mass 2 - no glow effect for performance
     previewCtx.fillStyle = CONFIG.colors.mass2;
     previewCtx.beginPath();
     previewCtx.arc(
@@ -2115,7 +2177,6 @@ function renderPreview() {
         0, Math.PI * 2
     );
     previewCtx.fill();
-    previewCtx.shadowBlur = 0;
 }
 
 function showMobilePreview() {
