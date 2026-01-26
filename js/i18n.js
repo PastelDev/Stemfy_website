@@ -123,6 +123,16 @@ const I18N = {
     chaos_warning_confirm: 'Update chaos map',
     language_toggle: 'Toggle language',
 
+    // Mobile view
+    mobile_tab_simulation: 'Simulation',
+    mobile_tab_controls: 'Controls',
+    mobile_tab_chaos: 'Chaos Map',
+    mobile_panel_preview: 'Preview',
+    mobile_panel_preview_hint: 'Adjust parameters to see initial positions',
+    view_mode_mobile: 'Mobile',
+    view_mode_desktop: 'Desktop',
+    view_switcher_tooltip: 'Switch view mode',
+
     // Tutorial
     tutorial_step_label: 'Step {current} / {total}',
     tutorial_skip: 'Skip',
@@ -354,6 +364,16 @@ const I18N = {
     chaos_warning_cancel: 'Κράτησε τον τρέχοντα χάρτη',
     chaos_warning_confirm: 'Ενημέρωση χάρτη',
     language_toggle: 'Εναλλαγή γλώσσας',
+
+    // Mobile view
+    mobile_tab_simulation: 'Προσομοίωση',
+    mobile_tab_controls: 'Ρυθμίσεις',
+    mobile_tab_chaos: 'Χάρτης Χάους',
+    mobile_panel_preview: 'Προεπισκόπηση',
+    mobile_panel_preview_hint: 'Ρύθμισε τις παραμέτρους για να δεις τις αρχικές θέσεις',
+    view_mode_mobile: 'Κινητό',
+    view_mode_desktop: 'Υπολογιστής',
+    view_switcher_tooltip: 'Αλλαγή προβολής',
 
     // Tutorial
     tutorial_step_label: 'Βήμα {current} / {total}',
@@ -808,6 +828,16 @@ class I18nManager {
 
     if (typeof updatePlayButton === 'function') {
       updatePlayButton();
+    }
+
+    // Update mobile tab labels
+    if (typeof updateMobileTabLabels === 'function') {
+      updateMobileTabLabels();
+    }
+
+    // Update view mode switcher icon
+    if (typeof updateViewModeSwitcherIcon === 'function') {
+      updateViewModeSwitcherIcon();
     }
   }
 

@@ -95,24 +95,24 @@ const CHAOS_WARNING_STORAGE_KEY = 'pendulumChaosWarningDismissed';
 const state = {
     // Current parameters
     params: { ...CONFIG.defaults },
-    
+
     // Simulation state
     theta1: 0,
     theta2: 0,
     omega1: 0,
     omega2: 0,
-    
+
     // Animation state
     isPlaying: false,
     animationId: null,
     lastTime: 0,
-    
+
     // Trail
     trail: [],
     trailEnabled: true,
     trailInfinite: false,
     trailDuration: CONFIG.trail.defaultDuration,
-    
+
     // Chaos map
     chaosMapVisible: false,
     chaosMapData: null,
@@ -122,10 +122,25 @@ const state = {
     chaosAxisX: 'theta1',
     chaosAxisY: 'theta2',
     chaosGridEnabled: true,
-    
+
     // UI
     controlPanelOpen: true,
-    chaosPanelOpen: true
+    chaosPanelOpen: true,
+
+    // Mobile UI
+    mobileActivePanel: 'simulation', // 'simulation', 'controls', 'chaos'
+    mobilePreviewVisible: false,
+    mobilePreviewTimeout: null,
+
+    // Preview box drag
+    previewDrag: {
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        offsetX: 0,
+        offsetY: 0,
+        customPosition: false // true if user has dragged to custom position
+    }
 };
 
 const INFO_CANVAS_SIZES = {
@@ -234,24 +249,59 @@ function applyViewPreference(preference) {
     }
 
     const controlPanel = document.querySelector('.control-panel');
+    const chaosPanel = document.querySelector('.chaos-panel');
+    const simMain = document.querySelector('.sim-main');
+
+    // Handle transition to mobile
     if (effective === VIEW_MODES.mobile && !wasMobile) {
+        // Reset to simulation panel view
+        state.mobileActivePanel = 'simulation';
+        state.controlPanelOpen = false;
+        state.chaosPanelOpen = false;
+
         if (controlPanel) {
             controlPanel.classList.add('collapsed');
-            controlPanel.classList.remove('open');
+            controlPanel.classList.remove('open', 'mobile-active');
         }
-        state.controlPanelOpen = false;
+        if (chaosPanel) {
+            chaosPanel.classList.add('collapsed');
+            chaosPanel.classList.remove('open', 'mobile-active');
+        }
+        if (simMain) {
+            simMain.classList.remove('mobile-hidden');
+        }
+
+        // Update tabs
+        const tabs = document.querySelectorAll('.mobile-tab');
+        tabs.forEach(tab => {
+            tab.classList.toggle('active', tab.getAttribute('data-panel') === 'simulation');
+        });
+
+        // Hide preview
+        hideMobilePreview();
     }
 
+    // Handle transition to desktop
     if (effective === VIEW_MODES.desktop && wasMobile) {
         if (controlPanel) {
-            controlPanel.classList.remove('collapsed');
+            controlPanel.classList.remove('collapsed', 'mobile-active');
             controlPanel.classList.add('open');
         }
+        if (chaosPanel) {
+            chaosPanel.classList.remove('collapsed', 'mobile-active');
+            chaosPanel.classList.add('open');
+        }
+        if (simMain) {
+            simMain.classList.remove('mobile-hidden');
+        }
         state.controlPanelOpen = true;
+        state.chaosPanelOpen = true;
     }
 
     updateViewToggleLabel(effective);
     updateNavHeightVariable();
+    updateViewModeSwitcherIcon();
+
     if (typeof syncPanelStateClasses === 'function') {
         syncPanelStateClasses();
     }
@@ -296,6 +346,7 @@ function initViewMode() {
 
 let canvas, ctx;
 let chaosCanvas, chaosCtx;
+let previewCanvas, previewCtx;
 let elements = {};
 let chaosWarning = {
     modal: null,
@@ -475,94 +526,113 @@ function getPosition(theta1, theta2, params) {
  */
 function render() {
     if (!ctx) return;
-    
+
     const width = canvas.width;
     const height = canvas.height;
     const centerX = width / 2;
     const centerY = height * 0.38;
-    
+
+    // Size-adaptive rendering: scale elements based on canvas size
+    // Reference size is 400px - elements scale proportionally
+    const referenceSize = 400;
+    const canvasSize = Math.min(width, height);
+    const sizeRatio = Math.min(1, canvasSize / referenceSize);
+
+    // Calculate adaptive sizes
+    const pivotRadius = Math.max(4, CONFIG.render.pivotRadius * sizeRatio);
+    const mass1Radius = Math.max(6, CONFIG.render.mass1Radius * sizeRatio);
+    const mass2Radius = Math.max(6, CONFIG.render.mass2Radius * sizeRatio);
+    const rodWidth = Math.max(2, CONFIG.render.rodWidth * sizeRatio);
+    const trailWidth = Math.max(1, CONFIG.render.trailWidth * sizeRatio);
+    const glowBlur = Math.max(5, 15 * sizeRatio);
+
     // Clear canvas
     ctx.fillStyle = 'rgba(10, 8, 18, 0.35)';
     ctx.fillRect(0, 0, width, height);
-    
+
     // Get positions
     const pos = getPosition(state.theta1, state.theta2, state.params);
-    
+
     // Draw trail
     if (state.trailEnabled && state.trail.length > 1) {
         ctx.beginPath();
         ctx.moveTo(centerX + state.trail[0].x, centerY + state.trail[0].y);
-        
+
         for (let i = 1; i < state.trail.length; i++) {
             const point = state.trail[i];
-            const alpha = state.trailInfinite ? 
-                0.8 : 
+            const alpha = state.trailInfinite ?
+                0.8 :
                 mapRange(i, 0, state.trail.length, 0.1, 0.8);
-            
+
             ctx.strokeStyle = `rgba(255, 107, 157, ${alpha})`;
-            ctx.lineWidth = CONFIG.render.trailWidth;
+            ctx.lineWidth = trailWidth;
             ctx.lineTo(centerX + point.x, centerY + point.y);
         }
         ctx.stroke();
     }
-    
+
     // Draw rods
     ctx.strokeStyle = CONFIG.colors.rod;
-    ctx.lineWidth = CONFIG.render.rodWidth;
+    ctx.lineWidth = rodWidth;
     ctx.lineCap = 'round';
-    
+
     // Rod 1
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(centerX + pos.x1, centerY + pos.y1);
     ctx.stroke();
-    
+
     // Rod 2
     ctx.beginPath();
     ctx.moveTo(centerX + pos.x1, centerY + pos.y1);
     ctx.lineTo(centerX + pos.x2, centerY + pos.y2);
     ctx.stroke();
-    
+
     // Draw pivot
     ctx.fillStyle = CONFIG.colors.pivot;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, CONFIG.render.pivotRadius, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, pivotRadius, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Draw mass 1
     ctx.fillStyle = CONFIG.colors.mass1;
     ctx.beginPath();
     ctx.arc(
-        centerX + pos.x1, 
-        centerY + pos.y1, 
-        CONFIG.render.mass1Radius * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
+        centerX + pos.x1,
+        centerY + pos.y1,
+        mass1Radius * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
         0, Math.PI * 2
     );
     ctx.fill();
-    
+
     // Draw mass 2
     ctx.fillStyle = CONFIG.colors.mass2;
     ctx.beginPath();
     ctx.arc(
-        centerX + pos.x2, 
+        centerX + pos.x2,
         centerY + pos.y2,
-        CONFIG.render.mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
+        mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
         0, Math.PI * 2
     );
     ctx.fill();
-    
+
     // Add glow effect to mass 2
     ctx.shadowColor = CONFIG.colors.mass2;
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = glowBlur;
     ctx.beginPath();
     ctx.arc(
-        centerX + pos.x2, 
+        centerX + pos.x2,
         centerY + pos.y2,
-        CONFIG.render.mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * 0.5,
+        mass2Radius * Math.sqrt(state.params.m2 / CONFIG.defaults.m2) * 0.5,
         0, Math.PI * 2
     );
     ctx.fill();
     ctx.shadowBlur = 0;
+
+    // Also render to preview canvas if visible
+    if (state.mobilePreviewVisible) {
+        renderPreview();
+    }
 }
 
 /**
@@ -1389,7 +1459,7 @@ function updatePlayButton() {
     const btn = elements.playBtn;
     if (!btn) return;
     const i18n = window.i18nManager;
-    
+
     if (state.isPlaying) {
         btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16"/>
@@ -1402,20 +1472,31 @@ function updatePlayButton() {
         </svg>`;
         btn.setAttribute('aria-label', i18n?.t('play_label') || 'Play');
     }
+
+    // Also update preview play button
+    updatePreviewPlayButton();
 }
 
 function setParameter(name, value) {
     state.params[name] = value;
-    
+
     // Update display
     const valueEl = document.getElementById(`${name}-value`);
     if (valueEl) {
         valueEl.textContent = formatNumber(value, name.includes('theta') || name.includes('omega') ? 1 : 2);
     }
-    
+
     // If changing initial conditions while paused, reset
     if (!state.isPlaying && ['theta1', 'theta2', 'omega1', 'omega2'].includes(name)) {
         reset();
+    }
+
+    // Trigger mobile preview when changing visual parameters
+    if (isMobileViewActive() && state.mobileActivePanel !== 'simulation') {
+        const visualParams = ['theta1', 'theta2', 'omega1', 'omega2', 'L1', 'L2', 'm1', 'm2'];
+        if (visualParams.includes(name)) {
+            triggerMobilePreview();
+        }
     }
 }
 
@@ -1592,33 +1673,52 @@ function updateChaosProgress(progress) {
 
 function handleChaosMapClick(event) {
     if (!state.chaosMapData) return;
-    
+
     const rect = chaosCanvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    
+
     const resolution = state.chaosMapData.resolution;
     const pixelX = Math.floor(x / rect.width * resolution);
     const pixelY = Math.floor(y / rect.height * resolution);
-    
+
     const axisX = state.chaosAxisX;
     const axisY = state.chaosAxisY;
     const rangeX = CONFIG.ranges[axisX];
     const rangeY = CONFIG.ranges[axisY];
-    
+
     const valueX = mapRange(pixelX, 0, resolution - 1, rangeX.min, rangeX.max);
     const valueY = mapRange(pixelY, 0, resolution - 1, rangeY.max, rangeY.min);
-    
-    // Update parameters
-    setParameter(axisX, valueX);
-    setParameter(axisY, valueY);
-    
+
+    // Store old values temporarily to avoid double preview trigger
+    const oldParamX = state.params[axisX];
+    const oldParamY = state.params[axisY];
+
+    // Update parameters directly without triggering preview twice
+    state.params[axisX] = valueX;
+    state.params[axisY] = valueY;
+
+    // Update displays
+    const valueElX = document.getElementById(`${axisX}-value`);
+    const valueElY = document.getElementById(`${axisY}-value`);
+    if (valueElX) {
+        valueElX.textContent = formatNumber(valueX, axisX.includes('theta') || axisX.includes('omega') ? 1 : 2);
+    }
+    if (valueElY) {
+        valueElY.textContent = formatNumber(valueY, axisY.includes('theta') || axisY.includes('omega') ? 1 : 2);
+    }
+
     // Update sliders
     const sliderX = document.getElementById(axisX);
     const sliderY = document.getElementById(axisY);
     if (sliderX) sliderX.value = valueX;
     if (sliderY) sliderY.value = valueY;
-    
+
+    // Trigger mobile preview if in mobile mode
+    if (isMobileViewActive() && state.mobileActivePanel === 'chaos') {
+        triggerMobilePreview();
+    }
+
     // Reset and optionally start
     reset();
 }
@@ -1659,6 +1759,547 @@ function toggleControlPanel() {
     }
     syncPanelStateClasses();
     resizeCanvas();
+}
+
+// ============================================
+// MOBILE PANEL NAVIGATION
+// ============================================
+
+function isMobileViewActive() {
+    return document.body.classList.contains('sim-view-mobile');
+}
+
+function setMobileActivePanel(panelName) {
+    if (!isMobileViewActive()) return;
+
+    state.mobileActivePanel = panelName;
+
+    const simMain = document.querySelector('.sim-main');
+    const controlPanel = document.querySelector('.control-panel');
+    const chaosPanel = document.querySelector('.chaos-panel');
+    const tabs = document.querySelectorAll('.mobile-tab');
+
+    // Update tab active states
+    tabs.forEach(tab => {
+        const tabPanel = tab.getAttribute('data-panel');
+        tab.classList.toggle('active', tabPanel === panelName);
+    });
+
+    // Show/hide panels
+    if (simMain) {
+        simMain.classList.toggle('mobile-hidden', panelName !== 'simulation');
+    }
+    if (controlPanel) {
+        controlPanel.classList.toggle('mobile-active', panelName === 'controls');
+        controlPanel.classList.toggle('collapsed', panelName !== 'controls');
+        controlPanel.classList.toggle('open', panelName === 'controls');
+    }
+    if (chaosPanel) {
+        chaosPanel.classList.toggle('mobile-active', panelName === 'chaos');
+        chaosPanel.classList.toggle('collapsed', panelName !== 'chaos');
+        chaosPanel.classList.toggle('open', panelName === 'chaos');
+    }
+
+    // Update state
+    state.controlPanelOpen = panelName === 'controls';
+    state.chaosPanelOpen = panelName === 'chaos';
+
+    // If switching to chaos panel, compute map if needed
+    if (panelName === 'chaos' && !state.chaosMapData && !state.chaosMapComputing) {
+        computeChaosMap();
+    }
+
+    // Handle preview box based on panel
+    if (panelName === 'simulation') {
+        // Just hide preview - simulation continues seamlessly on main canvas
+        hideMobilePreview();
+    } else {
+        // Show preview for controls/chaos panels
+        showMobilePreview();
+    }
+
+    syncPanelStateClasses();
+    resizeCanvas();
+
+    // Update preview play button to match current state
+    updatePreviewPlayButton();
+}
+
+function initMobileTabNavigation() {
+    const tabBar = document.getElementById('mobile-tab-bar');
+    if (!tabBar) return;
+
+    const tabs = tabBar.querySelectorAll('.mobile-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const panelName = tab.getAttribute('data-panel');
+            setMobileActivePanel(panelName);
+        });
+    });
+
+    // Update tab labels with translations
+    updateMobileTabLabels();
+}
+
+function updateMobileTabLabels() {
+    const i18n = window.i18nManager;
+    if (!i18n) return;
+
+    const tabSimLabel = document.getElementById('tab-simulation-label');
+    const tabControlsLabel = document.getElementById('tab-controls-label');
+    const tabChaosLabel = document.getElementById('tab-chaos-label');
+
+    if (tabSimLabel) tabSimLabel.textContent = i18n.t('mobile_tab_simulation');
+    if (tabControlsLabel) tabControlsLabel.textContent = i18n.t('mobile_tab_controls');
+    if (tabChaosLabel) tabChaosLabel.textContent = i18n.t('mobile_tab_chaos');
+}
+
+// ============================================
+// MOBILE PREVIEW BOX (Picture-in-Picture Simulation)
+// ============================================
+
+function initPreviewCanvas() {
+    previewCanvas = document.getElementById('preview-canvas');
+    if (!previewCanvas) return;
+
+    previewCtx = previewCanvas.getContext('2d');
+    resizePreviewCanvas();
+
+    // Initialize preview controls
+    initPreviewControls();
+    initPreviewResize();
+}
+
+function initPreviewControls() {
+    const playBtn = document.getElementById('preview-play-btn');
+    const resetBtn = document.getElementById('preview-reset-btn');
+
+    if (playBtn) {
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePlay();
+            updatePreviewPlayButton();
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            reset();
+            renderPreview();
+        });
+    }
+}
+
+function updatePreviewPlayButton() {
+    const playIcon = document.querySelector('#preview-play-btn .preview-play-icon');
+    const pauseIcon = document.querySelector('#preview-play-btn .preview-pause-icon');
+
+    if (playIcon && pauseIcon) {
+        if (state.isPlaying) {
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+        } else {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+        }
+    }
+}
+
+function initPreviewResize() {
+    const resizeHandle = document.getElementById('preview-resize-handle');
+    if (!resizeHandle) return;
+
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    const handleResizeStart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const box = document.getElementById('mobile-preview-box');
+        if (!box) return;
+
+        isResizing = true;
+        const rect = box.getBoundingClientRect();
+        startWidth = rect.width;
+        startHeight = rect.height;
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+        box.style.transition = 'none';
+    };
+
+    const handleResizeMove = (e) => {
+        if (!isResizing) return;
+        e.preventDefault();
+
+        const box = document.getElementById('mobile-preview-box');
+        if (!box) return;
+
+        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        const deltaX = clientX - startX;
+        const deltaY = clientY - startY;
+        const delta = Math.max(deltaX, deltaY);
+
+        // Keep aspect ratio square
+        let newSize = startWidth + delta;
+
+        // Constrain size
+        const minSize = 100;
+        const maxSize = Math.min(window.innerWidth - 48, window.innerHeight - 200);
+        newSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+        box.style.width = newSize + 'px';
+        box.style.height = newSize + 'px';
+
+        // Resize canvas
+        resizePreviewCanvas();
+        renderPreview();
+    };
+
+    const handleResizeEnd = () => {
+        if (!isResizing) return;
+        isResizing = false;
+
+        const box = document.getElementById('mobile-preview-box');
+        if (box) {
+            box.style.transition = '';
+        }
+    };
+
+    resizeHandle.addEventListener('mousedown', handleResizeStart);
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+
+    resizeHandle.addEventListener('touchstart', handleResizeStart, { passive: false });
+    document.addEventListener('touchmove', handleResizeMove, { passive: false });
+    document.addEventListener('touchend', handleResizeEnd);
+}
+
+function resizePreviewCanvas() {
+    if (!previewCanvas) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    const rect = box.getBoundingClientRect();
+    const width = rect.width || 120;
+    const height = rect.height || 120;
+
+    const dpr = window.devicePixelRatio || 1;
+    previewCanvas.width = width * dpr;
+    previewCanvas.height = height * dpr;
+
+    if (previewCtx) {
+        previewCtx.setTransform(1, 0, 0, 1, 0, 0);
+        previewCtx.scale(dpr, dpr);
+    }
+}
+
+function renderPreview() {
+    if (!previewCtx || !previewCanvas || !state.mobilePreviewVisible) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    const rect = box.getBoundingClientRect();
+    const width = rect.width || 120;
+    const height = rect.height || 120;
+    const centerX = width / 2;
+    const centerY = height * 0.45;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    // Reset transform and clear
+    previewCtx.setTransform(1, 0, 0, 1, 0, 0);
+    previewCtx.scale(dpr, dpr);
+
+    // Clear canvas
+    previewCtx.fillStyle = '#0a0812';
+    previewCtx.fillRect(0, 0, width, height);
+
+    // Calculate scale based on pendulum size and box size
+    const totalLength = state.params.L1 + state.params.L2;
+    const scale = (Math.min(width, height) * 0.35) / totalLength;
+
+    // Use current simulation state (not initial params)
+    const theta1 = state.theta1;
+    const theta2 = state.theta2;
+
+    const x1 = state.params.L1 * Math.sin(theta1) * scale;
+    const y1 = state.params.L1 * Math.cos(theta1) * scale;
+    const x2 = x1 + state.params.L2 * Math.sin(theta2) * scale;
+    const y2 = y1 + state.params.L2 * Math.cos(theta2) * scale;
+
+    // Adjust sizes based on preview box size
+    const sizeRatio = Math.min(width, height) / 120;
+    const rodWidth = Math.max(2, CONFIG.render.rodWidth * sizeRatio * 0.6);
+    const pivotSize = Math.max(3, 6 * sizeRatio * 0.6);
+    const massSize = Math.max(5, 10 * sizeRatio * 0.6);
+
+    // Draw trail if enabled
+    if (state.trailEnabled && state.trail.length > 1) {
+        previewCtx.lineCap = 'round';
+        previewCtx.lineJoin = 'round';
+
+        for (let i = 1; i < state.trail.length; i++) {
+            const prev = state.trail[i - 1];
+            const curr = state.trail[i];
+
+            const alpha = state.trailInfinite ? 0.6 : (i / state.trail.length) * 0.8;
+            previewCtx.strokeStyle = `rgba(255, 122, 236, ${alpha})`;
+            previewCtx.lineWidth = Math.max(1, CONFIG.render.trailWidth * sizeRatio * 0.5);
+
+            previewCtx.beginPath();
+            previewCtx.moveTo(centerX + prev.x * scale, centerY + prev.y * scale);
+            previewCtx.lineTo(centerX + curr.x * scale, centerY + curr.y * scale);
+            previewCtx.stroke();
+        }
+    }
+
+    // Draw rods
+    previewCtx.strokeStyle = CONFIG.colors.rod;
+    previewCtx.lineWidth = rodWidth;
+    previewCtx.lineCap = 'round';
+
+    previewCtx.beginPath();
+    previewCtx.moveTo(centerX, centerY);
+    previewCtx.lineTo(centerX + x1, centerY + y1);
+    previewCtx.stroke();
+
+    previewCtx.beginPath();
+    previewCtx.moveTo(centerX + x1, centerY + y1);
+    previewCtx.lineTo(centerX + x2, centerY + y2);
+    previewCtx.stroke();
+
+    // Draw pivot
+    previewCtx.fillStyle = CONFIG.colors.pivot;
+    previewCtx.beginPath();
+    previewCtx.arc(centerX, centerY, pivotSize, 0, Math.PI * 2);
+    previewCtx.fill();
+
+    // Draw mass 1
+    previewCtx.fillStyle = CONFIG.colors.mass1;
+    previewCtx.beginPath();
+    previewCtx.arc(
+        centerX + x1,
+        centerY + y1,
+        massSize * Math.sqrt(state.params.m1 / CONFIG.defaults.m1),
+        0, Math.PI * 2
+    );
+    previewCtx.fill();
+
+    // Draw mass 2 with glow
+    previewCtx.shadowColor = CONFIG.colors.mass2;
+    previewCtx.shadowBlur = Math.max(4, 12 * sizeRatio * 0.5);
+    previewCtx.fillStyle = CONFIG.colors.mass2;
+    previewCtx.beginPath();
+    previewCtx.arc(
+        centerX + x2,
+        centerY + y2,
+        massSize * Math.sqrt(state.params.m2 / CONFIG.defaults.m2),
+        0, Math.PI * 2
+    );
+    previewCtx.fill();
+    previewCtx.shadowBlur = 0;
+}
+
+function showMobilePreview() {
+    if (!isMobileViewActive()) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Show when not on simulation tab
+    if (state.mobileActivePanel !== 'simulation') {
+        // Reset to default position if not custom dragged
+        if (!state.previewDrag.customPosition) {
+            resetPreviewPosition();
+        }
+
+        box.classList.remove('hidden');
+        box.classList.add('corner', 'visible');
+        state.mobilePreviewVisible = true;
+
+        // Update preview play button state
+        updatePreviewPlayButton();
+
+        // Re-init canvas for current size and render
+        requestAnimationFrame(() => {
+            resizePreviewCanvas();
+            renderPreview();
+        });
+    }
+}
+
+function hideMobilePreview() {
+    const box = document.getElementById('mobile-preview-box');
+    if (box) {
+        box.classList.remove('visible', 'corner');
+        box.classList.add('hidden');
+        state.mobilePreviewVisible = false;
+    }
+}
+
+function triggerMobilePreview() {
+    if (!isMobileViewActive() || state.mobileActivePanel === 'simulation') return;
+
+    showMobilePreview();
+}
+
+// ============================================
+// PREVIEW BOX DRAG FUNCTIONALITY
+// ============================================
+
+function initPreviewDrag() {
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Mouse events
+    box.addEventListener('mousedown', handleDragStart);
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+
+    // Touch events
+    box.addEventListener('touchstart', handleDragStart, { passive: false });
+    document.addEventListener('touchmove', handleDragMove, { passive: false });
+    document.addEventListener('touchend', handleDragEnd);
+}
+
+function handleDragStart(e) {
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Don't start drag if clicking on controls or resize handle
+    if (e.target.closest('.mobile-preview-box__controls') ||
+        e.target.closest('.mobile-preview-box__resize')) {
+        return;
+    }
+
+    // Prevent default to avoid text selection and scrolling
+    e.preventDefault();
+
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+    const rect = box.getBoundingClientRect();
+
+    state.previewDrag.isDragging = true;
+    state.previewDrag.startX = clientX;
+    state.previewDrag.startY = clientY;
+    state.previewDrag.offsetX = clientX - rect.left;
+    state.previewDrag.offsetY = clientY - rect.top;
+
+    box.style.cursor = 'grabbing';
+    box.style.transition = 'none'; // Disable transition during drag
+}
+
+function handleDragMove(e) {
+    if (!state.previewDrag.isDragging) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    e.preventDefault();
+
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+    // Calculate new position
+    let newX = clientX - state.previewDrag.offsetX;
+    let newY = clientY - state.previewDrag.offsetY;
+
+    // Get boundaries
+    const boxRect = box.getBoundingClientRect();
+    const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sim-nav-height')) || 108;
+    const tabBarHeight = 64;
+
+    // Constrain to viewport
+    const minX = 8;
+    const maxX = window.innerWidth - boxRect.width - 8;
+    const minY = navHeight + 8;
+    const maxY = window.innerHeight - tabBarHeight - boxRect.height - 8;
+
+    newX = Math.max(minX, Math.min(maxX, newX));
+    newY = Math.max(minY, Math.min(maxY, newY));
+
+    // Apply position
+    box.style.left = newX + 'px';
+    box.style.top = newY + 'px';
+    box.style.right = 'auto';
+    box.style.transform = 'none';
+
+    state.previewDrag.customPosition = true;
+}
+
+function handleDragEnd() {
+    if (!state.previewDrag.isDragging) return;
+
+    const box = document.getElementById('mobile-preview-box');
+    if (box) {
+        box.style.cursor = 'grab';
+        // Re-enable transitions but keep custom position
+        box.style.transition = '';
+    }
+
+    state.previewDrag.isDragging = false;
+}
+
+function resetPreviewPosition() {
+    const box = document.getElementById('mobile-preview-box');
+    if (!box) return;
+
+    // Reset to default corner position
+    box.style.left = '';
+    box.style.top = '';
+    box.style.right = '';
+    box.style.transform = '';
+    state.previewDrag.customPosition = false;
+}
+
+// ============================================
+// VIEW MODE SWITCHER
+// ============================================
+
+function initViewModeSwitcher() {
+    const switcherBtn = document.getElementById('view-mode-switcher-btn');
+    if (switcherBtn) {
+        switcherBtn.addEventListener('click', toggleViewPreference);
+    }
+
+    // Update switcher icon based on current mode
+    updateViewModeSwitcherIcon();
+}
+
+function updateViewModeSwitcherIcon() {
+    const switcherBtn = document.getElementById('view-mode-switcher-btn');
+    if (!switcherBtn) return;
+
+    const isMobile = document.body.classList.contains('sim-view-mobile');
+    const i18n = window.i18nManager;
+
+    // Desktop icon when in mobile mode, mobile icon when in desktop mode
+    if (isMobile) {
+        // Show desktop icon
+        switcherBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>`;
+        switcherBtn.setAttribute('aria-label', i18n?.t('view_desktop_label') || 'Switch to desktop view');
+        switcherBtn.setAttribute('title', i18n?.t('view_desktop_label') || 'Switch to desktop view');
+    } else {
+        // Show mobile icon
+        switcherBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="7" y="2" width="10" height="20" rx="2"/>
+            <line x1="11" y1="18" x2="13" y2="18"/>
+        </svg>`;
+        switcherBtn.setAttribute('aria-label', i18n?.t('view_mobile_label') || 'Switch to mobile view');
+        switcherBtn.setAttribute('title', i18n?.t('view_mobile_label') || 'Switch to mobile view');
+    }
 }
 
 // ============================================
@@ -1884,17 +2525,22 @@ function initState() {
 document.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     initChaosCanvas();
+    initPreviewCanvas();
     initControls();
     initChaosWarningModal();
     initViewMode();
+    initMobileTabNavigation();
+    initViewModeSwitcher();
+    initPreviewDrag();
     initState();
-    
+
     // Initial render
     render();
     updatePlayButton();
+    updateMobileTabLabels();
 
     // Ensure chaos panel state on load
-    if (state.chaosPanelOpen) {
+    if (state.chaosPanelOpen && !isMobileViewActive()) {
         const chaosPanel = document.querySelector('.chaos-panel');
         if (chaosPanel) {
             chaosPanel.classList.remove('collapsed');
@@ -1905,12 +2551,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-    
     // Initialize starfield background
     if (typeof initStarfield === 'function') {
         initStarfield('starfield');
     }
+
+    // Listen for language changes to update mobile tab labels
+    window.addEventListener('languageChanged', () => {
+        updateMobileTabLabels();
+        updateViewModeSwitcherIcon();
+    });
 });
 
 // Keyboard shortcuts
