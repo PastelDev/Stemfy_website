@@ -220,6 +220,16 @@ body {
     height: 18px;
 }
 
+.action-btn.backup {
+    background: rgba(100, 180, 120, 0.15);
+    border-color: rgba(100, 180, 120, 0.4);
+}
+
+.action-btn.backup:hover {
+    background: rgba(100, 180, 120, 0.25);
+    border-color: rgba(100, 180, 120, 0.6);
+}
+
 /* Content Panel */
 .content-panel {
     background: rgba(18, 12, 28, 0.8);
