@@ -27,8 +27,9 @@ package-lock.json
 .env
 .env.local
 
-# Admin credentials (create manually on server)
+# Admin credentials (legacy location - for backwards compatibility)
 admin/credentials.php
 
-# Runtime content storage (Plesk host)
-/posts/
+# Note: The posts/ folder is intentionally tracked in git as a template.
+# Before deploying to production, delete the posts/ folder from the repository
+# and manually upload it to your Plesk hosting. See README.md for details.

@@ -168,7 +168,7 @@ if (isLoggedIn()) {
             <div class="error" style="background: rgba(255, 200, 100, 0.15); border-color: rgba(255, 200, 100, 0.4); color: #ffcc80;">
                 <strong>Setup required:</strong> Create credentials file.<br><br>
                 Using Plesk File Manager, create:<br>
-                <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">admin/credentials.php</code><br><br>
+                <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">posts/credentials.php</code><br><br>
                 With this content:<br>
                 <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; display: block; margin-top: 4px; white-space: pre; font-size: 0.8rem;">
 &lt;?php

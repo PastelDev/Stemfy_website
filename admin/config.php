@@ -2,33 +2,40 @@
 /**
  * Admin Configuration
  *
- * Credentials are loaded from a separate file for security.
- * Create 'credentials.php' in the admin folder with:
+ * Credentials are loaded from the posts/ folder for security.
+ * The posts/ folder should be manually uploaded to Plesk hosting
+ * and contains:
+ *   - credentials.php (admin login)
+ *   - posts.json (posts and resources data)
+ *   - news.json (announcements data)
  *
- *   <?php
- *   define('ADMIN_USERNAME', 'your_username');
- *   define('ADMIN_PASSWORD', 'your_password');
- *
- * This file is gitignored and must be created manually on the server.
+ * See posts/README-DELETE-BEFORE-DEPLOY.txt for deployment instructions.
  */
 
 // Session configuration
 session_start();
 
-// Load credentials from separate file
-$credentialsFile = __DIR__ . '/credentials.php';
-if (file_exists($credentialsFile)) {
-    require_once $credentialsFile;
-} else {
-    // Credentials not configured
-    define('ADMIN_USERNAME', false);
-    define('ADMIN_PASSWORD', false);
-}
-
-// Data file paths (allow override for deployments)
+// Data directory (posts/ folder at project root)
 $dataDir = defined('STEMFY_DATA_DIR') ? STEMFY_DATA_DIR : getenv('STEMFY_DATA_DIR');
 $dataDir = $dataDir ?: (dirname(__DIR__) . '/posts/');
 define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
+
+// Load credentials from posts/ folder
+$credentialsFile = DATA_DIR . 'credentials.php';
+if (file_exists($credentialsFile)) {
+    require_once $credentialsFile;
+} else {
+    // Credentials not configured - try legacy location
+    $legacyCredentials = __DIR__ . '/credentials.php';
+    if (file_exists($legacyCredentials)) {
+        require_once $legacyCredentials;
+    } else {
+        define('ADMIN_USERNAME', false);
+        define('ADMIN_PASSWORD', false);
+    }
+}
+
+// Data file paths
 define('POSTS_FILE', DATA_DIR . 'posts.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
 
