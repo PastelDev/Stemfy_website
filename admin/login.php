@@ -3,18 +3,40 @@ require_once 'config.php';
 
 $error = '';
 $notConfigured = !ADMIN_USERNAME || !ADMIN_PASSWORD;
+$clientIp = getClientIp();
+
+function formatRetryAfter($seconds) {
+    $seconds = max(1, (int) $seconds);
+    if ($seconds < 60) {
+        return $seconds . ' second' . ($seconds === 1 ? '' : 's');
+    }
+    $minutes = (int) ceil($seconds / 60);
+    return $minutes . ' minute' . ($minutes === 1 ? '' : 's');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$notConfigured) {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-
-    if ($username === ADMIN_USERNAME && $password === ADMIN_PASSWORD) {
-        $_SESSION['admin_logged_in'] = true;
-        $_SESSION['admin_username'] = $username;
-        header('Location: index.php');
-        exit;
+    if (!isValidCsrfToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Security check failed. Please refresh and try again.';
     } else {
-        $error = 'Invalid username or password';
+        $retryAfter = 0;
+        if (isLoginRateLimited($clientIp, $retryAfter)) {
+            $error = 'Too many login attempts. Please try again in ' . formatRetryAfter($retryAfter) . '.';
+        } else {
+            $username = $_POST['username'] ?? '';
+            $password = $_POST['password'] ?? '';
+
+            if ($username === ADMIN_USERNAME && $password === ADMIN_PASSWORD) {
+                session_regenerate_id(true);
+                $_SESSION['admin_logged_in'] = true;
+                $_SESSION['admin_username'] = $username;
+                clearLoginFailures($clientIp);
+                header('Location: index.php');
+                exit;
+            } else {
+                recordLoginFailure($clientIp);
+                $error = 'Invalid username or password';
+            }
+        }
     }
 }
 
@@ -176,10 +198,11 @@ define('ADMIN_USERNAME', 'admin');
 define('ADMIN_PASSWORD', 'your_password');</code>
             </div>
         <?php elseif ($error): ?>
-            <div class="error"><?php echo $error; ?></div>
+            <div class="error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <form method="POST" <?php echo $notConfigured ? 'style="opacity: 0.5; pointer-events: none;"' : ''; ?>>
+            <?php echo csrfInputField(); ?>
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required autocomplete="username">

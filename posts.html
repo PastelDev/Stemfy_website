@@ -604,16 +604,46 @@
         return localStorage.getItem('stemfy-language') || 'en';
       }
 
-      async function loadContent() {
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function toSafeUrl(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        if (raw.startsWith('//')) return '';
+
+        const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw);
+        if (hasScheme && !/^https?:/i.test(raw)) {
+          return '';
+        }
+
         try {
-          const lang = getLang();
+          const resolved = new URL(raw, window.location.href);
+          if (resolved.protocol !== 'http:' && resolved.protocol !== 'https:') {
+            return '';
+          }
+          return resolved.toString();
+        } catch (error) {
+          return '';
+        }
+      }
+
+      async function loadContent() {
+        const lang = getLang();
+        try {
           const posts = await window.stemfyCms.fetchPosts(lang);
           const resources = await window.stemfyCms.fetchResources(lang);
           renderPosts(posts, lang);
           renderResources(resources, lang);
         } catch (error) {
           console.log('Could not load dynamic content:', error);
-          showPlaceholders();
+          showPlaceholders(lang);
         }
       }
 
@@ -627,13 +657,18 @@
 
       function normalizeMedia(post) {
         if (Array.isArray(post.media) && post.media.length > 0) {
-          return post.media.map(item => ({
-            url: item.url,
-            type: inferMediaType(item)
-          }));
+          return post.media
+            .map(item => ({
+              url: toSafeUrl(item.url),
+              type: inferMediaType(item)
+            }))
+            .filter(item => item.url);
         }
         if (post.image_url) {
-          return [{ url: post.image_url, type: 'image' }];
+          const imageUrl = toSafeUrl(post.image_url);
+          if (imageUrl) {
+            return [{ url: imageUrl, type: 'image' }];
+          }
         }
         return [];
       }
@@ -642,10 +677,13 @@
         const container = document.getElementById('posts-container');
         if (!container) return;
 
-        postsCache = posts || [];
+        postsCache = (posts || []).map(post => ({
+          ...post,
+          media: normalizeMedia(post)
+        }));
 
-        if (!posts || posts.length === 0) {
-          const placeholder = window.i18nManager?.t('posts_no_content') || 'Content coming soon!';
+        if (!postsCache.length) {
+          const placeholder = escapeHtml(window.i18nManager?.t('posts_no_content') || 'Content coming soon!');
           container.innerHTML = `
             <div class="post-card">
               <div class="post-media">Instagram Post</div>
@@ -654,17 +692,17 @@
           return;
         }
 
-        container.innerHTML = posts.map((post, index) => {
-          const mediaItems = normalizeMedia(post);
+        container.innerHTML = postsCache.map((post, index) => {
+          const mediaItems = post.media || [];
           const preview = mediaItems[0];
           const mediaCount = mediaItems.length;
-          const title = lang === 'el' ? post.title_el : post.title_en;
-          const desc = lang === 'el' ? post.description_el : post.description_en;
+          const title = escapeHtml(lang === 'el' ? post.title_el : post.title_en);
+          const desc = escapeHtml(lang === 'el' ? post.description_el : post.description_en);
           const isVideo = preview && preview.type === 'video';
           const previewMarkup = preview
             ? (isVideo
-                ? `<video src="${preview.url}" preload="metadata" muted playsinline></video>`
-                : `<img src="${preview.url}" alt="">`)
+                ? `<video src="${escapeHtml(preview.url)}" preload="metadata" muted playsinline></video>`
+                : `<img src="${escapeHtml(preview.url)}" alt="">`)
             : 'Instagram Post';
 
           return `
@@ -673,7 +711,7 @@
                 <div class="post-media${isVideo ? ' is-video' : ''}">
                   ${previewMarkup}
                   ${mediaCount > 1 ? `<span class="media-count-badge">1 / ${mediaCount}</span>` : ''}
-                  ${isVideo ? `<span class="media-type-badge">Reel</span>` : ''}
+                  ${isVideo ? '<span class="media-type-badge">Reel</span>' : ''}
                 </div>
                 <p class="post-title">${title}</p>
                 <p class="post-desc">${desc}</p>
@@ -694,7 +732,7 @@
         if (!container) return;
 
         if (!resources || resources.length === 0) {
-          const placeholder = window.i18nManager?.t('posts_no_content') || 'Content coming soon!';
+          const placeholder = escapeHtml(window.i18nManager?.t('posts_no_content') || 'Content coming soon!');
           container.innerHTML = `
             <div class="resource-card">
               <div class="resource-icon">
@@ -710,13 +748,15 @@
           return;
         }
 
-        container.innerHTML = resources.map(resource => {
-          const title = lang === 'el' ? resource.title_el : resource.title_en;
-          const desc = lang === 'el' ? resource.description_el : resource.description_en;
+        const cards = resources.map(resource => {
+          const title = escapeHtml(lang === 'el' ? resource.title_el : resource.title_en);
+          const desc = escapeHtml(lang === 'el' ? resource.description_el : resource.description_en);
+          const fileUrl = toSafeUrl(resource.file_url);
+          if (!fileUrl) return '';
 
           return `
             <div class="resource-card dynamic">
-              <a href="${resource.file_url}" target="_blank" rel="noopener">
+              <a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">
                 <div class="resource-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -729,12 +769,31 @@
                 <p class="resource-desc">${desc}</p>
               </a>
             </div>`;
-        }).join('');
+        }).filter(Boolean);
+
+        if (!cards.length) {
+          const placeholder = escapeHtml(window.i18nManager?.t('posts_no_content') || 'Content coming soon!');
+          container.innerHTML = `
+            <div class="resource-card">
+              <div class="resource-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8" />
+                  <path d="M8 17h5" />
+                </svg>
+              </div>
+              <p class="posts-placeholder-text">${placeholder}</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = cards.join('');
       }
 
-      function showPlaceholders() {
-        renderPosts([], 'en');
-        renderResources([], 'en');
+      function showPlaceholders(lang) {
+        renderPosts([], lang || getLang());
+        renderResources([], lang || getLang());
       }
 
       function initToggle() {
@@ -780,15 +839,15 @@
         const post = postsCache[index];
         if (!post) return;
         const lang = getLang();
-        activeMedia = normalizeMedia(post);
+        activeMedia = (post.media || []).filter(item => item && item.url);
         if (!activeMedia.length) return;
         activeIndex = 0;
 
         modalTrack.innerHTML = activeMedia.map(item => {
           if (item.type === 'video') {
-            return `<div class="post-slide"><video src="${item.url}" controls playsinline></video></div>`;
+            return `<div class="post-slide"><video src="${escapeHtml(item.url)}" controls playsinline></video></div>`;
           }
-          return `<div class="post-slide"><img src="${item.url}" alt=""></div>`;
+          return `<div class="post-slide"><img src="${escapeHtml(item.url)}" alt=""></div>`;
         }).join('');
 
         const title = lang === 'el' ? post.title_el : post.title_en;
@@ -798,11 +857,14 @@
 
         if (modalDate && post.created_at) {
           const locale = lang === 'el' ? 'el-GR' : 'en-US';
-          modalDate.textContent = new Date(post.created_at).toLocaleDateString(locale, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
+          const parsedDate = new Date(post.created_at);
+          modalDate.textContent = Number.isNaN(parsedDate.getTime())
+            ? ''
+            : parsedDate.toLocaleDateString(locale, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
         } else if (modalDate) {
           modalDate.textContent = '';
         }
@@ -927,7 +989,7 @@
       }
 
       // Re-render when language changes
-      window.addEventListener('languageChanged', (e) => {
+      window.addEventListener('languageChanged', () => {
         loadContent();
       });
     })();

@@ -16,84 +16,88 @@ if (!isset($data['announcements'])) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $postAction = $_POST['post_action'] ?? '';
+    if (!isValidCsrfToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Security check failed. Please refresh and try again.';
+    } else {
+        $postAction = $_POST['post_action'] ?? '';
 
-    if ($postAction === 'create' || $postAction === 'update') {
-        $existingAnnouncement = null;
-        $existingFileUrl = null;
-        $uploadFolderValue = $_POST['upload_folder'] ?? '';
+        if ($postAction === 'create' || $postAction === 'update') {
+            $existingAnnouncement = null;
+            $existingFileUrl = null;
+            $uploadFolderValue = $_POST['upload_folder'] ?? '';
 
-        if ($postAction === 'update') {
+            if ($postAction === 'update') {
+                foreach ($data['announcements'] as $announcementItem) {
+                    if ($announcementItem['id'] === $_POST['id']) {
+                        $existingAnnouncement = $announcementItem;
+                        break;
+                    }
+                }
+                $existingFileUrl = $existingAnnouncement['file_url'] ?? null;
+            }
+
+            $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
+            [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_NEWS_DIR, UPLOAD_BASE_URL . 'news/', $uploadSubdir);
+            $uploadedFileUrl = uploadPdfFile('file_upload', $targetDir, $targetUrlBase, $errors);
+            $fileUrl = $uploadedFileUrl ?: $existingFileUrl;
+
+            if (empty($errors)) {
+                $announcement = [
+                    'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                    'title_en' => sanitizeInput($_POST['title_en']),
+                    'title_el' => sanitizeInput($_POST['title_el']),
+                    'content_en' => sanitizeInput($_POST['content_en']),
+                    'content_el' => sanitizeInput($_POST['content_el']),
+                    'file_url' => $fileUrl,
+                    'category' => sanitizeInput($_POST['category']),
+                    'pinned' => isset($_POST['pinned']),
+                    'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+
+                if ($postAction === 'update') {
+                    $index = array_search($_POST['id'], array_column($data['announcements'], 'id'));
+                    if ($index !== false) {
+                        $data['announcements'][$index] = $announcement;
+                        $message = 'Announcement updated successfully!';
+                    }
+                } else {
+                    array_unshift($data['announcements'], $announcement);
+                    $message = 'Announcement created successfully!';
+                }
+
+                saveJsonData(NEWS_FILE, $data);
+
+                if ($uploadedFileUrl && $existingFileUrl) {
+                    deleteUploadedFile($existingFileUrl);
+                }
+
+                $action = 'list';
+            } else {
+                $error = implode(' ', $errors);
+                if ($postAction === 'update') {
+                    $editId = $_POST['id'];
+                }
+                $action = $postAction === 'update' ? 'edit' : 'new';
+            }
+
+        } elseif ($postAction === 'delete' && isset($_POST['id'])) {
+            $announcementToDelete = null;
             foreach ($data['announcements'] as $announcementItem) {
                 if ($announcementItem['id'] === $_POST['id']) {
-                    $existingAnnouncement = $announcementItem;
+                    $announcementToDelete = $announcementItem;
                     break;
                 }
             }
-            $existingFileUrl = $existingAnnouncement['file_url'] ?? null;
-        }
-
-        $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
-        [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_NEWS_DIR, UPLOAD_BASE_URL . 'news/', $uploadSubdir);
-        $uploadedFileUrl = uploadPdfFile('file_upload', $targetDir, $targetUrlBase, $errors);
-        $fileUrl = $uploadedFileUrl ?: $existingFileUrl;
-
-        if (empty($errors)) {
-            $announcement = [
-                'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
-                'title_en' => sanitizeInput($_POST['title_en']),
-                'title_el' => sanitizeInput($_POST['title_el']),
-                'content_en' => sanitizeInput($_POST['content_en']),
-                'content_el' => sanitizeInput($_POST['content_el']),
-                'file_url' => $fileUrl,
-                'category' => sanitizeInput($_POST['category']),
-                'pinned' => isset($_POST['pinned']),
-                'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
-
-            if ($postAction === 'update') {
-                $index = array_search($_POST['id'], array_column($data['announcements'], 'id'));
-                if ($index !== false) {
-                    $data['announcements'][$index] = $announcement;
-                    $message = 'Announcement updated successfully!';
-                }
-            } else {
-                array_unshift($data['announcements'], $announcement);
-                $message = 'Announcement created successfully!';
+            if ($announcementToDelete && !empty($announcementToDelete['file_url'])) {
+                deleteUploadedFile($announcementToDelete['file_url']);
             }
 
+            $data['announcements'] = array_filter($data['announcements'], fn($a) => $a['id'] !== $_POST['id']);
+            $data['announcements'] = array_values($data['announcements']);
             saveJsonData(NEWS_FILE, $data);
-
-            if ($uploadedFileUrl && $existingFileUrl) {
-                deleteUploadedFile($existingFileUrl);
-            }
-
-            $action = 'list';
-        } else {
-            $error = implode(' ', $errors);
-            if ($postAction === 'update') {
-                $editId = $_POST['id'];
-            }
-            $action = $postAction === 'update' ? 'edit' : 'new';
+            $message = 'Announcement deleted successfully!';
         }
-
-    } elseif ($postAction === 'delete' && isset($_POST['id'])) {
-        $announcementToDelete = null;
-        foreach ($data['announcements'] as $announcementItem) {
-            if ($announcementItem['id'] === $_POST['id']) {
-                $announcementToDelete = $announcementItem;
-                break;
-            }
-        }
-        if ($announcementToDelete && !empty($announcementToDelete['file_url'])) {
-            deleteUploadedFile($announcementToDelete['file_url']);
-        }
-
-        $data['announcements'] = array_filter($data['announcements'], fn($a) => $a['id'] !== $_POST['id']);
-        $data['announcements'] = array_values($data['announcements']);
-        saveJsonData(NEWS_FILE, $data);
-        $message = 'Announcement deleted successfully!';
     }
 }
 
@@ -183,6 +187,7 @@ include 'templates/header.php';
                                 <a href="?action=edit&id=<?php echo $announcement['id']; ?>" class="btn btn-secondary btn-sm">Edit</a>
                                 <form method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this announcement?')">
                                     <input type="hidden" name="post_action" value="delete">
+                                    <?php echo csrfInputField(); ?>
                                     <input type="hidden" name="id" value="<?php echo $announcement['id']; ?>">
                                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                 </form>
@@ -195,8 +200,9 @@ include 'templates/header.php';
 
     <?php else: ?>
         <div class="content-panel">
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" data-upload-form="true">
                 <input type="hidden" name="post_action" value="<?php echo $editAnnouncement ? 'update' : 'create'; ?>">
+                <?php echo csrfInputField(); ?>
                 <?php if ($editAnnouncement): ?>
                     <input type="hidden" name="id" value="<?php echo $editAnnouncement['id']; ?>">
                     <input type="hidden" name="created_at" value="<?php echo $editAnnouncement['created_at']; ?>">
@@ -234,8 +240,8 @@ include 'templates/header.php';
                     </div>
                     <div class="form-group">
                         <label for="file_upload">PDF Attachment (optional)</label>
-                        <input type="file" id="file_upload" name="file_upload" accept="application/pdf">
-                        <p class="form-hint">Upload a PDF to attach to this announcement.</p>
+                        <input type="file" id="file_upload" name="file_upload" class="js-upload-input" data-max-size="<?php echo UPLOAD_MAX_SIZE; ?>" accept="application/pdf">
+                        <p class="form-hint">Upload a PDF to attach to this announcement. Max 50 MB.</p>
                         <?php if ($editAnnouncement && !empty($editAnnouncement['file_url'])): ?>
                             <p class="form-hint">Current file: <a href="<?php echo htmlspecialchars($editAnnouncement['file_url']); ?>" target="_blank" rel="noopener">View PDF</a></p>
                         <?php endif; ?>

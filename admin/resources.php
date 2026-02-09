@@ -16,87 +16,91 @@ if (!isset($data['resources'])) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $postAction = $_POST['post_action'] ?? '';
+    if (!isValidCsrfToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Security check failed. Please refresh and try again.';
+    } else {
+        $postAction = $_POST['post_action'] ?? '';
 
-    if ($postAction === 'create' || $postAction === 'update') {
-        $existingResource = null;
-        $existingFileUrl = null;
-        $uploadFolderValue = $_POST['upload_folder'] ?? '';
+        if ($postAction === 'create' || $postAction === 'update') {
+            $existingResource = null;
+            $existingFileUrl = null;
+            $uploadFolderValue = $_POST['upload_folder'] ?? '';
 
-        if ($postAction === 'update') {
+            if ($postAction === 'update') {
+                foreach ($data['resources'] as $resourceItem) {
+                    if ($resourceItem['id'] === $_POST['id']) {
+                        $existingResource = $resourceItem;
+                        break;
+                    }
+                }
+                $existingFileUrl = $existingResource['file_url'] ?? null;
+            }
+
+            $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
+            [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_RESOURCES_DIR, UPLOAD_BASE_URL . 'resources/', $uploadSubdir);
+            $uploadedFileUrl = uploadPdfFile('file_upload', $targetDir, $targetUrlBase, $errors);
+            $fileUrl = $uploadedFileUrl ?: $existingFileUrl;
+
+            if (!$fileUrl) {
+                $errors[] = 'Please upload a PDF file.';
+            }
+
+            if (empty($errors)) {
+                $resource = [
+                    'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                    'title_en' => sanitizeInput($_POST['title_en']),
+                    'title_el' => sanitizeInput($_POST['title_el']),
+                    'description_en' => sanitizeInput($_POST['description_en']),
+                    'description_el' => sanitizeInput($_POST['description_el']),
+                    'file_url' => $fileUrl,
+                    'type' => sanitizeInput($_POST['type']),
+                    'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+
+                if ($postAction === 'update') {
+                    $index = array_search($_POST['id'], array_column($data['resources'], 'id'));
+                    if ($index !== false) {
+                        $data['resources'][$index] = $resource;
+                        $message = 'Resource updated successfully!';
+                    }
+                } else {
+                    array_unshift($data['resources'], $resource);
+                    $message = 'Resource created successfully!';
+                }
+
+                saveJsonData(POSTS_FILE, $data);
+
+                if ($uploadedFileUrl && $existingFileUrl) {
+                    deleteUploadedFile($existingFileUrl);
+                }
+
+                $action = 'list';
+            } else {
+                $error = implode(' ', $errors);
+                if ($postAction === 'update') {
+                    $editId = $_POST['id'];
+                }
+                $action = $postAction === 'update' ? 'edit' : 'new';
+            }
+
+        } elseif ($postAction === 'delete' && isset($_POST['id'])) {
+            $resourceToDelete = null;
             foreach ($data['resources'] as $resourceItem) {
                 if ($resourceItem['id'] === $_POST['id']) {
-                    $existingResource = $resourceItem;
+                    $resourceToDelete = $resourceItem;
                     break;
                 }
             }
-            $existingFileUrl = $existingResource['file_url'] ?? null;
-        }
-
-        $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
-        [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_RESOURCES_DIR, UPLOAD_BASE_URL . 'resources/', $uploadSubdir);
-        $uploadedFileUrl = uploadPdfFile('file_upload', $targetDir, $targetUrlBase, $errors);
-        $fileUrl = $uploadedFileUrl ?: $existingFileUrl;
-
-        if (!$fileUrl) {
-            $errors[] = 'Please upload a PDF file.';
-        }
-
-        if (empty($errors)) {
-            $resource = [
-                'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
-                'title_en' => sanitizeInput($_POST['title_en']),
-                'title_el' => sanitizeInput($_POST['title_el']),
-                'description_en' => sanitizeInput($_POST['description_en']),
-                'description_el' => sanitizeInput($_POST['description_el']),
-                'file_url' => $fileUrl,
-                'type' => sanitizeInput($_POST['type']),
-                'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
-
-            if ($postAction === 'update') {
-                $index = array_search($_POST['id'], array_column($data['resources'], 'id'));
-                if ($index !== false) {
-                    $data['resources'][$index] = $resource;
-                    $message = 'Resource updated successfully!';
-                }
-            } else {
-                array_unshift($data['resources'], $resource);
-                $message = 'Resource created successfully!';
+            if ($resourceToDelete && !empty($resourceToDelete['file_url'])) {
+                deleteUploadedFile($resourceToDelete['file_url']);
             }
 
+            $data['resources'] = array_filter($data['resources'], fn($r) => $r['id'] !== $_POST['id']);
+            $data['resources'] = array_values($data['resources']);
             saveJsonData(POSTS_FILE, $data);
-
-            if ($uploadedFileUrl && $existingFileUrl) {
-                deleteUploadedFile($existingFileUrl);
-            }
-
-            $action = 'list';
-        } else {
-            $error = implode(' ', $errors);
-            if ($postAction === 'update') {
-                $editId = $_POST['id'];
-            }
-            $action = $postAction === 'update' ? 'edit' : 'new';
+            $message = 'Resource deleted successfully!';
         }
-
-    } elseif ($postAction === 'delete' && isset($_POST['id'])) {
-        $resourceToDelete = null;
-        foreach ($data['resources'] as $resourceItem) {
-            if ($resourceItem['id'] === $_POST['id']) {
-                $resourceToDelete = $resourceItem;
-                break;
-            }
-        }
-        if ($resourceToDelete && !empty($resourceToDelete['file_url'])) {
-            deleteUploadedFile($resourceToDelete['file_url']);
-        }
-
-        $data['resources'] = array_filter($data['resources'], fn($r) => $r['id'] !== $_POST['id']);
-        $data['resources'] = array_values($data['resources']);
-        saveJsonData(POSTS_FILE, $data);
-        $message = 'Resource deleted successfully!';
     }
 }
 
@@ -183,6 +187,7 @@ include 'templates/header.php';
                                 <a href="?action=edit&id=<?php echo $resource['id']; ?>" class="btn btn-secondary btn-sm">Edit</a>
                                 <form method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this resource?')">
                                     <input type="hidden" name="post_action" value="delete">
+                                    <?php echo csrfInputField(); ?>
                                     <input type="hidden" name="id" value="<?php echo $resource['id']; ?>">
                                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                 </form>
@@ -195,8 +200,9 @@ include 'templates/header.php';
 
     <?php else: ?>
         <div class="content-panel">
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" data-upload-form="true">
                 <input type="hidden" name="post_action" value="<?php echo $editResource ? 'update' : 'create'; ?>">
+                <?php echo csrfInputField(); ?>
                 <?php if ($editResource): ?>
                     <input type="hidden" name="id" value="<?php echo $editResource['id']; ?>">
                     <input type="hidden" name="created_at" value="<?php echo $editResource['created_at']; ?>">
@@ -234,8 +240,8 @@ include 'templates/header.php';
                     </div>
                     <div class="form-group">
                         <label for="file_upload">PDF Upload</label>
-                        <input type="file" id="file_upload" name="file_upload" accept="application/pdf" <?php echo $editResource ? '' : 'required'; ?>>
-                        <p class="form-hint">Upload a PDF file for this resource.</p>
+                        <input type="file" id="file_upload" name="file_upload" class="js-upload-input" data-max-size="<?php echo UPLOAD_MAX_SIZE; ?>" accept="application/pdf" <?php echo $editResource ? '' : 'required'; ?>>
+                        <p class="form-hint">Upload a PDF file for this resource. Max 50 MB.</p>
                         <?php if ($editResource && !empty($editResource['file_url'])): ?>
                             <p class="form-hint">Current file: <a href="<?php echo htmlspecialchars($editResource['file_url']); ?>" target="_blank" rel="noopener">View PDF</a></p>
                         <?php endif; ?>

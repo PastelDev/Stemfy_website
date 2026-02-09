@@ -16,98 +16,102 @@ if (!isset($data['posts'])) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $postAction = $_POST['post_action'] ?? '';
+    if (!isValidCsrfToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Security check failed. Please refresh and try again.';
+    } else {
+        $postAction = $_POST['post_action'] ?? '';
 
-    if ($postAction === 'create' || $postAction === 'update') {
-        $existingPost = null;
-        $existingMedia = [];
-        $removedMedia = [];
-        $uploadFolderValue = $_POST['upload_folder'] ?? '';
+        if ($postAction === 'create' || $postAction === 'update') {
+            $existingPost = null;
+            $existingMedia = [];
+            $removedMedia = [];
+            $uploadFolderValue = $_POST['upload_folder'] ?? '';
 
-        if ($postAction === 'update') {
+            if ($postAction === 'update') {
+                foreach ($data['posts'] as $postItem) {
+                    if ($postItem['id'] === $_POST['id']) {
+                        $existingPost = $postItem;
+                        break;
+                    }
+                }
+                $existingMedia = $existingPost['media'] ?? [];
+                if (empty($existingMedia) && !empty($existingPost['image_url'])) {
+                    $existingMedia = [['type' => 'image', 'url' => $existingPost['image_url']]];
+                }
+                $removedMedia = $_POST['remove_media'] ?? [];
+            }
+
+            $keptMedia = array_values(array_filter($existingMedia, function($item) use ($removedMedia) {
+                return !in_array($item['url'], $removedMedia, true);
+            }));
+
+            $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
+            [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_POSTS_DIR, UPLOAD_BASE_URL . 'posts/', $uploadSubdir);
+            $newMedia = uploadMediaFiles('media_files', $targetDir, $targetUrlBase, $errors);
+            $media = array_merge($keptMedia, $newMedia);
+
+            if (empty($media)) {
+                $errors[] = 'Please upload at least one image or video.';
+            }
+
+            if (empty($errors)) {
+                $post = [
+                    'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                    'title_en' => sanitizeInput($_POST['title_en']),
+                    'title_el' => sanitizeInput($_POST['title_el']),
+                    'description_en' => sanitizeInput($_POST['description_en']),
+                    'description_el' => sanitizeInput($_POST['description_el']),
+                    'media' => $media,
+                    'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+
+                if ($postAction === 'update') {
+                    $index = array_search($_POST['id'], array_column($data['posts'], 'id'));
+                    if ($index !== false) {
+                        $data['posts'][$index] = $post;
+                        $message = 'Post updated successfully!';
+                    }
+                } else {
+                    array_unshift($data['posts'], $post);
+                    $message = 'Post created successfully!';
+                }
+
+                saveJsonData(POSTS_FILE, $data);
+
+                foreach ($removedMedia as $removedUrl) {
+                    deleteUploadedFile($removedUrl);
+                }
+
+                $action = 'list';
+            } else {
+                $error = implode(' ', $errors);
+                if ($postAction === 'update') {
+                    $editId = $_POST['id'];
+                }
+                $action = $postAction === 'update' ? 'edit' : 'new';
+            }
+
+        } elseif ($postAction === 'delete' && isset($_POST['id'])) {
+            $postToDelete = null;
             foreach ($data['posts'] as $postItem) {
                 if ($postItem['id'] === $_POST['id']) {
-                    $existingPost = $postItem;
+                    $postToDelete = $postItem;
                     break;
                 }
             }
-            $existingMedia = $existingPost['media'] ?? [];
-            if (empty($existingMedia) && !empty($existingPost['image_url'])) {
-                $existingMedia = [['type' => 'image', 'url' => $existingPost['image_url']]];
-            }
-            $removedMedia = $_POST['remove_media'] ?? [];
-        }
 
-        $keptMedia = array_values(array_filter($existingMedia, function($item) use ($removedMedia) {
-            return !in_array($item['url'], $removedMedia, true);
-        }));
-
-        $uploadSubdir = getUploadSubdir($uploadFolderValue, $errors);
-        [$targetDir, $targetUrlBase] = getUploadTarget(UPLOAD_POSTS_DIR, UPLOAD_BASE_URL . 'posts/', $uploadSubdir);
-        $newMedia = uploadMediaFiles('media_files', $targetDir, $targetUrlBase, $errors);
-        $media = array_merge($keptMedia, $newMedia);
-
-        if (empty($media)) {
-            $errors[] = 'Please upload at least one image or video.';
-        }
-
-        if (empty($errors)) {
-            $post = [
-                'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
-                'title_en' => sanitizeInput($_POST['title_en']),
-                'title_el' => sanitizeInput($_POST['title_el']),
-                'description_en' => sanitizeInput($_POST['description_en']),
-                'description_el' => sanitizeInput($_POST['description_el']),
-                'media' => $media,
-                'created_at' => $postAction === 'update' ? $_POST['created_at'] : date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
-
-            if ($postAction === 'update') {
-                $index = array_search($_POST['id'], array_column($data['posts'], 'id'));
-                if ($index !== false) {
-                    $data['posts'][$index] = $post;
-                    $message = 'Post updated successfully!';
+            if ($postToDelete && !empty($postToDelete['media'])) {
+                foreach ($postToDelete['media'] as $mediaItem) {
+                    deleteUploadedFile($mediaItem['url'] ?? '');
                 }
-            } else {
-                array_unshift($data['posts'], $post);
-                $message = 'Post created successfully!';
             }
 
+            $data['posts'] = array_filter($data['posts'], fn($p) => $p['id'] !== $_POST['id']);
+            $data['posts'] = array_values($data['posts']);
             saveJsonData(POSTS_FILE, $data);
-
-            foreach ($removedMedia as $removedUrl) {
-                deleteUploadedFile($removedUrl);
-            }
-
-            $action = 'list';
-        } else {
-            $error = implode(' ', $errors);
-            if ($postAction === 'update') {
-                $editId = $_POST['id'];
-            }
-            $action = $postAction === 'update' ? 'edit' : 'new';
+            $message = 'Post deleted successfully!';
         }
-
-    } elseif ($postAction === 'delete' && isset($_POST['id'])) {
-        $postToDelete = null;
-        foreach ($data['posts'] as $postItem) {
-            if ($postItem['id'] === $_POST['id']) {
-                $postToDelete = $postItem;
-                break;
-            }
-        }
-
-        if ($postToDelete && !empty($postToDelete['media'])) {
-            foreach ($postToDelete['media'] as $mediaItem) {
-                deleteUploadedFile($mediaItem['url'] ?? '');
-            }
-        }
-
-        $data['posts'] = array_filter($data['posts'], fn($p) => $p['id'] !== $_POST['id']);
-        $data['posts'] = array_values($data['posts']);
-        saveJsonData(POSTS_FILE, $data);
-        $message = 'Post deleted successfully!';
     }
 }
 
@@ -217,6 +221,7 @@ include 'templates/header.php';
                                 <a href="?action=edit&id=<?php echo $post['id']; ?>" class="btn btn-secondary btn-sm">Edit</a>
                                 <form method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this post?')">
                                     <input type="hidden" name="post_action" value="delete">
+                                    <?php echo csrfInputField(); ?>
                                     <input type="hidden" name="id" value="<?php echo $post['id']; ?>">
                                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                 </form>
@@ -229,8 +234,9 @@ include 'templates/header.php';
 
     <?php else: ?>
         <div class="content-panel">
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" data-upload-form="true">
                 <input type="hidden" name="post_action" value="<?php echo $editPost ? 'update' : 'create'; ?>">
+                <?php echo csrfInputField(); ?>
                 <?php if ($editPost): ?>
                     <input type="hidden" name="id" value="<?php echo $editPost['id']; ?>">
                     <input type="hidden" name="created_at" value="<?php echo $editPost['created_at']; ?>">
@@ -301,8 +307,8 @@ include 'templates/header.php';
 
                 <div class="form-group">
                     <label for="media_files">Upload Media (Images &amp; Videos)</label>
-                    <input type="file" id="media_files" name="media_files[]" accept="image/*,video/*" multiple <?php echo $editPost ? '' : 'required'; ?>>
-                    <p class="form-hint">Select multiple files for carousel posts. Supported: JPG, PNG, GIF, WebP, MP4, WebM, MOV.</p>
+                    <input type="file" id="media_files" name="media_files[]" class="js-upload-input" data-max-size="<?php echo UPLOAD_MAX_SIZE; ?>" accept="image/*,video/*" multiple <?php echo $editPost ? '' : 'required'; ?>>
+                    <p class="form-hint">Select multiple files for carousel posts. Supported: JPG, PNG, GIF, WebP, MP4, WebM, MOV. Max 50 MB per file.</p>
                 </div>
 
                 <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">

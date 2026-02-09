@@ -391,17 +391,55 @@
         return localStorage.getItem('stemfy-language') || 'en';
       }
 
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function toSafeUrl(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        if (raw.startsWith('//')) return '';
+
+        const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw);
+        if (hasScheme && !/^https?:/i.test(raw)) {
+          return '';
+        }
+
+        try {
+          const resolved = new URL(raw, window.location.href);
+          if (resolved.protocol !== 'http:' && resolved.protocol !== 'https:') {
+            return '';
+          }
+          return resolved.toString();
+        } catch (error) {
+          return '';
+        }
+      }
+
       async function loadAnnouncements() {
+        const section = document.getElementById('announcements-section');
         try {
           const lang = getLang();
           const announcements = await window.stemfyCms.fetchNews(lang);
 
           if (announcements && announcements.length > 0) {
             renderAnnouncements(announcements, lang);
-            document.getElementById('announcements-section').style.display = 'block';
+            if (section) {
+              section.style.display = 'block';
+            }
+          } else if (section) {
+            section.style.display = 'none';
           }
         } catch (error) {
           console.log('Could not load announcements:', error);
+          if (section) {
+            section.style.display = 'none';
+          }
         }
       }
 
@@ -414,17 +452,21 @@
           el: { general: 'Γενικά', competition: 'Διαγωνισμός', event: 'Εκδήλωση', update: 'Ενημέρωση' }
         };
 
-        const readMoreText = lang === 'el' ? 'Διαβάστε περισσότερα' : 'Read more';
+        const readMoreText = escapeHtml(lang === 'el' ? 'Διαβάστε περισσότερα' : 'Read more');
 
         container.innerHTML = announcements.map(item => {
-          const title = lang === 'el' ? item.title_el : item.title_en;
-          const content = lang === 'el' ? item.content_el : item.content_en;
-          const categoryLabel = categoryLabels[lang][item.category] || item.category;
-          const date = new Date(item.created_at).toLocaleDateString(lang === 'el' ? 'el-GR' : 'en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
+          const title = escapeHtml(lang === 'el' ? item.title_el : item.title_en);
+          const content = escapeHtml(lang === 'el' ? item.content_el : item.content_en);
+          const categoryLabel = escapeHtml((categoryLabels[lang] && categoryLabels[lang][item.category]) || item.category || 'general');
+          const parsedDate = new Date(item.created_at);
+          const date = Number.isNaN(parsedDate.getTime())
+            ? ''
+            : parsedDate.toLocaleDateString(lang === 'el' ? 'el-GR' : 'en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+          const linkUrl = toSafeUrl(item.link_url);
 
           return `
             <div class="announcement-card ${item.pinned ? 'pinned' : ''}">
@@ -435,8 +477,8 @@
               </div>
               <p class="announcement-content">${content}</p>
               <div class="announcement-footer">
-                <span class="announcement-date">${date}</span>
-                ${item.link_url ? `<a href="${item.link_url}" target="_blank" rel="noopener" class="announcement-link">${readMoreText} &rarr;</a>` : ''}
+                <span class="announcement-date">${escapeHtml(date)}</span>
+                ${linkUrl ? `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener" class="announcement-link">${readMoreText} &rarr;</a>` : ''}
               </div>
             </div>`;
         }).join('');

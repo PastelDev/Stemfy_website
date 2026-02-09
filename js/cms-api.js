@@ -1,5 +1,8 @@
 (function () {
   const DEFAULTS = {
+    localApi: '/admin/api.php',
+    useLocalApiFirst: true,
+    localApiTimeoutMs: 8000,
     baseUrl: 'https://cms.stemfy.gr',
     perPage: 100,
     endpoints: {
@@ -29,6 +32,10 @@
   const langMap = config.langMap || DEFAULTS.langMap;
   const categoryCache = {};
 
+  let localPostsCache = null;
+  let localPostsCacheAt = 0;
+  const LOCAL_POSTS_CACHE_TTL_MS = 30000;
+
   function buildUrl(pathOrUrl, params) {
     if (!pathOrUrl) return null;
     const isAbsolute = /^https?:\/\//i.test(pathOrUrl);
@@ -43,14 +50,46 @@
     return url.toString();
   }
 
-  async function fetchJson(url) {
+  function buildLocalApiUrl(type) {
+    if (!config.localApi) return null;
+    try {
+      const url = new URL(config.localApi, window.location.href);
+      if (type) {
+        url.searchParams.set('type', type);
+      }
+      return url.toString();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function fetchJson(url, options = {}) {
     const response = await fetch(url, {
-      headers: { Accept: 'application/json' }
+      headers: { Accept: 'application/json' },
+      ...options
     });
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`);
     }
     return response.json();
+  }
+
+  async function fetchJsonWithTimeout(url, timeoutMs) {
+    if (!timeoutMs || typeof AbortController === 'undefined') {
+      return fetchJson(url, { cache: 'no-store' });
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      return await fetchJson(url, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   async function tryFetch(urls) {
@@ -246,7 +285,7 @@
     return '';
   }
 
-  function normalizeNewsItem(item, lang) {
+  function normalizeNewsItem(item) {
     const fileUrl = extractFileUrl(item);
     const linkUrl = getField(item, 'link_url') || getField(item, 'link') || fileUrl || '';
 
@@ -337,29 +376,141 @@
     return Array.isArray(data) ? data : [];
   }
 
-  async function fetchNews(lang) {
-    const items = await fetchCollection('news', lang);
-    const normalized = items.map((item) => normalizeNewsItem(item, lang));
-    normalized.sort((a, b) => {
+  async function fetchLocalPayload(type) {
+    const url = buildLocalApiUrl(type);
+    if (!url) {
+      return { available: false, data: null };
+    }
+
+    try {
+      const payload = await fetchJsonWithTimeout(url, config.localApiTimeoutMs);
+      if (!payload || payload.success !== true) {
+        return { available: false, data: null };
+      }
+      return { available: true, data: payload };
+    } catch (error) {
+      return { available: false, data: null };
+    }
+  }
+
+  async function fetchLocalPostsPayload() {
+    const now = Date.now();
+    if (localPostsCache && now - localPostsCacheAt < LOCAL_POSTS_CACHE_TTL_MS) {
+      return { available: true, data: localPostsCache };
+    }
+
+    const result = await fetchLocalPayload('posts');
+    if (result.available && result.data) {
+      localPostsCache = result.data;
+      localPostsCacheAt = now;
+      return { available: true, data: localPostsCache };
+    }
+
+    return { available: false, data: null };
+  }
+
+  function sortNewsItems(items) {
+    items.sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-    return normalized;
+    return items;
   }
 
-  async function fetchPosts(lang) {
+  async function fetchNewsFromLocal() {
+    const result = await fetchLocalPayload('news');
+    if (!result.available || !result.data) {
+      return { available: false, items: [] };
+    }
+
+    const announcements = Array.isArray(result.data.announcements) ? result.data.announcements : [];
+    const items = announcements.map((item) => normalizeNewsItem(item));
+    return { available: true, items: sortNewsItems(items) };
+  }
+
+  async function fetchNewsFromWordPress(lang) {
+    const items = await fetchCollection('news', lang);
+    const normalized = items.map((item) => normalizeNewsItem(item));
+    return sortNewsItems(normalized);
+  }
+
+  async function fetchPostsFromLocal() {
+    const result = await fetchLocalPostsPayload();
+    if (!result.available || !result.data) {
+      return { available: false, items: [] };
+    }
+
+    const posts = Array.isArray(result.data.posts) ? result.data.posts : [];
+    return { available: true, items: posts.map((item) => normalizePostItem(item)) };
+  }
+
+  async function fetchResourcesFromLocal() {
+    const result = await fetchLocalPostsPayload();
+    if (!result.available || !result.data) {
+      return { available: false, items: [] };
+    }
+
+    const resources = Array.isArray(result.data.resources) ? result.data.resources : [];
+    return { available: true, items: resources.map((item) => normalizeResourceItem(item)) };
+  }
+
+  async function fetchPostsFromWordPress(lang) {
     const items = await fetchCollection('posts', lang);
     return items.map((item) => normalizePostItem(item));
   }
 
-  async function fetchResources(lang) {
+  async function fetchResourcesFromWordPress(lang) {
     const items = await fetchCollection('resources', lang);
     return items.map((item) => normalizeResourceItem(item));
   }
 
+  async function fetchNews(lang) {
+    if (config.useLocalApiFirst) {
+      const local = await fetchNewsFromLocal();
+      if (local.available) return local.items;
+      return fetchNewsFromWordPress(lang);
+    }
+
+    const wpItems = await fetchNewsFromWordPress(lang);
+    if (wpItems.length > 0) return wpItems;
+
+    const local = await fetchNewsFromLocal();
+    return local.available ? local.items : [];
+  }
+
+  async function fetchPosts(lang) {
+    if (config.useLocalApiFirst) {
+      const local = await fetchPostsFromLocal();
+      if (local.available) return local.items;
+      return fetchPostsFromWordPress(lang);
+    }
+
+    const wpItems = await fetchPostsFromWordPress(lang);
+    if (wpItems.length > 0) return wpItems;
+
+    const local = await fetchPostsFromLocal();
+    return local.available ? local.items : [];
+  }
+
+  async function fetchResources(lang) {
+    if (config.useLocalApiFirst) {
+      const local = await fetchResourcesFromLocal();
+      if (local.available) return local.items;
+      return fetchResourcesFromWordPress(lang);
+    }
+
+    const wpItems = await fetchResourcesFromWordPress(lang);
+    if (wpItems.length > 0) return wpItems;
+
+    const local = await fetchResourcesFromLocal();
+    return local.available ? local.items : [];
+  }
+
   window.stemfyCms = {
     config: {
+      localApi: config.localApi,
+      useLocalApiFirst: config.useLocalApiFirst,
       baseUrl,
       perPage,
       endpoints: config.endpoints,

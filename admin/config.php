@@ -13,6 +13,16 @@
  */
 
 // Session configuration
+ini_set('session.use_strict_mode', '1');
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => $isHttps,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
 
 // Load credentials from separate file
@@ -27,7 +37,11 @@ if (file_exists($credentialsFile)) {
 
 // Data file paths (allow override for deployments)
 $dataDir = defined('STEMFY_DATA_DIR') ? STEMFY_DATA_DIR : getenv('STEMFY_DATA_DIR');
-$dataDir = $dataDir ?: (dirname(__DIR__) . '/posts/');
+$defaultDataDir = dirname(__DIR__) . '/posts/';
+if (!is_dir($defaultDataDir)) {
+    $defaultDataDir = __DIR__ . '/data/';
+}
+$dataDir = $dataDir ?: $defaultDataDir;
 define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
 define('POSTS_FILE', DATA_DIR . 'posts.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
@@ -43,12 +57,21 @@ define('UPLOAD_RESOURCES_DIR', UPLOAD_DIR . 'resources/');
 define('UPLOAD_NEWS_DIR', UPLOAD_DIR . 'news/');
 define('UPLOAD_MAX_SIZE', 52428800); // 50 MB
 
+// Login protection
+define('LOGIN_ATTEMPT_MAX', 5);
+define('LOGIN_ATTEMPT_WINDOW', 900); // 15 minutes
+define('LOGIN_ATTEMPT_BLOCK', 900); // 15 minutes
+define('LOGIN_ATTEMPTS_FILE', DATA_DIR . 'login_attempts.json');
+
 // Ensure data and upload directories exist
 ensureDir(DATA_DIR);
 ensureDir(UPLOAD_DIR);
 ensureDir(UPLOAD_POSTS_DIR);
 ensureDir(UPLOAD_RESOURCES_DIR);
 ensureDir(UPLOAD_NEWS_DIR);
+if (!file_exists(LOGIN_ATTEMPTS_FILE)) {
+    file_put_contents(LOGIN_ATTEMPTS_FILE, json_encode([], JSON_PRETTY_PRINT));
+}
 
 // Initialize data files if they don't exist
 if (!file_exists(POSTS_FILE)) {
@@ -73,13 +96,14 @@ function requireLogin() {
 
 function getJsonData($file) {
     if (file_exists($file)) {
-        return json_decode(file_get_contents($file), true);
+        $decoded = json_decode(file_get_contents($file), true);
+        return is_array($decoded) ? $decoded : [];
     }
     return [];
 }
 
 function saveJsonData($file, $data) {
-    return file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    return file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 }
 
 function generateId() {
@@ -88,6 +112,152 @@ function generateId() {
 
 function sanitizeInput($input) {
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+}
+
+function getCsrfToken() {
+    if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function isValidCsrfToken($token) {
+    if (!is_string($token) || $token === '') {
+        return false;
+    }
+    $sessionToken = $_SESSION['csrf_token'] ?? '';
+    return is_string($sessionToken) && $sessionToken !== '' && hash_equals($sessionToken, $token);
+}
+
+function csrfInputField() {
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(getCsrfToken(), ENT_QUOTES, 'UTF-8') . '">';
+}
+
+function getClientIp() {
+    $candidates = [
+        $_SERVER['HTTP_CF_CONNECTING_IP'] ?? null,
+        $_SERVER['HTTP_X_REAL_IP'] ?? null,
+        $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null,
+        $_SERVER['REMOTE_ADDR'] ?? null
+    ];
+
+    foreach ($candidates as $candidate) {
+        if (!$candidate) {
+            continue;
+        }
+
+        $parts = array_map('trim', explode(',', $candidate));
+        foreach ($parts as $part) {
+            if (filter_var($part, FILTER_VALIDATE_IP)) {
+                return $part;
+            }
+        }
+    }
+
+    return 'unknown';
+}
+
+function readLoginAttempts() {
+    if (!file_exists(LOGIN_ATTEMPTS_FILE)) {
+        return [];
+    }
+
+    $raw = file_get_contents(LOGIN_ATTEMPTS_FILE);
+    if ($raw === false) {
+        return [];
+    }
+
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function writeLoginAttempts($attempts) {
+    return file_put_contents(
+        LOGIN_ATTEMPTS_FILE,
+        json_encode($attempts, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        LOCK_EX
+    );
+}
+
+function pruneLoginAttempts($attempts, $now) {
+    foreach ($attempts as $ip => $data) {
+        $last = isset($data['last']) ? (int) $data['last'] : 0;
+        $blockedUntil = isset($data['blocked_until']) ? (int) $data['blocked_until'] : 0;
+        if ($last < ($now - (LOGIN_ATTEMPT_WINDOW * 2)) && $blockedUntil < $now) {
+            unset($attempts[$ip]);
+        }
+    }
+    return $attempts;
+}
+
+function isLoginRateLimited($ip, &$retryAfter = 0) {
+    $retryAfter = 0;
+    if (!$ip) {
+        return false;
+    }
+
+    $now = time();
+    $attempts = pruneLoginAttempts(readLoginAttempts(), $now);
+    if (!isset($attempts[$ip])) {
+        writeLoginAttempts($attempts);
+        return false;
+    }
+
+    $entry = $attempts[$ip];
+    $blockedUntil = isset($entry['blocked_until']) ? (int) $entry['blocked_until'] : 0;
+    if ($blockedUntil > $now) {
+        $retryAfter = $blockedUntil - $now;
+        return true;
+    }
+
+    if ($blockedUntil > 0 && $blockedUntil <= $now) {
+        unset($attempts[$ip]);
+        writeLoginAttempts($attempts);
+    }
+
+    return false;
+}
+
+function recordLoginFailure($ip) {
+    if (!$ip) {
+        return;
+    }
+
+    $now = time();
+    $attempts = pruneLoginAttempts(readLoginAttempts(), $now);
+    $entry = $attempts[$ip] ?? [
+        'count' => 0,
+        'first' => $now,
+        'last' => $now,
+        'blocked_until' => 0
+    ];
+
+    $first = isset($entry['first']) ? (int) $entry['first'] : $now;
+    if (($now - $first) > LOGIN_ATTEMPT_WINDOW) {
+        $entry['count'] = 0;
+        $entry['first'] = $now;
+    }
+
+    $entry['count'] = ((int) ($entry['count'] ?? 0)) + 1;
+    $entry['last'] = $now;
+    if ($entry['count'] >= LOGIN_ATTEMPT_MAX) {
+        $entry['blocked_until'] = $now + LOGIN_ATTEMPT_BLOCK;
+    }
+
+    $attempts[$ip] = $entry;
+    writeLoginAttempts($attempts);
+}
+
+function clearLoginFailures($ip) {
+    if (!$ip) {
+        return;
+    }
+
+    $attempts = readLoginAttempts();
+    if (isset($attempts[$ip])) {
+        unset($attempts[$ip]);
+        writeLoginAttempts($attempts);
+    }
 }
 
 function ensureDir($dir) {

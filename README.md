@@ -2,63 +2,53 @@
 
 ![STEMfy.gr](https://img.shields.io/badge/STEMfy.gr-STEM%20for%20you-blue?style=for-the-badge)
 
-Official website repository for **STEMfy.gr** — a galaxy-inspired, bilingual experience that highlights interactive simulations, science news, community challenges, and the content the team publishes on Instagram.
+Official website repository for **STEMfy.gr**: a galaxy-inspired, bilingual experience focused on interactive simulations, science news, challenges, and social content.
 
 Live site: https://stemfy.gr
 
 ## Highlights
 
-- **Immersive shared layout**: every page reuses the animated `starfield` canvas, the logo-based navigation bar, the settings modal (language + theme), and a footer with the Instagram link so the whole site feels cohesive.
-- **Interactive double pendulum**: the simulation bundle uses RK4 integration, adjustable masses/lengths/angles/velocities, damping, infinite trails, chaos-map exploration, download helpers (snapshots + short videos), and a spotlight tutorial (`js/tutorial.js`) that walks visitors through the controls.
-- **Localized + themed UI**: `js/i18n.js` supplies English/Greek translations for the nav, hero, cards, and page-specific blocks, while `THEMES` toggles the purple/blue palettes via CSS variables stored in `localStorage`.
-- **Dynamic posts & news**: `posts.html` toggles between Instagram-style posts and educational resources (with modal previews), while `news.html` mirrors a newsletter/comps layout and streams announcements from the headless WordPress CMS (`cms.stemfy.gr`) via `js/cms-api.js`. Both pages re-render when the language setting changes.
-- **Admin workflow**: content now lives in WordPress (headless CMS). The legacy PHP admin panel (`admin/`) remains in the repo but is no longer the primary source for public content.
+- Immersive shared layout: animated `starfield` canvas, logo nav, settings modal, and common footer across pages.
+- Interactive double pendulum: RK4 integration, parameter controls, chaos map, downloads, and guided tutorial.
+- Localized UI: English/Greek strings managed by `js/i18n.js`.
+- Dynamic posts and news: frontend uses `js/cms-api.js`, now with **local API first** (`/admin/api.php`) and WordPress fallback (`cms.stemfy.gr`).
+- Upload workflow: built-in PHP admin panel (`admin/`) is the primary way to publish posts/resources/news.
 
-## Pages at a glance
+## Pages
 
-- `index.html`: hero + company story, navigation cards that link to every major section, rotating logo, quick stats, and prompts for simulations, challenges, news, and posts. Includes the shared settings modal + language toggle.
-- `simulations.html`: a gallery of simulations (Double Pendulum, Bridge Builder, Mandelbrot Set) where only the first is live and the others are flagged as “coming soon” (see `descriptions/coming-soon.md`).
-- `double-pendulum.html`: the flagship simulation with chaos map panel, control panel, view toggles, download helpers, trail options, chaos-map explanations, challenges callouts, and the tutorial overlay described above. It loads `css/simulations.css`, `js/double-pendulum.js`, `js/tutorial.js`, `js/ui.js`, `js/starfield.js`, and `js/i18n.js`.
-- `challenges.html`: cards for Pendulum Trajectory and Chaos Map Explorer (both active and link back to the simulation), plus placeholders for Mandelbrot Zoom and Bridge Master. Each card has badges, descriptions, and Instagram submission links.
-- `news.html`: newsletter notes, competition grid (Math / Physics / Informatics / Science & Research / Astronomy with curated links), and an announcement feed populated from WordPress CMS (`cms.stemfy.gr`). Pinned items appear first.
-- `posts.html`: toggles between Posts (dynamic media cards + modal preview) and Educational Resources (PDF links). Fetches from WordPress CMS via `js/cms-api.js`, renders counts, and opens media in a modal. Language changes trigger re-renders.
-- `about.html`, `contact.html`, `404.html`: now share the same navigation, settings modal, and footer, and they are fully localized through `js/i18n.js`.
+- `index.html`: home hero and section cards.
+- `simulations.html`: simulations overview.
+- `double-pendulum.html`: flagship simulation page.
+- `challenges.html`: active and planned challenges.
+- `news.html`: announcements + competitions content.
+- `posts.html`: post feed + educational resources.
+- `about.html`, `contact.html`, `404.html`: standard info pages.
 
-## Directory snapshot
+## Directory Snapshot
 
-- `assets/`: shared logo, icons, and imagery referenced by every page.
-- `css/main.css`: palette, typography, nav/footer layout, responsive helpers, and shared scaffolding.
-- `css/simulations.css`: layout for the double-pendulum view (control/chaos panels, chaos warning modal, tutorial, toggles).
-- `js/`: `starfield.js` (background), `i18n.js` (language/theme manager + DOM updates), `ui.js` (language toggle button), `double-pendulum.js` (physics + chaos map + downloads), `tutorial.js`, plus helpers.
-- `admin/`: PHP admin dashboard (login, dashboard, posts/resources/news controllers, templates, CSS), `api.php` for the public JSON endpoint, `config.php` for credentials/data paths, and directories for `uploads/` and `data/` (JSON files with posts/resources/announcements).
-- `descriptions/`: storyboards for the double pendulum, bridge builder, and Mandelbrot simulations plus a “coming soon” note that tracks planned challenges.
+- `assets/`: images, logos, media assets.
+- `icons/`: icon graphics and challenge previews.
+- `css/`: shared and simulation-specific styles.
+- `js/`: starfield, i18n, UI, CMS adapter, simulation logic.
+- `admin/`: login, dashboard, CRUD forms, uploads, and JSON API.
+- `descriptions/`: simulation concept notes and backlog references.
 
-## Internationalization & theming
+## Dynamic Content Flow
 
-`js/i18n.js` hosts the English/Greek dictionaries, instantiates `I18nManager`, and:
+1. Frontend calls `js/cms-api.js`.
+2. Adapter first tries local API: `/admin/api.php`.
+3. If local API is unavailable, it falls back to WordPress REST endpoints on `cms.stemfy.gr`.
+4. Data is normalized for `posts.html` and `news.html`.
 
-1. Applies the stored language (`stemfy-language`) and theme (`stemfy-theme`) on load.
-2. Updates every page block (nav, hero, cards, page-specific sections, modals) via `updatePageContent()`.
-3. Exposes `setLanguage()` and `setTheme()` that persist choices in `localStorage` and emit `languageChanged` events.
+`admin/api.php` supports:
 
-The settings modal exposes both selectors. `js/ui.js` wires the floating gear button to toggle languages, and the modal’s theme selector updates the CSS custom properties defined in `THEMES` (purple and blue palettes).
+- `type=posts`
+- `type=news`
+- `type=all`
 
-## Dynamic content & admin API
+## Admin Panel
 
-- `js/cms-api.js` connects to the WordPress REST API at `cms.stemfy.gr` and normalizes posts, resources, and announcements for the frontend. It supports custom post types and category fallbacks.
-- `admin/data/posts.json` stores bilingual posts plus educational resources; each post includes `media[]` (image/video), localized text, and timestamps. `admin/data/news.json` keeps announcements with categories, pinned flags, and optional PDF links.
-- `admin/uploads/{posts,resources,news}/` hold the binaries submitted via the admin forms. Files are validated for mime type and size (50 MB limit) before being normalized and moved into `UPLOAD_DIR`.
-
-The public pages consume this API:
-
-- `posts.html` (posts + resources) renders cards with preview counts and opens media in a modal.
-- `news.html` loads announcements, translates their category/date strings, and honors the pinned order.
-
-If the API call fails, both pages fall back to localized placeholders.
-
-## Admin panel
-
-Log in via `admin/login.php` after creating `admin/credentials.php`:
+Create `admin/credentials.php` (gitignored):
 
 ```php
 <?php
@@ -66,53 +56,71 @@ define('ADMIN_USERNAME', 'your_username');
 define('ADMIN_PASSWORD', 'your_password');
 ```
 
-`admin/config.php` boots the session, defines paths, ensures data/upload directories exist, and provides helpers (`generateId`, `sanitizeInput`, file uploads, deletion). The dashboard (`admin/index.php`) displays counts and quick-action buttons.
+Main admin files:
 
-- `admin/posts.php`: create/edit/delete posts, require at least one media item, and normalize uploads before writing to `posts.json`.
-- `admin/resources.php`: manage PDF resources (type plus bilingual text) stored in `posts.json`’s `resources` array.
-- `admin/news.php`: manage announcements with categories, pinning, optional PDF attachments, and deletion (pins appear first via the API).
+- `admin/config.php`: session setup, paths, upload helpers, CSRF helpers, login-rate-limit helpers.
+- `admin/login.php`: login form and authentication.
+- `admin/posts.php`: manage media posts.
+- `admin/resources.php`: manage PDF resources.
+- `admin/news.php`: manage announcements.
+- `admin/api.php`: public JSON endpoint for frontend.
 
-All admin views reuse `templates/header.php` and `admin.css`.
+Uploads are validated by extension, mime type, and max size (`UPLOAD_MAX_SIZE`, default 50 MB).
 
-## Running locally
+For a step-by-step publishing workflow (without WordPress), see [UPLOADING.md](UPLOADING.md).
 
-1. **Static-only preview** – `python -m http.server 8000` or `npx serve` works for HTML/CSS/JS. Posts/news require access to `cms.stemfy.gr` for real data; otherwise placeholders appear.
-2. **PHP server (optional)** – run `php -S 0.0.0.0:8000` from the repo root if you still want to use the legacy `admin/` panel locally.
+## Running Locally
 
-Keep `admin/credentials.php` in place and ensure `admin/data/` stays writable so JSON files can be updated.
+1. Static preview only:
 
-## Local admin setup checklist
+```bash
+python -m http.server 8000
+```
 
-1. Copy `admin/credentials.php` (gitignored) with `ADMIN_USERNAME`/`ADMIN_PASSWORD`.
-2. Confirm PHP CLI (8+) is installed and run `php -S` from the root so `admin/` routes function.
-3. Upload new media via the admin forms; `config.php` limits uploads to 50 MB and only allows common image/video/PDF extensions.
-4. When removing posts/resources/news, the JSON file is rewritten and the prior upload file is deleted.
+or
 
-## Future & reference docs
+```bash
+npx serve
+```
 
-- `descriptions/double-pendulum.md`, `descriptions/bridge-builder.md`, and `descriptions/mandelbrot.md` document the ideas, goals, and UX notes for each simulation.
-- `descriptions/coming-soon.md` catalogs Bridge Builder + Mandelbrot Set simulations along with the Bridge Master and Mandelbrot Zoom challenges that are still in the backlog.
+In static-only mode, `/admin/api.php` is unavailable, so frontend falls back to WordPress when reachable.
 
-## Tech stack
+2. Full local admin/API mode (recommended):
 
-- **Markup & styling**: plain HTML + CSS (Outfit-inspired typography + galaxy gradients)
-- **Interactions**: Vanilla JavaScript (`js/i18n.js`, `js/double-pendulum.js`, `js/tutorial.js`, `js/ui.js`, `js/starfield.js`)
-- **Server/API**: WordPress (headless CMS) via REST API; legacy PHP admin panel remains optional
-- **Data**: JSON files under `admin/data/`
+```bash
+php -S 0.0.0.0:8000
+```
+
+Run from repo root so `admin/` routes and local API work.
+
+## Backup Scripts
+
+- Linux/macOS: `scripts/backup-content.sh`
+- Windows PowerShell: `scripts/backup-content.ps1`
+
+Both scripts back up available content directories (`posts`, `admin/data`, `admin/uploads`) into timestamped archives.
+
+## Tech Stack
+
+- Markup/styling: plain HTML + CSS
+- Frontend behavior: vanilla JavaScript
+- Admin/backend: PHP
+- Data storage: JSON + uploaded files
+- Optional external fallback source: WordPress REST API
 
 ## Contributing
 
 1. Fork the repo.
-2. Create a feature branch: `git checkout -b feature/your-feature`.
-3. Commit your changes: `git commit -m "Describe your change"`.
-4. Push the branch: `git push origin feature/your-feature`.
-5. Open a pull request describing the updates.
+2. Create a feature branch.
+3. Commit changes.
+4. Push branch.
+5. Open a pull request.
 
 ## Contact
 
-- **Instagram**: [@stemfy.gr](https://instagram.com/stemfy.gr)
-- **Email**: stelirapt7@gmail.com
+- Instagram: [@stemfy.gr](https://instagram.com/stemfy.gr)
+- Email: team@stemfy.gr
 
 ## License
 
-This project is open source under the [MIT License](LICENSE).
+MIT License. See [LICENSE](LICENSE).

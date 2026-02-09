@@ -11,7 +11,11 @@ header('Cache-Control: public, max-age=300'); // Cache for 5 minutes
 
 // Data file paths (allow override for deployments)
 $dataDir = defined('STEMFY_DATA_DIR') ? STEMFY_DATA_DIR : getenv('STEMFY_DATA_DIR');
-$dataDir = $dataDir ?: (dirname(__DIR__) . '/posts/');
+$defaultDataDir = dirname(__DIR__) . '/posts/';
+if (!is_dir($defaultDataDir)) {
+    $defaultDataDir = __DIR__ . '/data/';
+}
+$dataDir = $dataDir ?: $defaultDataDir;
 define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
 define('POSTS_FILE', DATA_DIR . 'posts.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
