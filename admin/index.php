@@ -3,11 +3,21 @@ require_once 'config.php';
 requireLogin();
 
 $postsData = getJsonData(POSTS_FILE);
+$resourcesData = getJsonData(RESOURCES_FILE);
 $newsData = getJsonData(NEWS_FILE);
 
-$postCount = count($postsData['posts'] ?? []);
-$resourceCount = count($postsData['resources'] ?? []);
-$newsCount = count($newsData['announcements'] ?? []);
+$allPosts = $postsData['posts'] ?? [];
+$allResources = $resourcesData['resources'] ?? [];
+$allNews = $newsData['announcements'] ?? [];
+
+$postCount = count($allPosts);
+$resourceCount = count($allResources);
+$newsCount = count($allNews);
+
+$draftPosts = count(array_filter($allPosts, fn($p) => ($p['status'] ?? 'published') === 'draft'));
+$draftResources = count(array_filter($allResources, fn($r) => ($r['status'] ?? 'published') === 'draft'));
+$draftNews = count(array_filter($allNews, fn($a) => ($a['status'] ?? 'published') === 'draft'));
+$totalDrafts = $draftPosts + $draftResources + $draftNews;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -131,6 +141,21 @@ $newsCount = count($newsData['announcements'] ?? []);
                         <p>News Items</p>
                     </div>
                 </div>
+
+                <?php if ($totalDrafts > 0): ?>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(255, 200, 50, 0.15); color: #ffc832;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <h3><?php echo $totalDrafts; ?></h3>
+                        <p>Drafts</p>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <div class="quick-actions">

@@ -49,7 +49,11 @@ if (!is_dir($defaultDataDir)) {
 $dataDir = $dataDir ?: $defaultDataDir;
 define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
 define('POSTS_FILE', DATA_DIR . 'posts.json');
+define('RESOURCES_FILE', DATA_DIR . 'resources.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
+
+// Available tags for posts
+define('POST_TAGS', ['physics', 'mathematics', 'informatics', 'astronomy', 'science', 'philosophy', 'technology']);
 
 // Upload paths (allow override for deployments)
 $uploadDir = defined('STEMFY_UPLOAD_DIR') ? STEMFY_UPLOAD_DIR : getenv('STEMFY_UPLOAD_DIR');
@@ -80,11 +84,27 @@ if (!file_exists(LOGIN_ATTEMPTS_FILE)) {
 
 // Initialize data files if they don't exist
 if (!file_exists(POSTS_FILE)) {
-    file_put_contents(POSTS_FILE, json_encode(['posts' => [], 'resources' => []], JSON_PRETTY_PRINT));
+    file_put_contents(POSTS_FILE, json_encode(['posts' => []], JSON_PRETTY_PRINT));
 }
-
+if (!file_exists(RESOURCES_FILE)) {
+    file_put_contents(RESOURCES_FILE, json_encode(['resources' => []], JSON_PRETTY_PRINT));
+}
 if (!file_exists(NEWS_FILE)) {
     file_put_contents(NEWS_FILE, json_encode(['announcements' => []], JSON_PRETTY_PRINT));
+}
+
+// One-time migration: move resources out of posts.json into resources.json
+if (file_exists(POSTS_FILE)) {
+    $migrationData = json_decode(file_get_contents(POSTS_FILE), true);
+    if (is_array($migrationData) && isset($migrationData['resources'])) {
+        $existingResources = json_decode(file_get_contents(RESOURCES_FILE), true);
+        if (is_array($existingResources) && empty($existingResources['resources'])) {
+            $existingResources['resources'] = $migrationData['resources'];
+            file_put_contents(RESOURCES_FILE, json_encode($existingResources, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        }
+        unset($migrationData['resources']);
+        file_put_contents(POSTS_FILE, json_encode($migrationData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    }
 }
 
 // Helper functions

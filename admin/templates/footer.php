@@ -312,6 +312,42 @@
         });
 
         initUploadForms();
+
+        /* ---- List search + status filter ---- */
+        function initListToolbar(searchId, listId) {
+            var searchInput = document.getElementById(searchId);
+            var listEl = document.getElementById(listId);
+            if (!searchInput || !listEl) return;
+
+            var cards = Array.from(listEl.querySelectorAll('.item-card'));
+            var filterBtns = searchInput.closest('.content-panel')
+                ? searchInput.closest('.content-panel').querySelectorAll('.filter-btn')
+                : [];
+            var activeFilter = 'all';
+
+            function applyFilters() {
+                var query = (searchInput.value || '').toLowerCase();
+                cards.forEach(function (card) {
+                    var matchesSearch = !query || (card.dataset.search || '').indexOf(query) !== -1;
+                    var matchesStatus = activeFilter === 'all' || card.dataset.status === activeFilter;
+                    card.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+                });
+            }
+
+            searchInput.addEventListener('input', applyFilters);
+            filterBtns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    filterBtns.forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    activeFilter = btn.dataset.filter || 'all';
+                    applyFilters();
+                });
+            });
+        }
+
+        initListToolbar('posts-search', 'posts-list');
+        initListToolbar('resources-search', 'resources-list');
+        initListToolbar('news-search', 'news-list');
     })();
     </script>
 </body>

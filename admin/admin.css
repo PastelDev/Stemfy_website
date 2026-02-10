@@ -654,6 +654,147 @@ body {
     flex-shrink: 0;
 }
 
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2em 0.55em;
+    border-radius: 5px;
+    vertical-align: middle;
+    margin-right: 0.4rem;
+}
+
+.status-published {
+    background: rgba(100, 255, 150, 0.15);
+    color: #80ff90;
+    border: 1px solid rgba(100, 255, 150, 0.3);
+}
+
+.status-draft {
+    background: rgba(255, 200, 50, 0.15);
+    color: #ffc832;
+    border: 1px solid rgba(255, 200, 50, 0.3);
+}
+
+/* Tag pills (list view) */
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+}
+
+.tag-pill {
+    font-size: 0.7rem;
+    padding: 0.15em 0.55em;
+    border-radius: 5px;
+    background: rgba(176, 138, 240, 0.12);
+    color: #b08af0;
+    border: 1px solid rgba(176, 138, 240, 0.25);
+}
+
+/* Tag checkboxes (form) */
+.tag-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    background: rgba(176, 138, 240, 0.08);
+    border: 1px solid rgba(176, 138, 240, 0.25);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+}
+
+.tag-checkbox:hover {
+    border-color: rgba(176, 138, 240, 0.5);
+    background: rgba(176, 138, 240, 0.15);
+}
+
+.tag-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.tag-checkbox input[type="checkbox"]:checked + span {
+    color: #b08af0;
+    font-weight: 600;
+}
+
+/* List toolbar (search + filter) */
+.list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(176, 138, 240, 0.1);
+}
+
+.list-search {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.65rem 1rem;
+    background: rgba(176, 138, 240, 0.08);
+    border: 1px solid rgba(176, 138, 240, 0.25);
+    border-radius: 10px;
+    color: #f8f4ff;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.list-search:focus {
+    outline: none;
+    border-color: rgba(176, 138, 240, 0.5);
+    background: rgba(176, 138, 240, 0.12);
+}
+
+.list-search::placeholder {
+    color: rgba(248, 244, 255, 0.4);
+}
+
+.list-filters {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.filter-btn {
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(176, 138, 240, 0.2);
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(248, 244, 255, 0.6);
+    font-family: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    border-color: rgba(176, 138, 240, 0.4);
+    color: #f8f4ff;
+}
+
+.filter-btn.active {
+    background: rgba(176, 138, 240, 0.15);
+    border-color: rgba(176, 138, 240, 0.4);
+    color: #b08af0;
+    font-weight: 600;
+}
+
 /* Sync page */
 .sync-checks {
     display: flex;

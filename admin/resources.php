@@ -9,7 +9,7 @@ $action = $_GET['action'] ?? 'list';
 $editId = $_GET['id'] ?? null;
 $uploadFolderValue = '';
 
-$data = getJsonData(POSTS_FILE);
+$data = getJsonData(RESOURCES_FILE);
 if (!isset($data['resources'])) {
     $data['resources'] = [];
 }
@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($errors)) {
                 $resource = [
                     'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                    'status' => ($_POST['status'] ?? 'published') === 'draft' ? 'draft' : 'published',
                     'title_en' => sanitizeInput($_POST['title_en']),
                     'title_el' => sanitizeInput($_POST['title_el']),
                     'description_en' => sanitizeInput($_POST['description_en']),
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = 'Resource created successfully!';
                 }
 
-                saveJsonData(POSTS_FILE, $data);
+                saveJsonData(RESOURCES_FILE, $data);
 
                 if ($uploadedFileUrl && $existingFileUrl) {
                     deleteUploadedFile($existingFileUrl);
@@ -98,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $data['resources'] = array_filter($data['resources'], fn($r) => $r['id'] !== $_POST['id']);
             $data['resources'] = array_values($data['resources']);
-            saveJsonData(POSTS_FILE, $data);
+            saveJsonData(RESOURCES_FILE, $data);
             $message = 'Resource deleted successfully!';
         }
     }
@@ -144,6 +145,10 @@ include 'templates/header.php';
     <?php endif; ?>
 
     <?php if ($action === 'list'): ?>
+        <?php
+            $publishedCount = count(array_filter($data['resources'], fn($r) => ($r['status'] ?? 'published') === 'published'));
+            $draftCount = count($data['resources']) - $publishedCount;
+        ?>
         <div class="content-panel">
             <div class="panel-header">
                 <h3>All Resources (<?php echo count($data['resources']); ?>)</h3>
@@ -156,6 +161,17 @@ include 'templates/header.php';
                 </a>
             </div>
 
+            <?php if (!empty($data['resources'])): ?>
+                <div class="list-toolbar">
+                    <input type="text" class="list-search" id="resources-search" placeholder="Search resources...">
+                    <div class="list-filters">
+                        <button class="filter-btn active" data-filter="all">All (<?php echo count($data['resources']); ?>)</button>
+                        <button class="filter-btn" data-filter="published">Published (<?php echo $publishedCount; ?>)</button>
+                        <button class="filter-btn" data-filter="draft">Drafts (<?php echo $draftCount; ?>)</button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php if (empty($data['resources'])): ?>
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -166,9 +182,10 @@ include 'templates/header.php';
                     <p>Add your first educational resource</p>
                 </div>
             <?php else: ?>
-                <div class="items-list">
+                <div class="items-list" id="resources-list">
                     <?php foreach ($data['resources'] as $resource): ?>
-                        <div class="item-card">
+                        <?php $resStatus = $resource['status'] ?? 'published'; ?>
+                        <div class="item-card" data-status="<?php echo $resStatus; ?>" data-search="<?php echo htmlspecialchars(strtolower($resource['title_en'] . ' ' . $resource['title_el'] . ' ' . ($resource['type'] ?? ''))); ?>">
                             <div class="item-preview">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -176,7 +193,10 @@ include 'templates/header.php';
                                 </svg>
                             </div>
                             <div class="item-content">
-                                <h4><?php echo htmlspecialchars($resource['title_en']); ?></h4>
+                                <h4>
+                                    <span class="status-badge status-<?php echo $resStatus; ?>"><?php echo ucfirst($resStatus); ?></span>
+                                    <?php echo htmlspecialchars($resource['title_en']); ?>
+                                </h4>
                                 <p><?php echo htmlspecialchars($resource['description_en']); ?></p>
                                 <div class="item-meta">
                                     <span>Type: <?php echo htmlspecialchars($resource['type']); ?></span>
@@ -207,6 +227,26 @@ include 'templates/header.php';
                     <input type="hidden" name="id" value="<?php echo $editResource['id']; ?>">
                     <input type="hidden" name="created_at" value="<?php echo $editResource['created_at']; ?>">
                 <?php endif; ?>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="published" <?php echo ($editResource && ($editResource['status'] ?? 'published') === 'published') ? 'selected' : ''; ?>>Published</option>
+                            <option value="draft" <?php echo ($editResource && ($editResource['status'] ?? '') === 'draft') ? 'selected' : ''; ?>>Draft</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Resource Type</label>
+                        <select id="type" name="type" required>
+                            <option value="pdf" <?php echo ($editResource && $editResource['type'] === 'pdf') ? 'selected' : ''; ?>>PDF Document</option>
+                            <option value="infographic" <?php echo ($editResource && $editResource['type'] === 'infographic') ? 'selected' : ''; ?>>Infographic</option>
+                            <option value="guide" <?php echo ($editResource && $editResource['type'] === 'guide') ? 'selected' : ''; ?>>Study Guide</option>
+                            <option value="video" <?php echo ($editResource && $editResource['type'] === 'video') ? 'selected' : ''; ?>>Video</option>
+                            <option value="other" <?php echo ($editResource && $editResource['type'] === 'other') ? 'selected' : ''; ?>>Other</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -245,16 +285,6 @@ include 'templates/header.php';
                         <?php if ($editResource && !empty($editResource['file_url'])): ?>
                             <p class="form-hint">Current file: <a href="<?php echo htmlspecialchars($editResource['file_url']); ?>" target="_blank" rel="noopener">View PDF</a></p>
                         <?php endif; ?>
-                    </div>
-                    <div class="form-group">
-                        <label for="type">Resource Type</label>
-                        <select id="type" name="type" required>
-                            <option value="pdf" <?php echo ($editResource && $editResource['type'] === 'pdf') ? 'selected' : ''; ?>>PDF Document</option>
-                            <option value="infographic" <?php echo ($editResource && $editResource['type'] === 'infographic') ? 'selected' : ''; ?>>Infographic</option>
-                            <option value="guide" <?php echo ($editResource && $editResource['type'] === 'guide') ? 'selected' : ''; ?>>Study Guide</option>
-                            <option value="video" <?php echo ($editResource && $editResource['type'] === 'video') ? 'selected' : ''; ?>>Video</option>
-                            <option value="other" <?php echo ($editResource && $editResource['type'] === 'other') ? 'selected' : ''; ?>>Other</option>
-                        </select>
                     </div>
                 </div>
 
