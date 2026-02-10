@@ -18,6 +18,7 @@ if (!is_dir($defaultDataDir)) {
 $dataDir = $dataDir ?: $defaultDataDir;
 define('DATA_DIR', rtrim($dataDir, '/\\') . DIRECTORY_SEPARATOR);
 define('POSTS_FILE', DATA_DIR . 'posts.json');
+define('RESOURCES_FILE', DATA_DIR . 'resources.json');
 define('NEWS_FILE', DATA_DIR . 'news.json');
 
 $type = $_GET['type'] ?? '';
@@ -29,19 +30,27 @@ function getJsonData($file) {
     return [];
 }
 
+/** Return only items with status "published" (or no status field for backwards compat). */
+function filterPublished($items) {
+    return array_values(array_filter($items, function ($item) {
+        return ($item['status'] ?? 'published') === 'published';
+    }));
+}
+
 switch ($type) {
     case 'posts':
-        $data = getJsonData(POSTS_FILE);
+        $postsData = getJsonData(POSTS_FILE);
+        $resourcesData = getJsonData(RESOURCES_FILE);
         echo json_encode([
             'success' => true,
-            'posts' => $data['posts'] ?? [],
-            'resources' => $data['resources'] ?? []
+            'posts' => filterPublished($postsData['posts'] ?? []),
+            'resources' => filterPublished($resourcesData['resources'] ?? [])
         ]);
         break;
 
     case 'news':
         $data = getJsonData(NEWS_FILE);
-        $announcements = $data['announcements'] ?? [];
+        $announcements = filterPublished($data['announcements'] ?? []);
 
         // Sort: pinned items first, then by date
         usort($announcements, function($a, $b) {
@@ -58,13 +67,14 @@ switch ($type) {
 
     case 'all':
         $postsData = getJsonData(POSTS_FILE);
+        $resourcesData = getJsonData(RESOURCES_FILE);
         $newsData = getJsonData(NEWS_FILE);
 
         echo json_encode([
             'success' => true,
-            'posts' => $postsData['posts'] ?? [],
-            'resources' => $postsData['resources'] ?? [],
-            'announcements' => $newsData['announcements'] ?? []
+            'posts' => filterPublished($postsData['posts'] ?? []),
+            'resources' => filterPublished($resourcesData['resources'] ?? []),
+            'announcements' => filterPublished($newsData['announcements'] ?? [])
         ]);
         break;
 

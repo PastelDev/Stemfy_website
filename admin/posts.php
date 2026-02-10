@@ -54,9 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'Please upload at least one image or video.';
             }
 
+            // Collect tags
+            $tags = $_POST['tags'] ?? [];
+            if (!is_array($tags)) {
+                $tags = [];
+            }
+            $tags = array_values(array_filter(array_map('trim', $tags)));
+
             if (empty($errors)) {
                 $post = [
                     'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                    'status' => ($_POST['status'] ?? 'published') === 'draft' ? 'draft' : 'published',
+                    'tags' => $tags,
                     'title_en' => sanitizeInput($_POST['title_en']),
                     'title_el' => sanitizeInput($_POST['title_el']),
                     'description_en' => sanitizeInput($_POST['description_en']),
@@ -155,6 +164,10 @@ include 'templates/header.php';
     <?php endif; ?>
 
     <?php if ($action === 'list'): ?>
+        <?php
+            $publishedCount = count(array_filter($data['posts'], fn($p) => ($p['status'] ?? 'published') === 'published'));
+            $draftCount = count($data['posts']) - $publishedCount;
+        ?>
         <div class="content-panel">
             <div class="panel-header">
                 <h3>All Posts (<?php echo count($data['posts']); ?>)</h3>
@@ -167,6 +180,17 @@ include 'templates/header.php';
                 </a>
             </div>
 
+            <?php if (!empty($data['posts'])): ?>
+                <div class="list-toolbar">
+                    <input type="text" class="list-search" id="posts-search" placeholder="Search posts...">
+                    <div class="list-filters">
+                        <button class="filter-btn active" data-filter="all">All (<?php echo count($data['posts']); ?>)</button>
+                        <button class="filter-btn" data-filter="published">Published (<?php echo $publishedCount; ?>)</button>
+                        <button class="filter-btn" data-filter="draft">Drafts (<?php echo $draftCount; ?>)</button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php if (empty($data['posts'])): ?>
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -178,7 +202,7 @@ include 'templates/header.php';
                     <p>Create your first post to get started</p>
                 </div>
             <?php else: ?>
-                <div class="items-list">
+                <div class="items-list" id="posts-list">
                     <?php foreach ($data['posts'] as $post): ?>
                         <?php
                             $mediaItems = $post['media'] ?? [];
@@ -186,8 +210,10 @@ include 'templates/header.php';
                                 $mediaItems = [['type' => 'image', 'url' => $post['image_url']]];
                             }
                             $previewMedia = $mediaItems[0] ?? null;
+                            $postStatus = $post['status'] ?? 'published';
+                            $postTags = $post['tags'] ?? [];
                         ?>
-                        <div class="item-card">
+                        <div class="item-card" data-status="<?php echo $postStatus; ?>" data-search="<?php echo htmlspecialchars(strtolower($post['title_en'] . ' ' . $post['title_el'] . ' ' . implode(' ', $postTags))); ?>">
                             <div class="item-preview">
                                 <?php if ($previewMedia && ($previewMedia['type'] ?? '') === 'image'): ?>
                                     <img src="<?php echo htmlspecialchars($previewMedia['url']); ?>" alt="">
@@ -210,12 +236,22 @@ include 'templates/header.php';
                                 <?php endif; ?>
                             </div>
                             <div class="item-content">
-                                <h4><?php echo htmlspecialchars($post['title_en']); ?></h4>
+                                <h4>
+                                    <span class="status-badge status-<?php echo $postStatus; ?>"><?php echo ucfirst($postStatus); ?></span>
+                                    <?php echo htmlspecialchars($post['title_en']); ?>
+                                </h4>
                                 <p><?php echo htmlspecialchars($post['description_en']); ?></p>
                                 <div class="item-meta">
                                     <span><?php echo count($mediaItems); ?> media</span>
                                     <span>Created: <?php echo date('M j, Y', strtotime($post['created_at'])); ?></span>
                                 </div>
+                                <?php if (!empty($postTags)): ?>
+                                    <div class="tag-list">
+                                        <?php foreach ($postTags as $tag): ?>
+                                            <span class="tag-pill"><?php echo htmlspecialchars($tag); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <div class="item-actions">
                                 <a href="?action=edit&id=<?php echo $post['id']; ?>" class="btn btn-secondary btn-sm">Edit</a>
@@ -244,6 +280,16 @@ include 'templates/header.php';
 
                 <div class="form-row">
                     <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="published" <?php echo ($editPost && ($editPost['status'] ?? 'published') === 'published') ? 'selected' : ''; ?>>Published</option>
+                            <option value="draft" <?php echo ($editPost && ($editPost['status'] ?? '') === 'draft') ? 'selected' : ''; ?>>Draft</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
                         <label for="title_en">Title (English)</label>
                         <input type="text" id="title_en" name="title_en" required
                                value="<?php echo $editPost ? htmlspecialchars($editPost['title_en']) : ''; ?>">
@@ -263,6 +309,20 @@ include 'templates/header.php';
                     <div class="form-group">
                         <label for="description_el">Description (Greek)</label>
                         <textarea id="description_el" name="description_el" required><?php echo $editPost ? htmlspecialchars($editPost['description_el']) : ''; ?></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tags</label>
+                    <?php $currentTags = $editPost ? ($editPost['tags'] ?? []) : []; ?>
+                    <div class="tag-checkboxes">
+                        <?php foreach (POST_TAGS as $tag): ?>
+                            <label class="tag-checkbox">
+                                <input type="checkbox" name="tags[]" value="<?php echo htmlspecialchars($tag); ?>"
+                                       <?php echo in_array($tag, $currentTags, true) ? 'checked' : ''; ?>>
+                                <span><?php echo htmlspecialchars(ucfirst($tag)); ?></span>
+                            </label>
+                        <?php endforeach; ?>
                     </div>
                 </div>
 

@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($errors)) {
                 $announcement = [
                     'id' => $postAction === 'update' ? $_POST['id'] : generateId(),
+                    'status' => ($_POST['status'] ?? 'published') === 'draft' ? 'draft' : 'published',
                     'title_en' => sanitizeInput($_POST['title_en']),
                     'title_el' => sanitizeInput($_POST['title_el']),
                     'content_en' => sanitizeInput($_POST['content_en']),
@@ -141,6 +142,10 @@ include 'templates/header.php';
     <?php endif; ?>
 
     <?php if ($action === 'list'): ?>
+        <?php
+            $publishedCount = count(array_filter($data['announcements'], fn($a) => ($a['status'] ?? 'published') === 'published'));
+            $draftCount = count($data['announcements']) - $publishedCount;
+        ?>
         <div class="content-panel">
             <div class="panel-header">
                 <h3>All Announcements (<?php echo count($data['announcements']); ?>)</h3>
@@ -153,6 +158,17 @@ include 'templates/header.php';
                 </a>
             </div>
 
+            <?php if (!empty($data['announcements'])): ?>
+                <div class="list-toolbar">
+                    <input type="text" class="list-search" id="news-search" placeholder="Search announcements...">
+                    <div class="list-filters">
+                        <button class="filter-btn active" data-filter="all">All (<?php echo count($data['announcements']); ?>)</button>
+                        <button class="filter-btn" data-filter="published">Published (<?php echo $publishedCount; ?>)</button>
+                        <button class="filter-btn" data-filter="draft">Drafts (<?php echo $draftCount; ?>)</button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php if (empty($data['announcements'])): ?>
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -162,9 +178,10 @@ include 'templates/header.php';
                     <p>Create your first news announcement</p>
                 </div>
             <?php else: ?>
-                <div class="items-list">
+                <div class="items-list" id="news-list">
                     <?php foreach ($data['announcements'] as $announcement): ?>
-                        <div class="item-card">
+                        <?php $annStatus = $announcement['status'] ?? 'published'; ?>
+                        <div class="item-card" data-status="<?php echo $annStatus; ?>" data-search="<?php echo htmlspecialchars(strtolower($announcement['title_en'] . ' ' . $announcement['title_el'] . ' ' . ($announcement['category'] ?? ''))); ?>">
                             <div class="item-preview" style="<?php echo $announcement['pinned'] ? 'border-color: #ff7aec;' : ''; ?>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
@@ -172,6 +189,7 @@ include 'templates/header.php';
                             </div>
                             <div class="item-content">
                                 <h4>
+                                    <span class="status-badge status-<?php echo $annStatus; ?>"><?php echo ucfirst($annStatus); ?></span>
                                     <?php if ($announcement['pinned']): ?>
                                         <span style="color: #ff7aec;">&#x1F4CC;</span>
                                     <?php endif; ?>
@@ -207,6 +225,16 @@ include 'templates/header.php';
                     <input type="hidden" name="id" value="<?php echo $editAnnouncement['id']; ?>">
                     <input type="hidden" name="created_at" value="<?php echo $editAnnouncement['created_at']; ?>">
                 <?php endif; ?>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="published" <?php echo ($editAnnouncement && ($editAnnouncement['status'] ?? 'published') === 'published') ? 'selected' : ''; ?>>Published</option>
+                            <option value="draft" <?php echo ($editAnnouncement && ($editAnnouncement['status'] ?? '') === 'draft') ? 'selected' : ''; ?>>Draft</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">

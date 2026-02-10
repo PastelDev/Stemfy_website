@@ -30,7 +30,7 @@ Live site: https://stemfy.gr
 - `icons/`: icon graphics and challenge previews.
 - `css/`: shared and simulation-specific styles.
 - `js/`: starfield, i18n, UI, CMS adapter, simulation logic.
-- `admin/`: login, dashboard, CRUD forms, uploads, and JSON API.
+- `admin/`: login, dashboard, CRUD forms, uploads, JSON API, and GitHub sync.
 - `descriptions/`: simulation concept notes and backlog references.
 
 ## Dynamic Content Flow
@@ -54,6 +54,11 @@ Create `admin/credentials.php` (gitignored):
 <?php
 define('ADMIN_USERNAME', 'your_username');
 define('ADMIN_PASSWORD', 'your_password');
+
+// GitHub Sync (optional – required only for the Sync to GitHub feature)
+define('GITHUB_TOKEN', 'ghp_YourFineGrainedToken');
+define('GITHUB_REPO',  'PastelDev/Stemfy_website');
+// define('GITHUB_BASE_BRANCH', 'master');  // default: master
 ```
 
 Main admin files:
@@ -64,6 +69,7 @@ Main admin files:
 - `admin/resources.php`: manage PDF resources.
 - `admin/news.php`: manage announcements.
 - `admin/api.php`: public JSON endpoint for frontend.
+- `admin/sync.php`: GitHub Sync — push Plesk changes to GitHub as pull requests.
 
 Uploads are validated by extension, mime type, and max size (`UPLOAD_MAX_SIZE`, default 50 MB).
 
@@ -93,12 +99,17 @@ php -S 0.0.0.0:8000
 
 Run from repo root so `admin/` routes and local API work.
 
-## Backup Scripts
+## GitHub Sync (Plesk to GitHub)
 
-- Linux/macOS: `scripts/backup-content.sh`
-- Windows PowerShell: `scripts/backup-content.ps1`
+The admin panel includes a **Sync** page (`admin/sync.php`) that pushes all uncommitted Plesk changes to GitHub as a pull request:
 
-Both scripts back up available content directories (`posts`, `admin/data`, `admin/uploads`) into timestamped archives.
+1. Open **Sync** in the admin sidebar.
+2. Review the list of pending changes.
+3. Enter an optional commit message and click **Sync to GitHub**.
+4. A timestamped branch (`sync/YYYYMMDD-HHMMSS`) is created, pushed, and a PR is opened against the base branch.
+5. Review and merge the PR on GitHub to persist the changes.
+
+Requires `GITHUB_TOKEN` and `GITHUB_REPO` in `admin/credentials.php` (see above). The token is never stored in git config or version control.
 
 ## Tech Stack
 
