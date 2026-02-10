@@ -619,6 +619,15 @@ body {
     opacity: 0.4;
 }
 
+.empty-state--warning svg {
+    color: #ffc040;
+    opacity: 0.7;
+}
+
+.empty-state--warning h4 {
+    color: #ffc040;
+}
+
 .empty-state h4 {
     font-size: 1.1rem;
     font-weight: 600;

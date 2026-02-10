@@ -333,12 +333,23 @@ include 'templates/header.php';
             <?php endforeach; ?>
         </div>
 
-        <?php if (!$checks['config']): ?>
+        <?php if (!$allOk): ?>
             <div class="sync-setup-hint">
-                <p>Add these lines to <code>admin/credentials.php</code> (this file is gitignored):</p>
-                <pre>define('GITHUB_TOKEN', 'ghp_YourTokenHere');
+                <?php if (!$checks['exec']): ?>
+                    <p><strong>PHP exec() is disabled.</strong> In Plesk, go to <code>Websites &amp; Domains &rarr; your domain &rarr; PHP Settings</code>, find the <code>disable_functions</code> field, and remove <code>exec</code> from the comma-separated list. Ensure the PHP handler is set to <em>FPM application</em> or <em>FastCGI application</em>.</p>
+                <?php endif; ?>
+                <?php if (!$checks['git']): ?>
+                    <p><strong>Git is not detected.</strong> SSH into your server and run <code>sudo dnf install git -y</code> (CentOS/RHEL) or <code>sudo apt-get install git -y</code> (Ubuntu/Debian). Also ensure the domain&rsquo;s SSH access is set to <code>/bin/bash</code> (not chrooted) under <code>Web Hosting Access</code>.</p>
+                <?php endif; ?>
+                <?php if (!$checks['repo']): ?>
+                    <p><strong>No Git repository found.</strong> SSH into the document root and run <code>git init</code>, then <code>git remote add origin</code> with your repo URL. Alternatively, install Plesk&rsquo;s free <em>Git</em> extension (<code>Extensions &rarr; Extensions Catalog</code>) to manage this via the Plesk UI.</p>
+                <?php endif; ?>
+                <?php if (!$checks['config']): ?>
+                    <p><strong>GitHub credentials missing.</strong> Add these lines to <code>admin/credentials.php</code> (this file is gitignored):</p>
+                    <pre>define('GITHUB_TOKEN', 'ghp_YourTokenHere');
 define('GITHUB_REPO',  'PastelDev/Stemfy_website');</pre>
-                <p>Create a <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">fine-grained token</a> with <strong>Contents: Read &amp; Write</strong> and <strong>Pull requests: Read &amp; Write</strong> permissions scoped to your repository.</p>
+                    <p>Create a <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">fine-grained token</a> with <strong>Contents: Read &amp; Write</strong> and <strong>Pull requests: Read &amp; Write</strong> permissions scoped to your repository.</p>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>
@@ -352,7 +363,17 @@ define('GITHUB_REPO',  'PastelDev/Stemfy_website');</pre>
             <?php endif; ?>
         </div>
 
-        <?php if (empty($statusLines)): ?>
+        <?php if (!$allOk): ?>
+            <div class="empty-state empty-state--warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h4>Cannot detect changes</h4>
+                <p>One or more prerequisites above are not met. Resolve them to enable change detection.</p>
+            </div>
+        <?php elseif (empty($statusLines)): ?>
             <div class="empty-state">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12"></polyline>
