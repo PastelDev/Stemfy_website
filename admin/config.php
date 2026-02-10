@@ -9,6 +9,11 @@
  *   define('ADMIN_USERNAME', 'your_username');
  *   define('ADMIN_PASSWORD', 'your_password');
  *
+ *   // GitHub Sync (optional – required only for Sync to GitHub feature)
+ *   define('GITHUB_TOKEN', 'ghp_YourFineGrainedToken');
+ *   define('GITHUB_REPO',  'PastelDev/Stemfy_website');
+ *   // define('GITHUB_BASE_BRANCH', 'master');  // default: master
+ *
  * This file is gitignored and must be created manually on the server.
  */
 
