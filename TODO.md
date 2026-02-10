@@ -30,7 +30,6 @@
 
 - [ ] Update OG/Twitter metadata URLs from `pasteldev.github.io` to current production domain.
 - [ ] Audit docs for stale environment details (contacts, deployment notes, and runtime paths).
-- [ ] Expand backup/restore runbooks for `scripts/backup-content.sh` and `scripts/backup-content.ps1`.
 
 ## Quality Gates
 

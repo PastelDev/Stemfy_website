@@ -50,17 +50,16 @@ After publishing, check:
 
 The frontend reads from local API first (`/admin/api.php`) and only falls back to WordPress if local API is unavailable.
 
-## 6. Create Backups
+## 6. Sync to GitHub
 
-Run backups before large edits or deployments:
+Use the built-in **Sync** page to push all Plesk changes to GitHub as a pull request:
 
-- Windows PowerShell:
-  - `powershell -ExecutionPolicy Bypass -File scripts/backup-content.ps1`
-- Linux/macOS:
-  - `bash scripts/backup-content.sh`
+1. Open `Sync` in the admin sidebar.
+2. Review the list of pending (uncommitted) changes.
+3. Enter an optional commit message and click **Sync to GitHub**.
+4. A timestamped branch is created, pushed, and a PR is opened automatically.
+5. Review and merge the PR on GitHub to persist the changes.
 
-Backups include available content directories:
+> **First-time setup:** Add `GITHUB_TOKEN` and `GITHUB_REPO` to `admin/credentials.php`. See the Sync page for a guided setup checklist.
 
-- `posts`
-- `admin/data`
-- `admin/uploads`
+`credentials.php` is gitignored — it is never included in any sync or commit.
