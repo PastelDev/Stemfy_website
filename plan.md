@@ -639,6 +639,7 @@ The migration should be considered successful when:
 - legacy URLs have tested redirects or aliases to their new canonical routes,
 - the double-pendulum simulation is integrated through a modular structure,
 - admin-authored content has a documented live-publication path (runtime fetch or automated rebuild) with no ambiguous delay window,
+- the double-pendulum simulation is integrated through a modular structure,
 - asset performance is improved measurably,
 - the repo has a documented build/lint/check workflow,
 - future simulations and content sections can be added without copy-pasting entire pages.
