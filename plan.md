@@ -1,494 +1,644 @@
-# STEMfy.gr Website Consistency & Implementation Plan
+# STEMfy.gr Refactor & Astro Migration Plan
 
-## Overview
+## 1. Purpose
 
-This plan ensures all HTML pages have consistent settings, styling, language support, and implements the placeholder pages with real content. It also removes dead code from JavaScript files.
+This plan translates the findings from the new audit documents into a practical refactor and migration roadmap for the current STEMfy.gr codebase.
 
----
+The goals are to improve:
 
-## Current State Analysis
+- **code quality** through modular architecture and consistent conventions,
+- **maintainability** through reusable layouts, components, and typed content boundaries,
+- **interpretability** through clearer file ownership, naming, and documentation,
+- **scalability** through a modern content pipeline and cleaner separation between static content, interactive simulations, and admin workflows.
 
-### Existing Pages
-
-| Page | Status | Language | Has Nav | Has Settings | Has Footer | Has i18n |
-|------|--------|----------|---------|--------------|------------|----------|
-| index.html | Complete | `lang="en"` | Yes | Yes | Yes | Yes |
-| about.html | Complete | `lang="el"` (hardcoded) | Partial (logo only) | No | No | No |
-| simulations.html | Partial | `lang="el"` (hardcoded) | No | No | No | No |
-| double-pendulum.html | Complete | `lang="el"` (hardcoded) | Custom sim nav | No | No | No |
-| 404.html | Complete | `lang="el"` (hardcoded) | No | No | No | No |
-| challenges.html | Placeholder | `lang="el"` (hardcoded) | No | No | No | No |
-| contact.html | Placeholder | `lang="el"` (hardcoded) | No | No | No | No |
-| news.html | Placeholder | `lang="el"` (hardcoded) | No | No | No | No |
-| philosophy.html | Placeholder | `lang="el"` (hardcoded) | No | No | No | No |
-
-### Issues Identified
-
-1. **Language inconsistency**: Only `index.html` supports dynamic language switching
-2. **Navigation inconsistency**: Only `index.html` has full navigation with settings button
-3. **No settings on other pages**: Users can't change language/theme except on homepage
-4. **No footer on other pages**: Missing copyright and social links
-5. **Dead code in JS files**: Unused functions in `common.js` and `double-pendulum.js`
-6. **Placeholder pages**: 4 pages need real content
-7. **Missing posts.html**: Referenced in index.html but doesn't exist
-8. **philosophy.html obsolete**: Replaced by posts.html
+This plan assumes the current site remains visually recognizable — dark cosmic branding, purple-magenta palette, bilingual support, and simulation-first identity — while the implementation moves from hand-maintained static pages to an Astro-based architecture.
 
 ---
 
-## Files to Modify/Create/Delete
+## 2. Inputs Used
 
-### Create
-- `posts.html` - New page for Instagram posts + educational PDFs
+This plan is based on:
 
-### Delete
-- `philosophy.html` - Replaced by posts.html
-
-### Modify
-
-| File | Changes |
-|------|---------|
-| `index.html` | Fix Posts link: `href="#"` → `href="posts.html"` |
-| `about.html` | Add: full nav, settings modal, footer, i18n scripts, change to `lang="en"` |
-| `simulations.html` | Add: full nav, settings modal, footer, i18n scripts, change to `lang="en"` |
-| `404.html` | Add: full nav, settings modal, footer, i18n scripts, change to `lang="en"` |
-| `challenges.html` | Full rewrite with content + nav/settings/footer/i18n |
-| `contact.html` | Full rewrite with content + nav/settings/footer/i18n |
-| `news.html` | Full rewrite with content + nav/settings/footer/i18n |
-| `js/i18n.js` | Add translations for all pages |
-| `js/common.js` | Remove dead code (3 functions) |
-| `js/double-pendulum.js` | Remove dead code (1 function) |
+1. `AUDIT_AND_PROPOSAL.md`, which identifies the major architectural weaknesses (HTML duplication, monolithic simulation code, no build system, JSON storage limits, and asset bloat) and proposes Astro as the short-term direction.
+2. `docs/website-brand-product-audit.md`, which clarifies the desired product direction: preserve the brand identity, strengthen content structure, improve community/competition systems, and evolve from prototype to platform.
+3. The current repository structure, which shows a raw multi-page static site, shared styling in large CSS files, large vanilla JS files, and a PHP + JSON admin layer.
 
 ---
 
-## Phase 1: Fix index.html
+## 3. Current-State Diagnosis
 
-**File:** `index.html`
+### 3.1 Structural problems in the current codebase
 
-**Change:** Line 81
-```html
-<!-- FROM -->
-<a href="#" class="nav-card">
+The current implementation is functional, but it has several structural issues that will make future growth expensive:
 
-<!-- TO -->
-<a href="posts.html" class="nav-card">
+- **Shared UI is duplicated across pages.** Navigation, footer, settings UI, shared meta structure, and starfield setup are repeated manually in multiple HTML files.
+- **There is no build pipeline.** Assets are served directly with no bundling, image processing, CSS splitting, typed validation, or deployment safeguards.
+- **Core frontend files are too large.** The project currently relies on very large files such as `js/double-pendulum.js`, `js/i18n.js`, `css/main.css`, and `css/simulations.css`, which increases cognitive load and makes safe changes harder.
+- **Content and rendering are loosely coupled.** Static page structure, translated strings, and content data are mixed together rather than flowing through a clear content model.
+- **The admin system is isolated from the frontend architecture.** PHP pages write JSON files, but the public site does not yet have a robust content ingestion model or schema validation layer.
+- **The asset system is inconsistent.** Heavy PNG-based icons and logo assets reduce performance and make brand scaling harder.
+
+### 3.2 Product and brand problems reflected in the implementation
+
+The audit documents also show non-code issues that should influence the migration plan:
+
+- The site has **strong identity but shallow content depth**.
+- The product promise is broader than the implementation: simulations, posts, news, challenges, resources, and community are present conceptually but not yet unified as a platform.
+- The site’s best differentiator is **interactive understanding**, especially simulations, not just static content.
+- The visual system is promising but still **underspecified as a reusable design system**.
+
+### 3.3 Why Astro is the right migration target
+
+Astro fits this project well because it allows STEMfy to:
+
+- keep a mostly static, performance-friendly site,
+- preserve vanilla JS where it is already working well,
+- introduce reusable layouts/components without forcing a full SPA rewrite,
+- support content collections for posts, news, resources, and challenge metadata,
+- progressively hydrate only the interactive parts that need client-side behavior,
+- create a cleaner boundary between content, presentation, and simulation logic.
+
+---
+
+## 4. Refactor Objectives
+
+### 4.1 Primary objectives
+
+1. **Remove duplication** across HTML, CSS, and JS.
+2. **Modularize simulations** so complex interactive code can evolve safely.
+3. **Formalize content models** for bilingual content, posts, resources, news, and challenges.
+4. **Create a scalable design system** from the existing visual identity.
+5. **Reduce performance overhead** from oversized assets and unstructured loading.
+6. **Prepare the codebase for future product features** such as competitions, submissions, and richer content publishing.
+
+### 4.2 Non-goals for the first migration
+
+To avoid over-scoping, the initial Astro migration should **not** attempt to solve everything at once. Phase 1 should not include:
+
+- a full user account system,
+- a database-backed community platform,
+- a complete rewrite of the PHP admin in the first pass,
+- a complete redesign of the STEMfy visual identity.
+
+The first milestone should focus on a safer architecture and cleaner content pipeline while preserving the current public experience.
+
+---
+
+## 5. Target Architecture
+
+## 5.1 Proposed high-level structure
+
+```text
+src/
+  components/
+    layout/
+    navigation/
+    footer/
+    ui/
+    content/
+    simulation/
+  layouts/
+    BaseLayout.astro
+    ContentLayout.astro
+    SimulationLayout.astro
+  pages/
+    index.astro
+    about.astro
+    contact.astro
+    simulations/
+      index.astro
+      [slug].astro
+    posts/
+      index.astro
+      [slug].astro
+    news/
+      index.astro
+      [slug].astro
+    challenges/
+      index.astro
+      [slug].astro
+  content/
+    posts/
+    news/
+    resources/
+    challenges/
+    simulations/
+  data/
+    navigation.ts
+    site.ts
+    social.ts
+  i18n/
+    en.ts
+    el.ts
+  lib/
+    content/
+    i18n/
+    seo/
+    analytics/
+    cms/
+  styles/
+    tokens.css
+    base.css
+    utilities.css
+    components/
+public/
+  assets/
+  icons/
+  fonts/
+admin/
+  ...existing PHP admin (temporarily retained)
 ```
 
----
+### 5.2 Architectural principles
 
-## Phase 2: Delete philosophy.html
+- **Astro for page composition** and routing.
+- **Content collections** for structured content and schema validation.
+- **Islands architecture** only for truly interactive UI.
+- **Vanilla JS modules** retained where appropriate, especially for simulation logic.
+- **Design tokens** extracted from the current visual system.
+- **Separation of concerns** between content, page composition, simulation engine code, and admin ingestion.
 
-**Action:** Delete `philosophy.html` (replaced by posts.html)
+### 5.3 Key migration decision
 
----
+The double-pendulum simulation should **not** be rewritten immediately into a framework-specific component. Instead:
 
-## Phase 3: Expand i18n.js Translations
+- keep the simulation engine in vanilla JS,
+- split it into focused modules,
+- mount it inside an Astro page/component boundary,
+- add typed configuration and documented public APIs around it.
 
-**File:** `js/i18n.js`
-
-Add the following translation keys to both `en` and `el` objects:
-
-```javascript
-// ===== ENGLISH (en) =====
-
-// Common
-back_home: 'Back to Home',
-coming_soon: 'Coming Soon',
-available: 'Available',
-
-// About page
-about_title: 'About Us',
-about_who_we_are: 'Who We Are',
-about_who_text: 'We are three students with a shared passion: to make science accessible, interactive, and fun. We believe that the best learning happens through exploration and experimentation.',
-about_stemfy_title: 'About STEMfy.gr',
-about_stemfy_text: 'STEMfy.gr is our channel for all things STEM - Science, Technology, Engineering, Mathematics. We create content that explains complex ideas simply, and we build interactive simulations so you can experiment yourself.',
-about_motto: 'Our motto:',
-about_motto_text: 'Make STEM Addictive!',
-about_contact_title: 'Contact',
-
-// Simulations page
-simulations_title: 'Simulations',
-simulations_subtitle: 'Interactive visualizations of physics & mathematics for exploration and learning',
-sim_pendulum_title: 'Double Pendulum',
-sim_pendulum_desc: 'Explore chaos in a simple system. See how small changes lead to completely different outcomes.',
-sim_bridge_title: 'Bridge Builder',
-sim_bridge_desc: 'Design and test bridges. Learn about structural engineering and material stress.',
-sim_mandelbrot_title: 'Mandelbrot Set',
-sim_mandelbrot_desc: 'Dive into infinite complexity. Explore the most famous fractal in mathematics.',
-
-// Challenges page
-challenges_title: 'Challenges',
-challenges_subtitle: 'Test your skills with our simulation challenges',
-challenges_intro: 'Complete challenges using our simulations and share your results on Instagram!',
-challenge_pendulum_trajectory: 'Pendulum Trajectory',
-challenge_pendulum_trajectory_desc: 'Find the most beautiful double pendulum trajectory pattern',
-challenge_chaos_map: 'Chaos Map Explorer',
-challenge_chaos_map_desc: 'Discover interesting shapes in the chaos map',
-challenge_mandelbrot: 'Mandelbrot Zoom',
-challenge_mandelbrot_desc: 'Find the most stunning Mandelbrot zoom location',
-challenge_bridge: 'Bridge Master',
-challenge_bridge_desc: 'Build the most durable bridge with limited materials',
-submit_instagram: 'Submit on Instagram',
-try_simulation: 'Try Simulation',
-
-// Contact page
-contact_title: 'Contact',
-contact_subtitle: 'Get in touch with us',
-contact_instagram: 'Instagram',
-contact_email: 'Email',
-
-// News page
-news_title: 'News',
-news_subtitle: 'Science news and competition updates',
-newsletter_title: 'Newsletter',
-newsletter_desc: 'Subscribe to receive the latest STEM news and updates',
-newsletter_coming: 'Newsletter signup coming soon!',
-competitions_title: 'Competitions for Greek Students',
-competitions_intro: 'Information about science and math olympiads available to Greek students',
-comp_math: 'Mathematics',
-comp_physics: 'Physics',
-comp_informatics: 'Informatics',
-comp_science: 'Science & Research',
-comp_astronomy: 'Astronomy',
-
-// Posts page
-posts_title: 'Posts',
-posts_subtitle: 'Thoughts, insights & discoveries',
-posts_instagram_title: 'From Instagram',
-posts_instagram_desc: 'Our latest posts from @stemfy.gr',
-posts_resources_title: 'Educational Resources',
-posts_resources_desc: 'PDFs and visual guides explaining STEM concepts',
-posts_no_content: 'Content coming soon!',
-
-// 404 page
-error_404: '404',
-error_title: 'Page Not Found',
-error_message: 'Sorry, the page you are looking for does not exist.',
-
-
-// ===== GREEK (el) =====
-
-// Common
-back_home: 'Πίσω στην Αρχική',
-coming_soon: 'Έρχεται Σύντομα',
-available: 'Διαθέσιμο',
-
-// About page
-about_title: 'Σχετικά με εμάς',
-about_who_we_are: 'Ποιοι Είμαστε',
-about_who_text: 'Είμαστε τρεις μαθητές με κοινό πάθος: να κάνουμε την επιστήμη προσβάσιμη, διαδραστική και διασκεδαστική. Πιστεύουμε ότι η καλύτερη μάθηση συμβαίνει μέσα από την εξερεύνηση και τον πειραματισμό.',
-about_stemfy_title: 'Σχετικά με το STEMfy.gr',
-about_stemfy_text: 'Το STEMfy.gr είναι το κανάλι μας για όλα τα θέματα STEM - Επιστήμη, Τεχνολογία, Μηχανική, Μαθηματικά. Δημιουργούμε περιεχόμενο που εξηγεί πολύπλοκες ιδέες με απλό τρόπο, και χτίζουμε διαδραστικές προσομοιώσεις ώστε να μπορείς να πειραματιστείς μόνος σου.',
-about_motto: 'Το σύνθημά μας:',
-about_motto_text: 'Κάνε το STEM Εθιστικό!',
-about_contact_title: 'Επικοινωνία',
-
-// Simulations page
-simulations_title: 'Προσομοιώσεις',
-simulations_subtitle: 'Διαδραστικές απεικονίσεις φυσικής & μαθηματικών για εξερεύνηση και μάθηση',
-sim_pendulum_title: 'Διπλό Εκκρεμές',
-sim_pendulum_desc: 'Εξερεύνησε το χάος σε ένα απλό σύστημα. Δες πώς μικρές αλλαγές οδηγούν σε τελείως διαφορετικά αποτελέσματα.',
-sim_bridge_title: 'Κατασκευαστής Γεφυρών',
-sim_bridge_desc: 'Σχεδίασε και δοκίμασε γέφυρες. Μάθε για τη δομική μηχανική και την καταπόνηση υλικών.',
-sim_mandelbrot_title: 'Σύνολο Mandelbrot',
-sim_mandelbrot_desc: 'Βουτιά στην άπειρη πολυπλοκότητα. Εξερεύνησε το πιο διάσημο fractal στα μαθηματικά.',
-
-// Challenges page
-challenges_title: 'Προκλήσεις',
-challenges_subtitle: 'Δοκίμασε τις ικανότητές σου με τις προκλήσεις μας',
-challenges_intro: 'Ολοκλήρωσε προκλήσεις χρησιμοποιώντας τις προσομοιώσεις μας και μοιράσου τα αποτελέσματά σου στο Instagram!',
-challenge_pendulum_trajectory: 'Τροχιά Εκκρεμούς',
-challenge_pendulum_trajectory_desc: 'Βρες το πιο όμορφο μοτίβο τροχιάς διπλού εκκρεμούς',
-challenge_chaos_map: 'Εξερευνητής Χάρτη Χάους',
-challenge_chaos_map_desc: 'Ανακάλυψε ενδιαφέροντα σχήματα στον χάρτη χάους',
-challenge_mandelbrot: 'Mandelbrot Zoom',
-challenge_mandelbrot_desc: 'Βρες την πιο εντυπωσιακή τοποθεσία zoom στο Mandelbrot',
-challenge_bridge: 'Μάστορας Γεφυρών',
-challenge_bridge_desc: 'Χτίσε την πιο ανθεκτική γέφυρα με περιορισμένα υλικά',
-submit_instagram: 'Υποβολή στο Instagram',
-try_simulation: 'Δοκίμασε την Προσομοίωση',
-
-// Contact page
-contact_title: 'Επικοινωνία',
-contact_subtitle: 'Επικοινώνησε μαζί μας',
-contact_instagram: 'Instagram',
-contact_email: 'Email',
-
-// News page
-news_title: 'Νέα',
-news_subtitle: 'Επιστημονικά νέα και ενημερώσεις διαγωνισμών',
-newsletter_title: 'Newsletter',
-newsletter_desc: 'Εγγραφείτε για να λαμβάνετε τα τελευταία νέα STEM',
-newsletter_coming: 'Η εγγραφή στο newsletter έρχεται σύντομα!',
-competitions_title: 'Διαγωνισμοί για Έλληνες Μαθητές',
-competitions_intro: 'Πληροφορίες για επιστημονικές και μαθηματικές ολυμπιάδες διαθέσιμες σε Έλληνες μαθητές',
-comp_math: 'Μαθηματικά',
-comp_physics: 'Φυσική',
-comp_informatics: 'Πληροφορική',
-comp_science: 'Επιστήμη & Έρευνα',
-comp_astronomy: 'Αστρονομία',
-
-// Posts page
-posts_title: 'Δημοσιεύσεις',
-posts_subtitle: 'Σκέψεις, ιδέες & ανακαλύψεις',
-posts_instagram_title: 'Από το Instagram',
-posts_instagram_desc: 'Οι τελευταίες δημοσιεύσεις μας από το @stemfy.gr',
-posts_resources_title: 'Εκπαιδευτικοί Πόροι',
-posts_resources_desc: 'PDFs και οπτικοί οδηγοί που εξηγούν έννοιες STEM',
-posts_no_content: 'Περιεχόμενο έρχεται σύντομα!',
-
-// 404 page
-error_404: '404',
-error_title: 'Σελίδα Δεν Βρέθηκε',
-error_message: 'Συγγνώμη, η σελίδα που ψάχνεις δεν υπάρχει.',
-```
-
-### Update updatePageContent() Method
-
-Add page detection logic to `updatePageContent()` to handle each page type:
-
-```javascript
-updatePageContent() {
-  const path = window.location.pathname;
-
-  // Always update common elements if they exist
-  this.updateNavigation();
-  this.updateFooter();
-  this.updateSettingsModal();
-
-  // Page-specific updates
-  if (path.includes('about')) {
-    this.updateAboutPage();
-  } else if (path.includes('simulations')) {
-    this.updateSimulationsPage();
-  } else if (path.includes('challenges')) {
-    this.updateChallengesPage();
-  } else if (path.includes('contact')) {
-    this.updateContactPage();
-  } else if (path.includes('news')) {
-    this.updateNewsPage();
-  } else if (path.includes('posts')) {
-    this.updatePostsPage();
-  } else if (path.includes('404')) {
-    this.update404Page();
-  } else {
-    // Homepage
-    this.updateHomePage();
-  }
-}
-```
+This approach lowers migration risk while still improving maintainability.
 
 ---
 
-## Phase 4: Standardize Page Structure
+## 6. Workstreams
 
-### Common Elements to Add to All Pages
+## 6.1 Workstream A — Information architecture and content model
 
-#### 1. Navigation Bar (copy from index.html lines 38-54)
-```html
-<nav>
-  <a href="index.html" class="logo">
-    <div class="logo-icon">
-      <img src="assets/logo.png" alt="STEMfy.gr logo">
-    </div>
-    <div class="logo-text">STEM<span>fy.gr</span></div>
-  </a>
-  <div class="nav-right">
-    <ul class="nav-links">
-      <li><a href="about.html">About</a></li>
-      <li><a href="contact.html">Contact</a></li>
-    </ul>
-    <button class="settings-btn" id="settings-btn" aria-label="Settings" title="Settings">
-      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l1.72-1.35c.15-.12.19-.34.1-.51l-1.63-2.83c-.12-.22-.37-.29-.59-.22l-2.03.81c-.42-.32-.9-.6-1.42-.82l-.31-2.15c-.04-.24-.24-.41-.48-.41h-3.26c-.24 0-.43.17-.47.41l-.31 2.15c-.52.23-1 .5-1.42.82l-2.03-.81c-.22-.09-.47 0-.59.22L2.74 8.87c-.12.21-.08.44.1.51l1.72 1.35c-.05.3-.07.62-.07.94s.02.64.07.94l-1.72 1.35c-.15.12-.19.34-.1.51l1.63 2.83c.12.22.37.29.59.22l2.03-.81c.42.32.9.6 1.42.82l.31 2.15c.05.24.24.41.48.41h3.26c.24 0 .43-.17.47-.41l.31-2.15c.52-.23 1-.5 1.42-.82l2.03.81c.22.09.47 0 .59-.22l1.63-2.83c.12-.22.07-.44-.1-.51l-1.72-1.35zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-    </button>
-  </div>
-</nav>
-```
+### Goals
 
-#### 2. Settings Modal (copy from index.html lines 99-123)
-```html
-<!-- Settings Modal -->
-<div class="settings-modal" id="settings-modal">
-  <div class="settings-modal-content">
-    <div class="settings-header">
-      <h2 id="settings-title">Settings</h2>
-      <button class="settings-close" id="settings-close" aria-label="Close">&times;</button>
-    </div>
-    <div class="settings-body">
-      <div class="settings-group">
-        <label for="language-select" id="language-label">Language</label>
-        <select id="language-select">
-          <option value="en">English</option>
-          <option value="el">Ελληνικά</option>
-        </select>
-      </div>
-      <div class="settings-group">
-        <label for="theme-select" id="theme-label">Theme</label>
-        <select id="theme-select">
-          <option value="purple">Purple</option>
-          <option value="blue">Blue</option>
-        </select>
-      </div>
-    </div>
-  </div>
-</div>
-```
+- Standardize site structure.
+- Make content types explicit.
+- Support bilingual content cleanly.
 
-#### 3. Footer (copy from index.html lines 89-96)
-```html
-<footer>
-  <p>&copy; 2025 STEMfy.gr - Made with ❤️ by three curious students</p>
-  <div class="social-links">
-    <a href="https://instagram.com/stemfy.gr" target="_blank" rel="noopener" title="Instagram">
-      <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-    </a>
-  </div>
-</footer>
-```
+### Actions
 
-#### 4. Scripts (add before </body>)
-```html
-<script src="js/starfield.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/ui.js"></script>
-```
+1. Define canonical content types:
+   - pages,
+   - posts,
+   - news,
+   - resources,
+   - challenges,
+   - simulations.
+2. Decide which items are:
+   - static site content,
+   - admin-managed JSON-fed content,
+   - future database-backed content.
+3. Create schemas for each content type with required fields such as:
+   - `slug`,
+   - `title`,
+   - `summary`,
+   - `locale`,
+   - `publishedAt`,
+   - `status`,
+   - `tags`,
+   - `heroImage`,
+   - optional SEO metadata.
+4. Establish a bilingual content strategy:
+   - either parallel localized documents,
+   - or a single canonical item with `en`/`el` fields,
+   - but avoid scattered ad-hoc translation keys for long-form content.
+5. Unify navigation labels, section naming, and route naming.
 
-#### 5. Change HTML lang attribute
-```html
-<!-- FROM -->
-<html lang="el">
+### Deliverables
 
-<!-- TO -->
-<html lang="en">
-```
+- Content model specification.
+- Route map.
+- Frontmatter/schema definitions.
+- Editorial conventions for bilingual publishing.
 
 ---
 
-## Phase 5: Implement Content Pages
+## 6.2 Workstream B — Layout and component system
 
-### 5.1 challenges.html
+### Goals
 
-**Content Structure:**
-- Header with title "Challenges"
-- Introduction explaining how to participate
-- Grid of 4 challenge cards:
-  1. **Pendulum Trajectory** - Active (links to double-pendulum.html)
-  2. **Chaos Map Explorer** - Active (links to double-pendulum.html)
-  3. **Mandelbrot Zoom** - Coming soon
-  4. **Bridge Master** - Coming soon
-- Each card has:
-  - Icon
-  - Title
-  - Description
-  - Status badge (Active/Coming Soon)
-  - Button: "Try Simulation" or "Submit on Instagram"
+- Remove repeated HTML structure.
+- Centralize shared UI.
+- Improve interpretability of the frontend.
 
-### 5.2 contact.html
+### Actions
 
-**Content Structure:**
-- Header with title "Contact"
-- Centered card with two contact methods:
-  1. **Instagram**: @stemfy.gr with Instagram icon, links to https://instagram.com/stemfy.gr
-  2. **Email**: team@stemfy.gr with email icon, mailto link
+1. Create a **BaseLayout** that owns:
+   - document shell,
+   - global metadata,
+   - fonts,
+   - theme classes,
+   - shared scripts,
+   - starfield mounting.
+2. Extract reusable components for:
+   - header/navigation,
+   - footer,
+   - language switcher,
+   - settings modal,
+   - CTA cards,
+   - section headers,
+   - content cards,
+   - badges/tags,
+   - simulation control panels.
+3. Split layout concerns into page types:
+   - marketing/content pages,
+   - simulation pages,
+   - collection index pages.
+4. Replace page-by-page duplication with data-driven rendering for menus, links, and cards.
 
-### 5.3 news.html
+### Deliverables
 
-**Content Structure:**
-- Header with title "News"
-- **Newsletter Section:**
-  - Title: "Newsletter"
-  - Description about subscribing
-  - "Coming soon" placeholder
-- **Competitions Section:**
-  - Title: "Competitions for Greek Students"
-  - Grid of competition categories:
-    - **Mathematics**: IMO, BMO, EGMO
-    - **Physics**: IPhO, BPhO
-    - **Informatics**: IOAI
-    - **Science & Research**: IYPT, IYNT
-    - **Astronomy**: IOA, etc.
-  - Each shows: Name, brief description, link to official site
-
-### 5.4 posts.html
-
-**Content Structure:**
-- Header with title "Posts"
-- **Instagram Section:**
-  - Title: "From Instagram"
-  - Placeholder for manual Instagram embeds (3-6 post placeholders)
-  - Note: Full API integration is complex; start with manual embeds
-- **Educational Resources Section:**
-  - Title: "Educational Resources"
-  - Grid for PDF uploads (placeholder cards for now)
-  - "More content coming soon" message
+- Shared Astro layouts.
+- Reusable UI components.
+- Navigation/footer config files.
 
 ---
 
-## Phase 6: Remove Dead Code
+## 6.3 Workstream C — Design system and styling refactor
 
-### 6.1 js/common.js
+### Goals
 
-**Remove these functions:**
+- Turn the current brand language into a maintainable design system.
+- Reduce CSS sprawl and styling ambiguity.
 
-1. **`initStarfield()`** (lines 10-97)
-   - Reason: Duplicate of starfield.js, never called
+### Actions
 
-2. **`initGalaxyLogo()`** (lines 103-203)
-   - Reason: No `#galaxy-logo` canvas exists in any HTML file
+1. Extract design tokens from current styles:
+   - color tokens,
+   - spacing scale,
+   - border radii,
+   - shadows/glows,
+   - typography scale,
+   - z-index layers,
+   - motion timings.
+2. Split CSS into clear layers:
+   - tokens,
+   - reset/base,
+   - layout utilities,
+   - components,
+   - simulation-specific styles.
+3. Formalize typography usage:
+   - Outfit as the primary UI/content font,
+   - pixel/mono accent usage only where it adds identity,
+   - clear heading/body/label hierarchy.
+4. Standardize icon usage into:
+   - UI icons,
+   - category icons,
+   - social/illustration assets.
+5. Introduce responsive rules from a single breakpoint strategy rather than page-local overrides.
 
-3. **`hslToRgb()`** (lines 275-297)
-   - Reason: Not referenced anywhere in the codebase
+### Deliverables
 
-**Keep these functions (used by double-pendulum.js):**
-- `formatNumber()`
-- `clamp()`
-- `lerp()`
-- `mapRange()`
-- `degToRad()`
-- `radToDeg()`
-- `getChaosColor()`
-- `debounce()`
-- `throttle()`
-
-### 6.2 js/double-pendulum.js
-
-**Remove:**
-- **`computeChaosMapWithWorker()`** (lines 672-676)
-  - Reason: Stub function that just calls `computeChaosMapDirect()`, Web Worker never implemented
-
----
-
-## Implementation Order
-
-1. Fix `index.html` Posts link
-2. Delete `philosophy.html`
-3. Expand `js/i18n.js` with all translations
-4. Standardize `about.html`
-5. Standardize `simulations.html`
-6. Standardize `404.html`
-7. Implement `challenges.html`
-8. Implement `contact.html`
-9. Implement `news.html`
-10. Create `posts.html`
-11. Remove dead code from `js/common.js`
-12. Remove dead code from `js/double-pendulum.js`
+- Token file(s).
+- Component-level styles.
+- Lightweight design-system documentation.
 
 ---
 
-## Verification Checklist
+## 6.4 Workstream D — Simulation architecture refactor
 
-After implementation, verify:
+### Goals
 
-- [ ] All pages have `lang="en"` attribute
-- [ ] All pages have full navigation bar with settings button
-- [ ] All pages have settings modal
-- [ ] All pages have footer
-- [ ] All pages load i18n.js and ui.js
-- [ ] Language switching works on all pages
-- [ ] Language persists when navigating between pages
-- [ ] Theme switching works on all pages
-- [ ] Theme persists when navigating between pages
-- [ ] All navigation links work correctly
-- [ ] Posts link goes to posts.html
-- [ ] philosophy.html is deleted
-- [ ] Double pendulum simulation still works after common.js cleanup
-- [ ] No console errors on any page
+- Preserve the quality of the current simulation while making it understandable and extensible.
+
+### Actions
+
+1. Split the double-pendulum implementation into modules such as:
+   - physics engine/integration,
+   - rendering,
+   - state store,
+   - controls,
+   - presets,
+   - tutorial/onboarding,
+   - exports/downloads,
+   - chaos map generation,
+   - mobile adaptations.
+2. Define a clear public API for simulation bootstrapping:
+   - container element,
+   - initial parameters,
+   - callbacks/events,
+   - localization inputs.
+3. Move simulation constants and presets into configuration files.
+4. Add inline documentation for mathematical/model assumptions.
+5. Prepare a shared simulation framework so future simulations (Bridge Builder, Mandelbrot) can reuse:
+   - page shell,
+   - control patterns,
+   - download/export patterns,
+   - tutorial structure.
+
+### Deliverables
+
+- Modular simulation folder structure.
+- Documented bootstrap interface.
+- Reusable simulation page template.
+
+---
+
+## 6.5 Workstream E — Internationalization redesign
+
+### Goals
+
+- Keep bilingual support strong while reducing translation complexity.
+
+### Actions
+
+1. Separate **UI string translations** from **long-form content translations**.
+2. Replace the giant translation surface with structured locale modules.
+3. Define a route strategy for localization, for example:
+   - `/en/...` and `/el/...`, or
+   - locale-aware rendering with deterministic canonical URLs.
+4. Ensure language selection affects:
+   - navigation,
+   - metadata,
+   - structured content,
+   - simulation labels,
+   - fallback behavior.
+5. Add validation to prevent missing translation keys.
+
+### Deliverables
+
+- Locale module structure.
+- Localized route plan.
+- Translation quality checklist.
+
+---
+
+## 6.6 Workstream F — CMS and publishing pipeline
+
+### Goals
+
+- Keep the current admin usable while creating a cleaner path into the Astro frontend.
+
+### Actions
+
+1. Audit the JSON outputs used by the PHP admin.
+2. Define a stable ingestion contract between admin-generated data and Astro content/data loaders.
+3. Decide whether the near-term source of truth is:
+   - markdown/content collections,
+   - JSON generated by admin,
+   - or a hybrid model.
+4. Add schema validation for imported admin data.
+5. Normalize media handling paths and metadata.
+6. Create a migration path from the current PHP+JSON admin to one of:
+   - retained lightweight admin + generated content,
+   - headless CMS,
+   - custom Astro-compatible editorial workflow.
+
+### Deliverables
+
+- Content ingestion spec.
+- Validation layer for admin JSON.
+- Recommendation memo for future CMS direction.
+
+---
+
+## 6.7 Workstream G — Performance and asset optimization
+
+### Goals
+
+- Improve loading performance without losing the visual identity.
+
+### Actions
+
+1. Convert brand/logo assets to SVG where possible.
+2. Audit large PNG icons and replace/compress them using:
+   - SVG for simple assets,
+   - WebP/AVIF for bitmap assets.
+3. Use Astro’s asset pipeline for image sizing and responsive delivery where applicable.
+4. Lazy-load non-critical media.
+5. Ensure the starfield and simulation scripts only initialize where needed.
+6. Review font loading strategy and eliminate unused font declarations.
+
+### Deliverables
+
+- Asset optimization checklist.
+- Reduced media footprint.
+- Performance budget targets.
+
+---
+
+## 6.8 Workstream H — Quality, tooling, and governance
+
+### Goals
+
+- Establish the engineering baseline the current project is missing.
+
+### Actions
+
+1. Introduce a Node-based project toolchain with Astro.
+2. Add:
+   - formatter,
+   - linter,
+   - basic type checking,
+   - content/schema validation,
+   - build verification.
+3. Define conventions for:
+   - naming,
+   - file organization,
+   - component ownership,
+   - content review,
+   - translation updates.
+4. Add CI checks for:
+   - install,
+   - lint,
+   - build,
+   - content validation.
+5. Create lightweight technical documentation for contributors.
+
+### Deliverables
+
+- Tooling baseline.
+- CI workflow.
+- Contribution and architecture docs.
+
+---
+
+## 7. Migration Phases
+
+## Phase 0 — Discovery and stabilization
+
+### Objective
+Document what exists and reduce migration ambiguity.
+
+### Tasks
+
+- Inventory all public routes, shared sections, scripts, and admin data files.
+- Freeze current page scope and identify obsolete pages/links.
+- Define success metrics for migration.
+- Decide route naming and localization strategy.
+
+### Outcome
+A stable migration map with reduced hidden dependencies.
+
+---
+
+## Phase 1 — Astro foundation and design-system extraction
+
+### Objective
+Create the new architectural skeleton without changing the product significantly.
+
+### Tasks
+
+- Initialize Astro project structure.
+- Build base layout and global styles.
+- Extract navigation, footer, settings, and starfield into reusable parts.
+- Port core static pages first:
+  - home,
+  - about,
+  - contact,
+  - simulations index.
+- Define content collections and locale modules.
+
+### Outcome
+The public site shell becomes maintainable even before all features are migrated.
+
+---
+
+## Phase 2 — Content migration and routing cleanup
+
+### Objective
+Move content-driven sections into structured collections.
+
+### Tasks
+
+- Migrate posts, news, resources, and challenge metadata into validated models.
+- Create reusable listing/detail templates.
+- Normalize slugs, metadata, and translations.
+- Introduce SEO defaults and structured page metadata.
+
+### Outcome
+Content becomes scalable and easier to publish consistently.
+
+---
+
+## Phase 3 — Simulation migration and modularization
+
+### Objective
+Move the flagship simulation into the Astro architecture safely.
+
+### Tasks
+
+- Wrap current simulation in an Astro page.
+- Split `double-pendulum.js` into modules.
+- Refactor simulation styling into scoped or organized global layers.
+- Introduce reusable patterns for future simulations.
+
+### Outcome
+The strongest product feature is preserved while becoming easier to extend.
+
+---
+
+## Phase 4 — Admin integration and publishing workflow hardening
+
+### Objective
+Connect editorial workflows to the new frontend cleanly.
+
+### Tasks
+
+- Build loaders/adapters for admin JSON.
+- Add schema validation and error handling.
+- Align media paths and content states.
+- Decide whether to retain, replace, or phase out the PHP admin.
+
+### Outcome
+Publishing becomes more reliable and less ad hoc.
+
+---
+
+## Phase 5 — Performance, QA, and future-platform readiness
+
+### Objective
+Complete optimization and prepare for broader platform growth.
+
+### Tasks
+
+- Optimize images and fonts.
+- Add regression checks and content QA.
+- Improve accessibility and mobile polish.
+- Prepare extension points for leaderboards, submissions, and community features.
+
+### Outcome
+The project is ready to scale beyond a polished prototype.
+
+---
+
+## 8. Recommended Priorities
+
+If the team wants the highest return with limited time, prioritize work in this order:
+
+1. **Layout/component extraction into Astro**
+2. **Content modeling and route cleanup**
+3. **Simulation modularization**
+4. **Asset optimization**
+5. **Admin/frontend contract cleanup**
+6. **Tooling and CI hardening**
+
+This order removes the most recurring maintenance pain first while keeping the flagship simulation and brand intact.
+
+---
+
+## 9. Risks and Mitigations
+
+### Risk 1 — Over-rewriting too early
+Trying to redesign the site, rewrite the simulation, and replace the CMS all at once could stall delivery.
+
+**Mitigation:** keep the first migration incremental; preserve working logic where possible.
+
+### Risk 2 — Breaking bilingual behavior
+Migration may unintentionally regress English/Greek switching.
+
+**Mitigation:** define localization strategy before page migration and validate page-by-page.
+
+### Risk 3 — Losing brand character during cleanup
+A generic component system could flatten the visual identity.
+
+**Mitigation:** extract design tokens from the current brand instead of replacing the brand language.
+
+### Risk 4 — Content model mismatch with admin data
+The PHP admin and Astro collections may diverge in structure.
+
+**Mitigation:** define an explicit ingestion contract and validation layer before integration.
+
+### Risk 5 — Simulation regressions
+Refactoring a large simulation without boundaries could break behavior subtly.
+
+**Mitigation:** modularize around stable behavior, add smoke tests/checklists, and avoid logic rewrites unless necessary.
+
+---
+
+## 10. Definition of Done
+
+The migration should be considered successful when:
+
+- the site runs on Astro-based page composition,
+- shared UI is no longer duplicated across pages,
+- major content types have validated schemas,
+- bilingual behavior is deterministic and maintainable,
+- the double-pendulum simulation is integrated through a modular structure,
+- asset performance is improved measurably,
+- the repo has a documented build/lint/check workflow,
+- future simulations and content sections can be added without copy-pasting entire pages.
+
+---
+
+## 11. Immediate Next Steps
+
+1. Approve the target route map and localization approach.
+2. Decide the near-term source of truth for content: Markdown, admin JSON, or hybrid.
+3. Initialize the Astro project skeleton in a migration branch.
+4. Port the shared site shell before porting feature-heavy pages.
+5. Treat the double-pendulum page as a controlled second-stage migration, not the first page to rewrite.
+
+---
+
+## 12. Expected Result
+
+Following this plan should transform STEMfy from a visually strong but structurally fragile prototype into a maintainable, interpretable, and scalable platform.
+
+The key principle is: **preserve the identity, refactor the architecture, and migrate incrementally**.
