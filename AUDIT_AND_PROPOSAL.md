@@ -551,3 +551,407 @@ The current identity is **dark-cosmic-purple** — a space-themed aesthetic with
 ---
 
 *This document serves as the baseline audit and north-star proposal for STEMfy.gr's evolution from a student project to a community-driven STEM learning platform.*
+
+---
+
+## PART 6: CHOSEN STACK — VERIFIED FREE TIERS & IMPLEMENTATION PLAN
+
+**Decision (2026-03-19):** Cloudflare Pages (hosting) + Supabase Free (backend) + Astro (build) + Papaki.gr (domain registrar).
+
+---
+
+### 6.1 Cloudflare Pages — Free Tier Verification
+
+**Confirmed: Truly free. No credit card required. No hidden costs.**
+
+| Resource | Free Tier Limit |
+|----------|----------------|
+| Bandwidth | **Unlimited** |
+| Builds | 500/month (20 min timeout each) |
+| Concurrent builds | 1 |
+| Projects | 100 |
+| Custom domains per project | 100 |
+| Files per deployment | 20,000 |
+| Individual file size | 25 MB max |
+| Total site size | 1 GB per deployment |
+| Requests | **Unlimited** |
+| HTTPS/SSL | **Free** (automatic) |
+| Preview deployments | **Free** |
+| Custom .gr domain | **Supported on free tier** |
+
+**What happens at limits:**
+- Bandwidth: Can't exceed — it's unlimited
+- 500 builds/month exceeded: Builds blocked until next month (site stays live)
+- File too large: Deployment rejected (fix and redeploy)
+- Site never goes down due to traffic. Cloudflare does **not** charge overages — it restricts builds, not serving.
+
+**No gotchas found.** Custom domains, HTTPS, preview deployments, and commercial use are all included in the free tier with no payment method required.
+
+---
+
+### 6.2 Supabase Free Tier — Verification & Limitations
+
+**Confirmed: Truly free. No credit card required.**
+
+| Resource | Free Tier Limit |
+|----------|----------------|
+| Database storage | 500 MB |
+| File storage (Supabase Storage) | 1 GB |
+| Monthly Active Users (auth) | 50,000 |
+| Database egress | 2 GB/month |
+| File storage egress | 2 GB/month |
+| Edge function invocations | 500,000/month |
+| API requests | **Unlimited** (no monthly cap) |
+| Read throughput | 1,200 req/sec |
+| Write throughput | 1,000 req/sec |
+| Individual file upload | 50 MB max |
+| Free projects per account | 2 |
+
+**The 7-day inactivity pause — how it works:**
+- If your database receives **zero** API calls for 7 consecutive days, the project pauses automatically
+- Supabase sends warning emails before pausing
+- Any REST API call (SELECT, INSERT, etc.) counts as activity
+- Unpausing takes 1–2 minutes via the dashboard
+- Paused projects are restorable for 90 days; after that, data can still be downloaded but the project is deleted
+
+**How to prevent pausing (free):**
+Set up a GitHub Actions workflow that pings the database twice per week:
+
+```yaml
+# .github/workflows/supabase-keepalive.yml
+name: Supabase Keepalive
+on:
+  schedule:
+    - cron: '0 8 * * 1,4'  # Monday and Thursday at 8 AM UTC
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          curl -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+```
+
+**Will free tier work for STEMfy.gr (50–200 initial users)?**
+Yes, comfortably:
+- 50,000 MAU limit vs ~200 users = 250x headroom
+- 500 MB database = enough for thousands of articles, scores, and submissions (text is small)
+- 1 GB file storage = enough for ~1,000 simulation screenshots at 1 MB each
+- Unlimited API requests = no rate limit concerns
+- The main constraint is **storage** — if you store lots of media, you'll hit 500 MB / 1 GB first
+
+**When to upgrade to Pro ($25/month):**
+- When database exceeds 500 MB
+- When you need guaranteed uptime (no pause risk)
+- When file storage exceeds 1 GB
+- Realistically: months after launch, not at start
+
+---
+
+### 6.3 How Astro Works — Implementation Detail
+
+#### What Astro does
+
+Astro is a **static site generator** (SSG). It takes template files with shared components and builds them into plain HTML/CSS/JS — exactly like your current site, but generated from a single source of truth instead of copy-pasted across 9 files.
+
+```
+WHAT YOU WRITE:                    WHAT ASTRO BUILDS:
+                                   (output in dist/)
+src/layouts/Base.astro
+  ├── Nav component                index.html  ← full HTML with nav, footer, starfield
+  ├── Starfield component          about.html  ← same shared elements, different content
+  ├── Footer component             simulations.html
+  └── i18n setup                   double-pendulum.html
+                                   posts.html
+src/pages/index.astro              news.html
+src/pages/about.astro              challenges.html
+src/pages/simulations.astro        contact.html
+...etc                             404.html
+
+src/styles/global.css              css/global.css  ← bundled & minified
+src/js/starfield.js                js/starfield.js ← optimized
+```
+
+The output (`dist/` folder) is **identical in nature** to what you have now — static HTML files. No server runtime needed. Deployable anywhere.
+
+#### What changes for you
+
+| Aspect | Today | With Astro |
+|--------|-------|------------|
+| Editing the nav | Edit 9 HTML files | Edit 1 component (`Nav.astro`) |
+| Adding a new page | Copy-paste 100+ lines of boilerplate | Create a 10-line `.astro` file |
+| CSS/JS optimization | None (raw files) | Auto-minified and bundled |
+| Image optimization | Manual (25 MB of PNGs) | Auto-compressed at build time |
+| Development server | `python -m http.server` | `npm run dev` (hot reload) |
+| Building for production | Not needed (raw files) | `npm run build` → `dist/` folder |
+
+#### Your existing code works as-is
+
+Astro's "islands architecture" means:
+- **Your starfield canvas JS** → works unchanged (loaded as a `<script>` tag)
+- **Your double-pendulum simulation** → works unchanged (loaded as a `<script>` tag)
+- **Your CSS** → works unchanged (imported in the layout)
+- **Your i18n system** → works unchanged (client-side JS)
+
+No React, no Vue, no framework needed. Astro wraps your existing vanilla JS/HTML/CSS in a component system for reuse, then gets out of the way.
+
+#### Proposed Astro project structure
+
+```
+stemfy.gr/
+├── src/
+│   ├── layouts/
+│   │   └── Base.astro              # THE shared layout (nav + starfield + footer + i18n)
+│   │
+│   ├── components/
+│   │   ├── Nav.astro               # Navigation bar (written once)
+│   │   ├── Footer.astro            # Footer (written once)
+│   │   ├── SettingsModal.astro     # Language/theme settings (written once)
+│   │   ├── Starfield.astro         # Canvas starfield wrapper
+│   │   ├── SimulationCard.astro    # Reusable card for simulation listings
+│   │   ├── ArticleCard.astro       # Reusable card for articles
+│   │   ├── CompetitionCard.astro   # Reusable card for competitions
+│   │   └── LeaderboardTable.astro  # Leaderboard display component
+│   │
+│   ├── pages/
+│   │   ├── index.astro             # Home page
+│   │   ├── about.astro             # About page
+│   │   ├── contact.astro           # Contact page
+│   │   ├── posts.astro             # Instagram-style posts
+│   │   ├── news.astro              # News/events
+│   │   ├── 404.astro               # Error page
+│   │   ├── simulations/
+│   │   │   ├── index.astro         # Simulation catalog
+│   │   │   └── double-pendulum.astro
+│   │   ├── learn/
+│   │   │   ├── index.astro         # Articles hub
+│   │   │   └── [slug].astro        # Dynamic article pages
+│   │   └── competitions/
+│   │       ├── index.astro         # Competition listing
+│   │       └── [slug].astro        # Individual competition + leaderboard
+│   │
+│   ├── simulations/                # Simulation JS (your existing code)
+│   │   ├── double-pendulum/
+│   │   │   ├── physics.js          # RK4 engine (extracted from double-pendulum.js)
+│   │   │   ├── renderer.js         # Canvas rendering
+│   │   │   ├── controls.js         # UI controls
+│   │   │   ├── chaos-map.js        # Chaos map visualization
+│   │   │   └── tutorial.js         # Guided walkthrough
+│   │   └── [future-simulations]/
+│   │
+│   ├── lib/
+│   │   ├── supabase.js             # Supabase client initialization
+│   │   ├── auth.js                 # Auth helper functions
+│   │   └── i18n.js                 # Internationalization (migrated)
+│   │
+│   ├── styles/
+│   │   ├── global.css              # CSS variables, resets, typography
+│   │   ├── components.css          # Shared component styles
+│   │   └── simulations.css         # Simulation-specific styles
+│   │
+│   └── i18n/
+│       ├── en.json                 # English translations
+│       └── el.json                 # Greek translations
+│
+├── public/
+│   ├── assets/
+│   │   ├── logo.svg                # SVG version of logo (to be created)
+│   │   ├── logo.png                # Current PNG (fallback)
+│   │   └── pfp.jpg                 # Profile picture
+│   ├── icons/                      # Optimized SVG icons (replacing 25 MB of PNGs)
+│   └── fonts/                      # Self-hosted fonts (optional, for performance)
+│
+├── astro.config.mjs                # Astro configuration
+├── package.json
+└── .github/
+    └── workflows/
+        ├── deploy.yml              # Auto-deploy to Cloudflare on push
+        └── supabase-keepalive.yml  # Prevent Supabase free tier pausing
+```
+
+#### How a page looks in Astro
+
+**Base layout** (`src/layouts/Base.astro`) — written once, used everywhere:
+```astro
+---
+// Base.astro — the shared skeleton for every page
+const { title, description } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{title} | STEMfy.gr</title>
+  <meta name="description" content={description}>
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+</head>
+<body>
+  <Nav />
+  <canvas id="starfield"></canvas>
+  <SettingsModal />
+
+  <main>
+    <slot />   <!-- Page-specific content goes here -->
+  </main>
+
+  <Footer />
+  <script src="/js/starfield.js"></script>
+  <script src="/js/i18n.js"></script>
+</body>
+</html>
+```
+
+**A page** (`src/pages/about.astro`) — just the unique content:
+```astro
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="About" description="About STEMfy.gr">
+  <section class="about-hero">
+    <h1>Three minds. One mission.</h1>
+    <p>We are three students exploring the world of STEM...</p>
+  </section>
+</Base>
+```
+
+That's it. ~10 lines per page instead of 100+ lines of duplicated boilerplate. The nav, footer, starfield, settings modal, and meta tags are inherited from the layout.
+
+#### The development workflow
+
+**Local development:**
+```bash
+npm run dev          # Starts dev server at localhost:4321
+                     # Hot reload — edit a file, browser updates instantly
+```
+
+**Building for production:**
+```bash
+npm run build        # Generates static HTML in dist/
+npm run preview      # Preview the built site locally
+```
+
+**Deploying:**
+```bash
+git add . && git commit -m "Update about page"
+git push origin main
+# Cloudflare auto-detects push → builds → deploys in ~3 min
+# Site live at stemfy.gr
+```
+
+---
+
+### 6.4 Complete Pipeline — How Everything Connects
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     YOUR DEVELOPMENT WORKFLOW                    │
+│                                                                  │
+│  1. Edit code locally (VS Code, etc.)                           │
+│  2. npm run dev → test at localhost:4321                        │
+│  3. git push origin main                                        │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────┐                                │
+│  │       GitHub Repository      │                                │
+│  │   PastelDev/Stemfy_website   │                                │
+│  └──────────┬──────────────────┘                                │
+│             │                                                    │
+│      webhook fires                                               │
+│             │                                                    │
+│             ▼                                                    │
+│  ┌─────────────────────────────┐                                │
+│  │     Cloudflare Pages         │                                │
+│  │                              │                                │
+│  │  npm install                 │                                │
+│  │  npm run build (Astro)       │                                │
+│  │  Upload dist/ to CDN         │                                │
+│  │                              │                                │
+│  │  Live at: stemfy.gr          │                                │
+│  │  Preview: pr-42.pages.dev    │                                │
+│  └─────────────────────────────┘                                │
+│                                                                  │
+│                                                                  │
+│  ┌─────────────────────────────┐    ┌────────────────────────┐  │
+│  │     Supabase (Free)          │    │   Admin Panel           │  │
+│  │                              │    │   (Motor Admin or       │  │
+│  │  PostgreSQL database         │◄───│    custom /admin page)  │  │
+│  │  ├── users (auth)            │    │                         │  │
+│  │  ├── articles                │    │  Create articles        │  │
+│  │  ├── competitions            │    │  Manage competitions    │  │
+│  │  ├── leaderboard_scores      │    │  Review submissions     │  │
+│  │  ├── submissions             │    │  Moderate content       │  │
+│  │  └── posts                   │    └────────────────────────┘  │
+│  │                              │                                │
+│  │  Supabase Storage            │                                │
+│  │  ├── simulation-screenshots  │                                │
+│  │  ├── post-media              │                                │
+│  │  └── user-avatars            │                                │
+│  │                              │                                │
+│  │  Supabase Auth               │                                │
+│  │  ├── Email/password signup   │                                │
+│  │  ├── Admin role management   │                                │
+│  │  └── Row-Level Security      │                                │
+│  └─────────────────────────────┘                                │
+│                                                                  │
+│                                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │     Papaki.gr (unchanged)    │                                │
+│  │                              │                                │
+│  │  Domain registrar only       │                                │
+│  │  DNS points to Cloudflare    │                                │
+│  │  stemfy.gr → CF Pages        │                                │
+│  └─────────────────────────────┘                                │
+│                                                                  │
+│                                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │   GitHub Actions (free)      │                                │
+│  │                              │                                │
+│  │  supabase-keepalive.yml      │                                │
+│  │  Pings DB every Mon & Thu    │                                │
+│  │  Prevents free tier pause    │                                │
+│  └─────────────────────────────┘                                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 6.5 Admin Panel — How It Works with Supabase
+
+The current PHP admin panel (`/admin/`) reads/writes JSON files. With Supabase, the admin panel becomes a web interface that talks to the database via API.
+
+**Three options, from simplest to most custom:**
+
+**Option A: Supabase Dashboard directly (developer only)**
+- Log into supabase.com → open your project → Table Editor
+- Spreadsheet-like view of all tables
+- Inline editing, filtering, sorting
+- Good for: Quick data fixes, the developer on the team
+- Not good for: Non-technical team members
+
+**Option B: Motor Admin (free, auto-generated)**
+- Open-source tool that auto-generates an admin UI from your database schema
+- Connect with your Supabase connection string
+- Gets: forms for creating articles, tables for viewing submissions, filters for moderation
+- Self-hosted (run on your machine or a small server)
+- Good for: Small team, quick setup, non-technical admins
+
+**Option C: Custom admin pages in Astro (full control)**
+- Build `/admin/` pages as part of your Astro site
+- Protected by Supabase Auth (admin role check)
+- Custom forms with rich text editors, file uploaders, competition builders
+- More work to build but exactly matches your workflow
+- Good for: Long-term, when you know exactly what admin features you need
+
+**Recommended path:** Start with Option A (Supabase Dashboard) for the developer, add Option B (Motor Admin) when non-technical team members need access, build Option C later when you have specific workflow requirements.
+
+### 6.6 Monthly Cost Summary
+
+| Service | Cost | Notes |
+|---------|------|-------|
+| Cloudflare Pages | $0 | Unlimited bandwidth, no credit card |
+| Supabase Free | $0 | 500 MB DB, 1 GB storage, 50k MAU |
+| Papaki.gr | ~$15/year | Domain registration only |
+| GitHub | $0 | Free for public/private repos |
+| GitHub Actions | $0 | 2,000 min/month free (keepalive uses ~1 min/month) |
+| **Total at launch** | **~$1.25/month** | (just domain cost amortized) |
+| **Total when scaling** | **~$26.25/month** | (Supabase Pro at $25/mo when needed) |
