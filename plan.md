@@ -209,11 +209,13 @@ This approach lowers migration risk while still improving maintainability.
    - or a single canonical item with `en`/`el` fields,
    - but avoid scattered ad-hoc translation keys for long-form content.
 5. Unify navigation labels, section naming, and route naming.
+6. Define a legacy-to-new URL compatibility matrix so every current `.html` entry point has either a stable alias or an explicit redirect target in the Astro route map.
 
 ### Deliverables
 
 - Content model specification.
 - Route map.
+- Legacy URL redirect/alias matrix for existing `.html` pages and high-value inbound links.
 - Frontmatter/schema definitions.
 - Editorial conventions for bilingual publishing.
 
@@ -511,6 +513,8 @@ Move content-driven sections into structured collections.
 - Create reusable listing/detail templates.
 - Normalize slugs, metadata, and translations.
 - Introduce SEO defaults and structured page metadata.
+- Ship a redirect/alias plan for legacy URLs (for example `double-pendulum.html`, `simulations.html`, and other current root pages) so inbound links, internal hard-links, and shared social URLs continue to resolve after the new route structure lands.
+- Keep admin-published content on a live path during the transition by choosing one of two supported modes per content type: runtime reads from `admin/api.php` through an Astro server endpoint/adapter, or publish-triggered rebuilds/webhooks with clear editorial expectations.
 
 ### Outcome
 Content becomes scalable and easier to publish consistently.
@@ -545,6 +549,8 @@ Connect editorial workflows to the new frontend cleanly.
 - Add schema validation and error handling.
 - Align media paths and content states.
 - Decide whether to retain, replace, or phase out the PHP admin.
+- If collections are build-time sourced, add a rebuild trigger/webhook from the admin publish flow; if live runtime fetching is retained, define caching, fallback, and failure behavior so editors still see newly published entries immediately.
+- Document the publishing contract end-to-end: where content is authored, when it becomes visible on the public site, and how rollback/revalidation works.
 
 ### Outcome
 Publishing becomes more reliable and less ad hoc.
@@ -610,6 +616,16 @@ Refactoring a large simulation without boundaries could break behavior subtly.
 
 **Mitigation:** modularize around stable behavior, add smoke tests/checklists, and avoid logic rewrites unless necessary.
 
+### Risk 6 — Breaking inbound links during route cleanup
+Moving from root `.html` files to collection-style routes can strand existing bookmarks, internal links, and social shares if compatibility work is skipped.
+
+**Mitigation:** approve a redirect matrix before implementation, keep stable aliases for critical pages where useful, and test the highest-traffic legacy URLs before launch.
+
+### Risk 7 — Delaying admin-authored content visibility
+A pure build-time collection setup can make newly published posts/news/resources invisible until the next deploy.
+
+**Mitigation:** preserve a live runtime path or add publish-triggered rebuild automation, and document the expected freshness SLA for editors.
+
 ---
 
 ## 10. Definition of Done
@@ -620,7 +636,9 @@ The migration should be considered successful when:
 - shared UI is no longer duplicated across pages,
 - major content types have validated schemas,
 - bilingual behavior is deterministic and maintainable,
+- legacy URLs have tested redirects or aliases to their new canonical routes,
 - the double-pendulum simulation is integrated through a modular structure,
+- admin-authored content has a documented live-publication path (runtime fetch or automated rebuild) with no ambiguous delay window,
 - asset performance is improved measurably,
 - the repo has a documented build/lint/check workflow,
 - future simulations and content sections can be added without copy-pasting entire pages.
